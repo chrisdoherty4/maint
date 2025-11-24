@@ -1,0 +1,63 @@
+"""The Maint integration."""
+
+from __future__ import annotations
+
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_NAME
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.typing import ConfigType
+
+from .const import DOMAIN
+from .models import MaintConfigEntry, MaintRuntimeData, MaintTaskStore
+from .panel import async_register_panel
+from .websocket import async_register_websocket_handlers
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Set up Maint."""
+    data = hass.data.setdefault(DOMAIN, {})
+    await _async_get_task_store(hass)
+    await async_register_panel(hass)
+    if not data.get("ws_registered"):
+        async_register_websocket_handlers(hass)
+        data["ws_registered"] = True
+    return True
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: MaintConfigEntry) -> bool:
+    """Set up Maint from a config entry."""
+    if entry.unique_id is None:
+        hass.config_entries.async_update_entry(entry, unique_id=DOMAIN)
+
+    if (name := entry.data.get(CONF_NAME)) and entry.title != name:
+        hass.config_entries.async_update_entry(entry, title=name)
+
+    task_store = await _async_get_task_store(hass)
+    entry.runtime_data = MaintRuntimeData(task_store=task_store)
+
+    entry.async_on_unload(entry.add_update_listener(config_entry_update_listener))
+
+    return True
+
+
+async def config_entry_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Update listener, called when the config entry options are changed."""
+    await hass.config_entries.async_reload(entry.entry_id)
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
+    return True
+
+
+async def _async_get_task_store(hass: HomeAssistant) -> MaintTaskStore:
+    """Return the shared Maint task store."""
+    data = hass.data.setdefault(DOMAIN, {})
+    if (store := data.get("task_store")) is None:
+        store = MaintTaskStore(hass)
+        await store.async_load()
+        data["task_store"] = store
+    return store

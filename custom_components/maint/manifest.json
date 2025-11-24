@@ -1,0 +1,10 @@
+{
+  "domain": "maint",
+  "name": "Maint",
+  "codeowners": ["@chrisdoherty4"],
+  "config_flow": true,
+  "dependencies": ["http"],
+  "documentation": "https://www.home-assistant.io/integrations/maint",
+  "iot_class": "calculated",
+  "quality_scale": "bronze"
+}

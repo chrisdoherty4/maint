@@ -1,0 +1,27 @@
+{
+  "config": {
+    "abort": {
+      "single_instance_allowed": "Only one entry is allowed."
+    },
+    "error": {
+      "name_required": "Enter a name."
+    },
+    "step": {
+      "user": {
+        "data": {
+          "name": "Name"
+        },
+        "description": "Track recurring household maintenance tasks."
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "name": "Name"
+        }
+      }
+    }
+  }
+}
