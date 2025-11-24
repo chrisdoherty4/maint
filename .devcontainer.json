@@ -18,7 +18,8 @@
                 "github.vscode-pull-request-github",
                 "ms-python.python",
                 "ms-python.vscode-pylance",
-                "ryanluker.vscode-coverage-gutters"
+                "ryanluker.vscode-coverage-gutters",
+                "openai.chatgpt"
             ],
             "settings": {
                 "files.eol": "\n",
@@ -40,6 +41,7 @@
     "features": {
         "ghcr.io/devcontainers-extra/features/apt-packages:1": {
             "packages": "ffmpeg,libturbojpeg0,libpcap-dev"
-        }
+        },
+        "ghcr.io/jsburckhardt/devcontainer-features/codex:1": {}
     }
 }
