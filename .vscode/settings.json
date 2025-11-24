@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "/home/vscode/.local/lib/python3.13",
+    ]
+}
