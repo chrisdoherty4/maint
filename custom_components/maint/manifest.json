@@ -11,5 +11,8 @@
   "iot_class": "calculated",
   "loggers": [
     "maint"
+  ],
+  "dependencies": [
+    "http"
   ]
 }
