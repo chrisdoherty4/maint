@@ -1,18 +1,18 @@
 {
   "domain": "maint",
   "name": "Maint",
-  "version": "0.0.1",
   "codeowners": [
     "@chrisdoherty4"
   ],
-  "issue_tracker": "https://github.com/chrisdoherty4/maint/issues",
-  "documentation": "https://github.com/chrisdoherty4/maint",
   "config_flow": true,
+  "dependencies": [
+    "http"
+  ],
+  "documentation": "https://github.com/chrisdoherty4/maint",
   "iot_class": "calculated",
+  "issue_tracker": "https://github.com/chrisdoherty4/maint/issues",
   "loggers": [
     "maint"
   ],
-  "dependencies": [
-    "http"
-  ]
+  "version": "0.0.1"
 }
