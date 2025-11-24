@@ -2,25 +2,28 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
-
 from homeassistant import config_entries
 from homeassistant.const import CONF_NAME
-from homeassistant.helpers import config_validation as cv, selector
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import selector
 
 from .const import DOMAIN
 
 DEFAULT_NAME = "Home maintenance"
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 def _validated_name(value: Any) -> str:
     """Validate and normalize a task list name."""
     name = cv.string(value).strip()
     if not name:
-        raise vol.Invalid("name_required")
+        message = "name_required"
+        raise vol.Invalid(message)
     return name
 
 
@@ -46,7 +49,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     def async_get_options_flow(
-        config_entry: config_entries.ConfigEntry,
+        _config_entry: config_entries.ConfigEntry,
     ) -> config_entries.OptionsFlow:
         """Return the options flow."""
         return OptionsFlowHandler()

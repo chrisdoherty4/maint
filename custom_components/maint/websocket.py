@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
-
 from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
 
 from .const import (
@@ -21,12 +20,16 @@ from .const import (
 )
 from .models import MaintConfigEntry, MaintRuntimeData, MaintTaskStore
 
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
+
 
 def _validated_description(value: Any) -> str:
     """Validate task descriptions are non-empty after trimming whitespace."""
     description = cv.string(value).strip()
     if not description:
-        raise vol.Invalid("description_required")
+        message = "description_required"
+        raise vol.Invalid(message)
     return description
 
 
@@ -49,7 +52,6 @@ TASK_LAST_COMPLETED_VALIDATION = cv.date
 @callback
 def async_register_websocket_handlers(hass: HomeAssistant) -> None:
     """Register websocket commands for Maint."""
-
     websocket_api.async_register_command(hass, websocket_list_tasks)
     websocket_api.async_register_command(hass, websocket_create_task)
     websocket_api.async_register_command(hass, websocket_update_task)

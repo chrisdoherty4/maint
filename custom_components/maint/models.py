@@ -4,13 +4,23 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
 from uuid import uuid4
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
+
+from .const import (
+    SIGNAL_TASK_CREATED,
+    SIGNAL_TASK_DELETED,
+    SIGNAL_TASK_UPDATED,
+)
+
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.core import HomeAssistant
 
 STORAGE_KEY = "maint.tasks"
 STORAGE_VERSION = 1
@@ -25,7 +35,6 @@ UNSET = _UnsetType()
 
 def _serialize_date(value: date) -> str:
     """Serialize a date value to an ISO formatted string."""
-
     return value.isoformat()
 
 
@@ -33,7 +42,8 @@ def _deserialize_date(value: str) -> date:
     """Deserialize an ISO date or datetime string."""
     d = dt_util.parse_date(value)
     if d is None:
-        raise ValueError(f"Invalid date format: {value}")
+        message = f"Invalid date format: {value}"
+        raise ValueError(message)
     return d
 
 
@@ -95,6 +105,7 @@ class MaintTaskStore:
 
     def __init__(self, hass: HomeAssistant) -> None:
         """Initialize the task store."""
+        self._hass = hass
         self._store: Store[MaintTaskStoreData] = Store(
             hass, STORAGE_VERSION, STORAGE_KEY, private=True
         )
@@ -165,6 +176,9 @@ class MaintTaskStore:
         )
         tasks[task.task_id] = task
         await self._async_save()
+        async_dispatcher_send(
+            self._hass, SIGNAL_TASK_CREATED, entry_id, tasks[task.task_id]
+        )
         return task
 
     async def async_update_task(
@@ -191,6 +205,7 @@ class MaintTaskStore:
         task.last_completed = last_completed
         task.frequency = int(frequency)
         await self._async_save()
+        async_dispatcher_send(self._hass, SIGNAL_TASK_UPDATED, entry_id, task)
         return task
 
     async def async_delete_task(self, entry_id: str, task_id: str) -> MaintTask:
@@ -202,6 +217,7 @@ class MaintTaskStore:
         if not tasks:
             self._tasks.pop(entry_id, None)
         await self._async_save()
+        async_dispatcher_send(self._hass, SIGNAL_TASK_DELETED, entry_id, task)
         return task
 
     async def async_get_task(self, entry_id: str, task_id: str) -> MaintTask:
@@ -222,25 +238,25 @@ class MaintTaskStore:
         last_completed: date | None = None,
     ) -> None:
         """Validate task parameters."""
-        if entry_id is not None:
-            if entry_id == "":
-                raise ValueError("entry_id cannot be empty")
+        if entry_id is not None and entry_id == "":
+            message = "entry_id cannot be empty"
+            raise ValueError(message)
 
-        if task_id is not None:
-            if task_id == "":
-                raise ValueError("task_id cannot be empty")
+        if task_id is not None and task_id == "":
+            message = "task_id cannot be empty"
+            raise ValueError(message)
 
-        if description is not None:
-            if description == "":
-                raise ValueError("description cannot be empty")
+        if description is not None and description == "":
+            message = "description cannot be empty"
+            raise ValueError(message)
 
-        if last_completed is not None:
-            if last_completed == "":
-                raise ValueError("last_completed cannot be empty")
+        if last_completed is not None and last_completed == "":
+            message = "last_completed cannot be empty"
+            raise ValueError(message)
 
-        if frequency is not None:
-            if frequency <= 0:
-                raise ValueError("frequency must be greater than 0")
+        if frequency is not None and frequency <= 0:
+            message = "frequency must be greater than 0"
+            raise ValueError(message)
 
 
 @dataclass(slots=True)
