@@ -93,7 +93,7 @@ async def async_setup_entry(
 class MaintTaskBinarySensor(BinarySensorEntity):
     """Binary sensor representing if a maintenance task is due."""
 
-    _attr_has_entity_name = True
+    _attr_has_entity_name = False
 
     def __init__(self, entry: MaintConfigEntry, task: MaintTask) -> None:
         """Initialize the binary sensor."""
@@ -101,11 +101,8 @@ class MaintTaskBinarySensor(BinarySensorEntity):
         self._task = task
         self._attr_unique_id = f"{entry.entry_id}_{task.task_id}"
         self._attr_name = task.description
-        binary_sensor_prefix = entry.options.get(
+        self._binary_sensor_prefix = entry.options.get(
             CONF_BINARY_SENSOR_PREFIX, DEFAULT_BINARY_SENSOR_PREFIX
-        )
-        self._attr_suggested_object_id = (
-            f"{binary_sensor_prefix}_{slugify(task.description)}"
         )
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
@@ -127,6 +124,13 @@ class MaintTaskBinarySensor(BinarySensorEntity):
             "frequency": self._task.frequency,
             "frequency_unit": self._task.frequency_unit,
         }
+
+    @property
+    def suggested_object_id(self) -> str | None:
+        """Return the suggested object ID using the configured prefix."""
+        prefix = slugify(self._binary_sensor_prefix)
+        task_slug = slugify(self._task.description)
+        return f"{prefix}_{task_slug}" if prefix else task_slug
 
     @callback
     def handle_task_update(self, task: MaintTask) -> None:
