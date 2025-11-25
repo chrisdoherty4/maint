@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from homeassistant.const import CONF_NAME, Platform
+from homeassistant.const import Platform
 from homeassistant.helpers import config_validation as cv
 
-from .const import DOMAIN
+from .const import DEFAULT_TITLE, DOMAIN
 from .models import MaintConfigEntry, MaintRuntimeData, MaintTaskStore
 from .panel import async_register_panel
 from .websocket import async_register_websocket_handlers
@@ -37,8 +37,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: MaintConfigEntry) -> boo
     if entry.unique_id is None:
         hass.config_entries.async_update_entry(entry, unique_id=DOMAIN)
 
-    if (name := entry.data.get(CONF_NAME)) and entry.title != name:
-        hass.config_entries.async_update_entry(entry, title=name)
+    if entry.title != DEFAULT_TITLE:
+        hass.config_entries.async_update_entry(entry, title=DEFAULT_TITLE)
 
     task_store = await _async_get_task_store(hass)
     entry.runtime_data = MaintRuntimeData(task_store=task_store)

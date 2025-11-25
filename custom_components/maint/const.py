@@ -1,6 +1,7 @@
 """Constants for the Maint integration."""
 
 DOMAIN = "maint"
+DEFAULT_TITLE = "Maint"
 
 WS_TYPE_KEY = "type"
 WS_TYPE_TASK_CREATE = "maint/task/create"
