@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.binary_sensor import BinarySensorEntity
@@ -14,6 +15,7 @@ from .const import (
     CONF_BINARY_SENSOR_PREFIX,
     DEFAULT_BINARY_SENSOR_PREFIX,
     DOMAIN,
+    EVENT_TASK_DUE,
     SIGNAL_TASK_CREATED,
     SIGNAL_TASK_DELETED,
     SIGNAL_TASK_UPDATED,
@@ -23,6 +25,8 @@ if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
     from .models import MaintConfigEntry, MaintTask
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -108,6 +112,7 @@ class MaintTaskBinarySensor(BinarySensorEntity):
             "identifiers": {(DOMAIN, entry.entry_id)},
             "name": entry.title,
         }
+        self._last_is_on: bool | None = None
 
     @property
     def is_on(self) -> bool:
@@ -132,9 +137,42 @@ class MaintTaskBinarySensor(BinarySensorEntity):
         task_slug = slugify(self._task.description)
         return f"{prefix}_{task_slug}" if prefix else task_slug
 
+    def async_write_ha_state(self) -> None:
+        """Write state to Home Assistant and emit events on activation."""
+        previous_is_on = self._last_is_on
+        current_is_on = self.is_on
+        super().async_write_ha_state()
+        self._last_is_on = current_is_on
+        if current_is_on and (previous_is_on is False or previous_is_on is None):
+            self._fire_task_due_event()
+
     @callback
     def handle_task_update(self, task: MaintTask) -> None:
         """Refresh the sensor when the underlying task changes."""
         self._task = task
         self._attr_name = task.description
         self.async_write_ha_state()
+
+    def _fire_task_due_event(self) -> None:
+        """Notify listeners when a task becomes due."""
+        if self.hass is None:
+            return
+
+        _LOGGER.debug(
+            "Task %s for entry %s is due; firing event",
+            self._task.task_id,
+            self._entry.entry_id,
+        )
+        self.hass.bus.async_fire(
+            EVENT_TASK_DUE,
+            {
+                "entry_id": self._entry.entry_id,
+                "entity_id": self.entity_id,
+                "task_id": self._task.task_id,
+                "description": self._task.description,
+                "last_completed": self._task.last_completed.isoformat(),
+                "frequency": self._task.frequency,
+                "frequency_unit": self._task.frequency_unit,
+                "next_scheduled": self._task.next_scheduled.isoformat(),
+            },
+        )

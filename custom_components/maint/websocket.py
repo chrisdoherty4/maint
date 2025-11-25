@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
@@ -30,6 +31,8 @@ from .models import (
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def _validated_description(value: Any) -> str:
@@ -62,6 +65,7 @@ TASK_LAST_COMPLETED_VALIDATION = cv.date
 @callback
 def async_register_websocket_handlers(hass: HomeAssistant) -> None:
     """Register websocket commands for Maint."""
+    _LOGGER.debug("Registering Maint websocket commands")
     websocket_api.async_register_command(hass, websocket_list_tasks)
     websocket_api.async_register_command(hass, websocket_create_task)
     websocket_api.async_register_command(hass, websocket_update_task)
@@ -85,12 +89,18 @@ def _resolve_task_store(
     entry = hass.config_entries.async_get_entry(entry_id)
 
     if entry is None or entry.domain != DOMAIN:
+        _LOGGER.warning("Websocket request for unknown Maint entry %s", entry_id)
         connection.send_error(
             msg["id"], "entry_not_found", f"Entry {entry_id} not found"
         )
         return None
 
     if entry.state is not ConfigEntryState.LOADED:
+        _LOGGER.debug(
+            "Maint entry %s not loaded for websocket request %s",
+            entry_id,
+            msg.get(WS_TYPE_KEY, "unknown"),
+        )
         connection.send_error(
             msg["id"], "entry_not_loaded", f"Entry {entry_id} is not loaded"
         )
@@ -98,6 +108,7 @@ def _resolve_task_store(
 
     runtime_data = entry.runtime_data
     if not isinstance(runtime_data, MaintRuntimeData):
+        _LOGGER.warning("Runtime data missing for Maint entry %s", entry_id)
         connection.send_error(
             msg["id"], "runtime_data_missing", f"Entry {entry_id} has no runtime data"
         )
@@ -123,6 +134,11 @@ async def websocket_list_tasks(
 
     store, entry = resolved
     tasks = await store.async_list_tasks(entry.entry_id)
+    _LOGGER.debug(
+        "Websocket list tasks for Maint entry %s: %s tasks",
+        entry.entry_id,
+        len(tasks),
+    )
     connection.send_result(msg["id"], [task.to_dict() for task in tasks])
 
 
@@ -158,6 +174,11 @@ async def websocket_create_task(
         frequency_unit=frequency_unit,
     )
     connection.send_result(msg["id"], task.to_dict())
+    _LOGGER.debug(
+        "Websocket created Maint task %s for entry %s",
+        task.task_id,
+        entry.entry_id,
+    )
 
 
 @websocket_api.websocket_command(
@@ -198,10 +219,18 @@ async def websocket_update_task(
             frequency_unit=frequency_unit,
         )
     except KeyError:
+        _LOGGER.debug(
+            "Task %s not found for Maint entry %s during websocket update",
+            task_id,
+            entry.entry_id,
+        )
         connection.send_error(msg["id"], "task_not_found", f"Task {task_id} not found")
         return
 
     connection.send_result(msg["id"], task.to_dict())
+    _LOGGER.debug(
+        "Websocket updated Maint task %s for entry %s", task.task_id, entry.entry_id
+    )
 
 
 @websocket_api.websocket_command(
@@ -224,6 +253,14 @@ async def websocket_delete_task(
     try:
         task = await store.async_delete_task(entry.entry_id, task_id)
     except KeyError:
+        _LOGGER.debug(
+            "Task %s not found for Maint entry %s during websocket delete",
+            task_id,
+            entry.entry_id,
+        )
         connection.send_error(msg["id"], "task_not_found", f"Task {task_id} not found")
         return
     connection.send_result(msg["id"], task.to_dict())
+    _LOGGER.debug(
+        "Websocket deleted Maint task %s for entry %s", task.task_id, entry.entry_id
+    )

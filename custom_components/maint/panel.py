@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -12,6 +13,8 @@ from .const import DOMAIN
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
+
+_LOGGER = logging.getLogger(__name__)
 
 PANEL_STATIC_PATH = "/api/maint_panel_static"
 WEB_COMPONENT_NAME = "maint-panel"
@@ -46,3 +49,4 @@ async def async_register_panel(hass: HomeAssistant) -> None:
     )
 
     data["panel_registered"] = True
+    _LOGGER.debug("Registered Maint panel")

@@ -19,11 +19,6 @@ events when tasks become due so you can automate reminders or actions.
 3) Find **Maint** under HACS Integrations and install it.
 4) Restart Home Assistant, then add the Maint integration from *Settings → Devices & Services*.
 
-## Usage
-- Create tasks with a description, frequency, and last completed date; sensors track when they’re due.
-- Listen for the `maint_task_due` event to trigger automations when a task becomes due.
-- Adjust the binary sensor prefix in the integration options to fit your naming style.
-
 ## What's next
 - Publish Maint to the HACS default registry so it can be installed without adding a custom
   repository.

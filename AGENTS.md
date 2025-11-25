@@ -15,4 +15,4 @@ tasks.
 
 - Code is linted using ruff.
 - `scripts/lint` can be used to lint with ruff.
-- Always lint changes and fix issues.
+- When Python or JavaScript files are changed always lint them and fix problems.

@@ -14,3 +14,5 @@ WS_TYPE_TASK_LIST = "maint/task/list"
 SIGNAL_TASK_CREATED = "maint_task_created"
 SIGNAL_TASK_UPDATED = "maint_task_updated"
 SIGNAL_TASK_DELETED = "maint_task_deleted"
+
+EVENT_TASK_DUE = "maint_task_due"

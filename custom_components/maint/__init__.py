@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from homeassistant.const import Platform
@@ -14,6 +15,7 @@ from .websocket import async_register_websocket_handlers
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR]
+_LOGGER = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -24,16 +26,19 @@ if TYPE_CHECKING:
 async def async_setup(hass: HomeAssistant, _config: ConfigType) -> bool:
     """Set up Maint."""
     data = hass.data.setdefault(DOMAIN, {})
+    _LOGGER.debug("Setting up Maint integration")
     await _async_get_task_store(hass)
     await async_register_panel(hass)
     if not data.get("ws_registered"):
         async_register_websocket_handlers(hass)
         data["ws_registered"] = True
+        _LOGGER.debug("Registered Maint websocket handlers")
     return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: MaintConfigEntry) -> bool:
     """Set up Maint from a config entry."""
+    _LOGGER.debug("Setting up Maint config entry %s", entry.entry_id)
     if entry.unique_id is None:
         hass.config_entries.async_update_entry(entry, unique_id=DOMAIN)
 
@@ -52,11 +57,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: MaintConfigEntry) -> boo
 
 async def config_entry_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Update listener, called when the config entry options are changed."""
+    _LOGGER.debug(
+        "Reloading Maint config entry %s after options update", entry.entry_id
+    )
     await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
+    _LOGGER.debug("Unloading Maint config entry %s", entry.entry_id)
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 
@@ -64,7 +73,10 @@ async def _async_get_task_store(hass: HomeAssistant) -> MaintTaskStore:
     """Return the shared Maint task store."""
     data = hass.data.setdefault(DOMAIN, {})
     if (store := data.get("task_store")) is None:
+        _LOGGER.debug("Creating Maint task store")
         store = MaintTaskStore(hass)
         await store.async_load()
         data["task_store"] = store
+    else:
+        _LOGGER.debug("Reusing existing Maint task store")
     return store

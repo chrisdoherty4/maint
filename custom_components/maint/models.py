@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import TYPE_CHECKING, Literal, NotRequired, TypedDict
@@ -40,6 +41,7 @@ class _UnsetType:
 
 
 UNSET = _UnsetType()
+_LOGGER = logging.getLogger(__name__)
 
 
 def _serialize_date(value: date) -> str:
@@ -130,6 +132,7 @@ class MaintTaskStore:
         """Load tasks from disk."""
         if self._loaded:
             return
+        _LOGGER.debug("Loading Maint tasks from storage")
         data = await self._store.async_load()
         if not data:
             self._tasks = {}
@@ -142,10 +145,18 @@ class MaintTaskStore:
                     entry_tasks[task_data["task_id"]] = MaintTask.from_dict(task_data)
                 tasks_by_entry[entry_id] = entry_tasks
             self._tasks = tasks_by_entry
+        total_tasks = sum(len(tasks) for tasks in self._tasks.values())
+        _LOGGER.debug(
+            "Loaded Maint task store: %s entries, %s tasks",
+            len(self._tasks),
+            total_tasks,
+        )
         self._loaded = True
 
     async def _async_save(self) -> None:
         """Persist tasks to disk."""
+        entries_count = len(self._tasks)
+        tasks_count = sum(len(tasks) for tasks in self._tasks.values())
         await self._store.async_save(
             {
                 "entries": {
@@ -154,15 +165,25 @@ class MaintTaskStore:
                 }
             }
         )
+        _LOGGER.debug(
+            "Saved Maint tasks: %s entries, %s tasks",
+            entries_count,
+            tasks_count,
+        )
 
     async def _async_get_entry_tasks(self, entry_id: str) -> dict[str, MaintTask]:
         """Return the task mapping for an entry."""
         await self.async_load()
+        if entry_id not in self._tasks:
+            _LOGGER.debug("Initialized Maint task list for entry %s", entry_id)
         return self._tasks.setdefault(entry_id, {})
 
     async def async_list_tasks(self, entry_id: str) -> list[MaintTask]:
         """Return all stored tasks for an entry."""
         tasks = await self._async_get_entry_tasks(entry_id)
+        _LOGGER.debug(
+            "Listing Maint tasks for entry %s (%s tasks)", entry_id, len(tasks)
+        )
         return list(tasks.values())
 
     async def async_create_task(
@@ -196,6 +217,13 @@ class MaintTaskStore:
         async_dispatcher_send(
             self._hass, SIGNAL_TASK_CREATED, entry_id, tasks[task.task_id]
         )
+        _LOGGER.debug(
+            "Created Maint task %s for entry %s (freq=%s %s)",
+            task.task_id,
+            entry_id,
+            task.frequency,
+            task.frequency_unit,
+        )
         return task
 
     async def async_update_task(  # noqa: PLR0913
@@ -226,6 +254,13 @@ class MaintTaskStore:
         task.frequency_unit = frequency_unit
         await self._async_save()
         async_dispatcher_send(self._hass, SIGNAL_TASK_UPDATED, entry_id, task)
+        _LOGGER.debug(
+            "Updated Maint task %s for entry %s (freq=%s %s)",
+            task_id,
+            entry_id,
+            task.frequency,
+            task.frequency_unit,
+        )
         return task
 
     async def async_delete_task(self, entry_id: str, task_id: str) -> MaintTask:
@@ -238,6 +273,7 @@ class MaintTaskStore:
             self._tasks.pop(entry_id, None)
         await self._async_save()
         async_dispatcher_send(self._hass, SIGNAL_TASK_DELETED, entry_id, task)
+        _LOGGER.debug("Deleted Maint task %s for entry %s", task.task_id, entry_id)
         return task
 
     async def async_get_task(self, entry_id: str, task_id: str) -> MaintTask:
@@ -245,6 +281,7 @@ class MaintTaskStore:
         self.validate(entry_id=entry_id, task_id=task_id)
 
         tasks = await self._async_get_entry_tasks(entry_id)
+        _LOGGER.debug("Fetching Maint task %s for entry %s", task_id, entry_id)
         return tasks[task_id]
 
     @classmethod
