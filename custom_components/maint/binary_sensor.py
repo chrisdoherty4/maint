@@ -8,8 +8,11 @@ from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.util import dt as dt_util
+from homeassistant.util import slugify
 
 from .const import (
+    CONF_BINARY_SENSOR_PREFIX,
+    DEFAULT_BINARY_SENSOR_PREFIX,
     DOMAIN,
     SIGNAL_TASK_CREATED,
     SIGNAL_TASK_DELETED,
@@ -98,6 +101,12 @@ class MaintTaskBinarySensor(BinarySensorEntity):
         self._task = task
         self._attr_unique_id = f"{entry.entry_id}_{task.task_id}"
         self._attr_name = task.description
+        binary_sensor_prefix = entry.options.get(
+            CONF_BINARY_SENSOR_PREFIX, DEFAULT_BINARY_SENSOR_PREFIX
+        )
+        self._attr_suggested_object_id = (
+            f"{binary_sensor_prefix}_{slugify(task.description)}"
+        )
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
             "name": entry.title,

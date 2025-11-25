@@ -177,11 +177,6 @@ const STYLE = `
     margin: 0;
   }
 
-  .subtext-inline {
-    color: var(--secondary-text-color);
-    margin: 0;
-  }
-
   .form-actions {
     display: flex;
     justify-content: flex-end;
@@ -372,7 +367,6 @@ class MaintPanel extends HTMLElement {
           <div class="form-header" tabindex="0" role="button" aria-expanded="${this._formExpanded}">
             <div class="form-header-text">
               <h2>Create task</h2>
-              <p class="subtext-inline">Track when work is complete and when it should be done again.</p>
             </div>
             <button
               type="button"

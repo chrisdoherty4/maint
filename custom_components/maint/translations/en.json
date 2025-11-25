@@ -8,5 +8,14 @@
                 "description": "Track recurring household maintenance tasks."
             }
         }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "data": {
+                    "binary_sensor_prefix": "Binary sensor prefix"
+                }
+            }
+        }
     }
 }
