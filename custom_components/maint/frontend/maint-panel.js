@@ -146,6 +146,18 @@ const STYLE = `
     margin-bottom: 12px;
   }
 
+  .frequency-editor {
+    display: grid;
+    grid-template-columns: 1fr 140px;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .frequency-editor select,
+  .frequency-editor input {
+    width: 100%;
+  }
+
   .form-header {
     display: flex;
     align-items: flex-start;
@@ -321,10 +333,11 @@ class MaintPanel extends HTMLElement {
     try {
       this._busy = true;
       this.render();
-      this._tasks = await this._hass.callWS({
+      const tasks = await this._hass.callWS({
         type: "maint/task/list",
         entry_id: this._selectedEntryId,
       });
+      this._tasks = tasks.map((task) => this._normalizeTask(task));
       this._editingTaskId = null;
       this._confirmTaskId = null;
       this._formExpanded = this._tasks.length === 0;
@@ -390,14 +403,20 @@ class MaintPanel extends HTMLElement {
                       <input type="text" name="description" required placeholder="Smoke detector battery" ${disabledAttr} />
                     </label>
                     <div class="inline-fields">
-                      <label>
-                        <span class="label-text">Frequency (days)</span>
-                        <input type="number" name="frequency" min="1" step="1" required placeholder="90" ${disabledAttr} />
-                      </label>
-                      <label>
-                        <span class="label-text">Starting from</span>
-                        <input type="date" name="last_completed" ${disabledAttr} />
-                      </label>
+                    <label>
+                      <span class="label-text">Frequency</span>
+                      <input type="number" name="frequency" min="1" step="1" required placeholder="90" ${disabledAttr} />
+                    </label>
+                    <label>
+                      <span class="label-text">Unit</span>
+                      <select name="frequency_unit" ${disabledAttr}>
+                        ${this._frequencyUnitOptions()}
+                      </select>
+                    </label>
+                    <label>
+                      <span class="label-text">Starting from</span>
+                      <input type="date" name="last_completed" ${disabledAttr} />
+                    </label>
                     </div>
                   </div>
                   <div class="form-actions">
@@ -416,6 +435,11 @@ class MaintPanel extends HTMLElement {
         const taskId = this._escape(task.task_id);
         const isEditing = this._editingTaskId === task.task_id;
         const description = task.description ?? "";
+        const frequencyUnit = this._normalizeFrequencyUnit(task.frequency_unit);
+        const frequencyValue = this._formatFrequencyValue(
+          task.frequency,
+          frequencyUnit,
+        );
         const saveLabel = isEditing
           ? this._busy
             ? "Saving…"
@@ -435,8 +459,13 @@ class MaintPanel extends HTMLElement {
               <td>
                 ${
                   isEditing
-                    ? `<input type="number" name="frequency" min="1" step="1" value="${this._escape(task.frequency ?? "")}" />`
-                    : this._formatFrequency(task.frequency)
+                    ? `<div class="frequency-editor">
+                        <input type="number" name="frequency" min="1" step="1" value="${this._escape(frequencyValue ?? "")}" />
+                        <select name="frequency_unit">
+                          ${this._frequencyUnitOptions(frequencyUnit)}
+                        </select>
+                      </div>`
+                    : this._formatFrequency(task.frequency, task.frequency_unit)
                 }
               </td>
               <td>
@@ -601,6 +630,14 @@ class MaintPanel extends HTMLElement {
       this.render();
       return;
     }
+    const frequencyUnit = this._parseFrequencyUnit(
+      formData.get("frequency_unit"),
+    );
+    if (frequencyUnit === null) {
+      this._error = "Choose a frequency unit.";
+      this.render();
+      return;
+    }
     // const payload = {
     //   description,
     //   frequency,
@@ -622,9 +659,10 @@ class MaintPanel extends HTMLElement {
         entry_id: this._selectedEntryId,
         description,
         frequency,
+        frequency_unit: frequencyUnit,
         last_completed: lastCompleted,
       });
-      this._tasks = [...this._tasks, created];
+      this._tasks = [...this._tasks, this._normalizeTask(created)];
       form.reset();
     } catch (err) {
       // eslint-disable-next-line no-console
@@ -718,6 +756,9 @@ class MaintPanel extends HTMLElement {
     }
     const descriptionInput = row.querySelector('input[name="description"]');
     const frequencyInput = row.querySelector('input[name="frequency"]');
+    const frequencyUnitSelect = row.querySelector(
+      'select[name="frequency_unit"]',
+    );
     const dateInput = row.querySelector('input[name="last_completed"]');
 
     const description = (descriptionInput?.value || "").toString().trim();
@@ -729,6 +770,12 @@ class MaintPanel extends HTMLElement {
     const frequency = this._parseFrequency(frequencyInput?.value);
     if (frequency === null) {
       this._error = "Enter how often the task repeats.";
+      this.render();
+      return;
+    }
+    const frequencyUnit = this._parseFrequencyUnit(frequencyUnitSelect?.value);
+    if (frequencyUnit === null) {
+      this._error = "Choose a frequency unit.";
       this.render();
       return;
     }
@@ -748,10 +795,11 @@ class MaintPanel extends HTMLElement {
         task_id: taskId,
         description,
         frequency,
+        frequency_unit: frequencyUnit,
         last_completed: lastCompleted,
       });
       this._tasks = this._tasks.map((task) =>
-        task.task_id === taskId ? updated : task,
+        task.task_id === taskId ? this._normalizeTask(updated) : task,
       );
       this._editingTaskId = null;
     } catch (err) {
@@ -762,6 +810,14 @@ class MaintPanel extends HTMLElement {
       this._busy = false;
       this.render();
     }
+  }
+
+  _normalizeTask(task) {
+    const frequencyUnit = this._normalizeFrequencyUnit(task.frequency_unit);
+    return {
+      ...task,
+      frequency_unit: frequencyUnit,
+    };
   }
 
   _parseDate(value) {
@@ -807,6 +863,45 @@ class MaintPanel extends HTMLElement {
     return Math.floor(parsed);
   }
 
+  _parseFrequencyUnit(value) {
+    if (value === null || value === undefined) {
+      return null;
+    }
+    const normalized = value.toString().trim();
+    if (["days", "weeks", "months"].includes(normalized)) {
+      return normalized;
+    }
+    return null;
+  }
+
+  _normalizeFrequencyUnit(value) {
+    const normalized = (value || "").toString().trim();
+    if (["days", "weeks", "months"].includes(normalized)) {
+      return normalized;
+    }
+    return "days";
+  }
+
+  _frequencyUnitOptions(selectedUnit = "days") {
+    const normalized = this._normalizeFrequencyUnit(selectedUnit);
+    return `
+      <option value="days" ${normalized === "days" ? "selected" : ""}>Days</option>
+      <option value="weeks" ${normalized === "weeks" ? "selected" : ""}>Weeks</option>
+      <option value="months" ${normalized === "months" ? "selected" : ""}>Months</option>
+    `;
+  }
+
+  _frequencyUnitMultiplier(unit) {
+    switch (this._normalizeFrequencyUnit(unit)) {
+      case "weeks":
+        return 7;
+      case "months":
+        return 30;
+      default:
+        return 1;
+    }
+  }
+
   _formatDateInput(value) {
     if (!value) {
       return "";
@@ -821,12 +916,49 @@ class MaintPanel extends HTMLElement {
       .padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
   }
 
-  _formatFrequency(value) {
+  _formatFrequencyValue(frequencyDays, frequencyUnit = "days") {
+    if (!frequencyDays || Number.isNaN(Number(frequencyDays))) {
+      return "";
+    }
+    const unit = this._normalizeFrequencyUnit(frequencyUnit);
+    const multiplier = this._frequencyUnitMultiplier(unit);
+    const normalized = Number(frequencyDays) / multiplier;
+    if (!Number.isFinite(normalized)) {
+      return "";
+    }
+    return Number.isInteger(normalized)
+      ? normalized
+      : Number(normalized.toFixed(2));
+  }
+
+  _formatFrequency(frequencyDays, frequencyUnit = "days") {
+    if (!frequencyDays || Number.isNaN(Number(frequencyDays))) {
+      return "—";
+    }
+    const unit = this._normalizeFrequencyUnit(frequencyUnit);
+    const value = this._formatFrequencyValue(frequencyDays, unit);
     if (!value || Number.isNaN(Number(value))) {
       return "—";
     }
-    const days = Number(value);
-    return days === 1 ? "Every day" : `Every ${days} days`;
+    const unitLabel =
+      unit === "days"
+        ? Number(value) === 1
+          ? "day"
+          : "days"
+        : unit === "weeks"
+          ? Number(value) === 1
+            ? "week"
+            : "weeks"
+          : Number(value) === 1
+            ? "month"
+            : "months";
+    if (unit === "days" && Number(value) === 1) {
+      return "Every day";
+    }
+    if (Number(value) === 1) {
+      return `Every ${unitLabel}`;
+    }
+    return `Every ${value} ${unitLabel}`;
   }
 
   _nextScheduled(task) {

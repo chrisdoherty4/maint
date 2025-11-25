@@ -18,7 +18,15 @@ from .const import (
     WS_TYPE_TASK_LIST,
     WS_TYPE_TASK_UPDATE,
 )
-from .models import MaintConfigEntry, MaintRuntimeData, MaintTaskStore
+from .models import (
+    FREQUENCY_UNIT_DAYS,
+    FREQUENCY_UNIT_MONTHS,
+    FREQUENCY_UNIT_WEEKS,
+    FREQUENCY_UNITS,
+    MaintConfigEntry,
+    MaintRuntimeData,
+    MaintTaskStore,
+)
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -44,6 +52,8 @@ TASK_DESCRIPTION_VALIDATION = _validated_description
 
 TASK_FREQUENCY_KEY = "frequency"
 TASK_FREQUENCY_VALIDATION = cv.positive_int
+TASK_FREQUENCY_UNIT_KEY = "frequency_unit"
+TASK_FREQUENCY_UNIT_VALIDATION = vol.In(FREQUENCY_UNITS)
 
 TASK_LAST_COMPLETED_KEY = "last_completed"
 TASK_LAST_COMPLETED_VALIDATION = cv.date
@@ -56,6 +66,15 @@ def async_register_websocket_handlers(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, websocket_create_task)
     websocket_api.async_register_command(hass, websocket_update_task)
     websocket_api.async_register_command(hass, websocket_delete_task)
+
+
+def _convert_frequency_to_days(frequency: int, unit: str) -> int:
+    """Normalize a frequency value into days for storage."""
+    if unit == FREQUENCY_UNIT_WEEKS:
+        return frequency * 7
+    if unit == FREQUENCY_UNIT_MONTHS:
+        return frequency * 30
+    return frequency
 
 
 def _resolve_task_store(
@@ -113,6 +132,9 @@ async def websocket_list_tasks(
         vol.Required(TASK_ENTRY_ID_KEY): TASK_ENTRY_ID_VALIDATION,
         vol.Required(TASK_DESCRIPTION_KEY): TASK_DESCRIPTION_VALIDATION,
         vol.Required(TASK_FREQUENCY_KEY): TASK_FREQUENCY_VALIDATION,
+        vol.Optional(
+            TASK_FREQUENCY_UNIT_KEY, default=FREQUENCY_UNIT_DAYS
+        ): TASK_FREQUENCY_UNIT_VALIDATION,
         vol.Required(TASK_LAST_COMPLETED_KEY): TASK_LAST_COMPLETED_VALIDATION,
     }
 )
@@ -126,11 +148,14 @@ async def websocket_create_task(
         return
 
     store, entry = resolved
+    frequency_unit = msg[TASK_FREQUENCY_UNIT_KEY]
+    frequency = _convert_frequency_to_days(msg[TASK_FREQUENCY_KEY], frequency_unit)
     task = await store.async_create_task(
         entry.entry_id,
         description=msg[TASK_DESCRIPTION_KEY],
         last_completed=msg[TASK_LAST_COMPLETED_KEY],
-        frequency=msg[TASK_FREQUENCY_KEY],
+        frequency=frequency,
+        frequency_unit=frequency_unit,
     )
     connection.send_result(msg["id"], task.to_dict())
 
@@ -143,6 +168,9 @@ async def websocket_create_task(
         vol.Required(TASK_DESCRIPTION_KEY): TASK_DESCRIPTION_VALIDATION,
         vol.Required(TASK_LAST_COMPLETED_KEY): TASK_LAST_COMPLETED_VALIDATION,
         vol.Required(TASK_FREQUENCY_KEY): TASK_FREQUENCY_VALIDATION,
+        vol.Optional(
+            TASK_FREQUENCY_UNIT_KEY, default=FREQUENCY_UNIT_DAYS
+        ): TASK_FREQUENCY_UNIT_VALIDATION,
     }
 )
 @websocket_api.async_response
@@ -157,7 +185,8 @@ async def websocket_update_task(
     task_id = msg[TASK_ID_KEY]
     last_completed = msg[TASK_LAST_COMPLETED_KEY]
     description = msg[TASK_DESCRIPTION_KEY]
-    frequency = msg[TASK_FREQUENCY_KEY]
+    frequency_unit = msg[TASK_FREQUENCY_UNIT_KEY]
+    frequency = _convert_frequency_to_days(msg[TASK_FREQUENCY_KEY], frequency_unit)
 
     try:
         task = await store.async_update_task(
@@ -166,6 +195,7 @@ async def websocket_update_task(
             description=description,
             last_completed=last_completed,
             frequency=frequency,
+            frequency_unit=frequency_unit,
         )
     except KeyError:
         connection.send_error(msg["id"], "task_not_found", f"Task {task_id} not found")

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, Literal, NotRequired, TypedDict
 from uuid import uuid4
 
 from homeassistant.config_entries import ConfigEntry
@@ -24,6 +24,15 @@ if TYPE_CHECKING:
 
 STORAGE_KEY = "maint.tasks"
 STORAGE_VERSION = 1
+FREQUENCY_UNIT_DAYS: Literal["days"] = "days"
+FREQUENCY_UNIT_WEEKS: Literal["weeks"] = "weeks"
+FREQUENCY_UNIT_MONTHS: Literal["months"] = "months"
+FREQUENCY_UNITS = (
+    FREQUENCY_UNIT_DAYS,
+    FREQUENCY_UNIT_WEEKS,
+    FREQUENCY_UNIT_MONTHS,
+)
+FrequencyUnit = Literal["days", "weeks", "months"]
 
 
 class _UnsetType:
@@ -55,6 +64,7 @@ class MaintTask:
     description: str
     last_completed: date
     frequency: int
+    frequency_unit: FrequencyUnit = FREQUENCY_UNIT_DAYS
 
     @property
     def next_scheduled(self) -> date:
@@ -68,6 +78,7 @@ class MaintTask:
             "description": self.description,
             "last_completed": _serialize_date(self.last_completed),
             "frequency": self.frequency,
+            "frequency_unit": self.frequency_unit,
         }
 
     @classmethod
@@ -76,12 +87,14 @@ class MaintTask:
         last_completed = _deserialize_date(data["last_completed"])
         frequency = data["frequency"]
         description = data["description"]
+        frequency_unit = data.get("frequency_unit", FREQUENCY_UNIT_DAYS)
 
         return cls(
             task_id=data["task_id"],
             description=description,
             last_completed=last_completed,
             frequency=frequency,
+            frequency_unit=frequency_unit,
         )
 
 
@@ -92,6 +105,7 @@ class MaintTaskSerializedData(TypedDict):
     description: str
     last_completed: str
     frequency: int
+    frequency_unit: NotRequired[FrequencyUnit]
 
 
 class MaintTaskStoreData(TypedDict):
@@ -158,6 +172,7 @@ class MaintTaskStore:
         description: str,
         last_completed: date,
         frequency: int,
+        frequency_unit: FrequencyUnit = FREQUENCY_UNIT_DAYS,
     ) -> MaintTask:
         """Create and store a new task."""
         self.validate(
@@ -165,6 +180,7 @@ class MaintTaskStore:
             description=description,
             last_completed=last_completed,
             frequency=frequency,
+            frequency_unit=frequency_unit,
         )
 
         tasks = await self._async_get_entry_tasks(entry_id)
@@ -173,6 +189,7 @@ class MaintTaskStore:
             description=description,
             last_completed=last_completed,
             frequency=int(frequency),
+            frequency_unit=frequency_unit,
         )
         tasks[task.task_id] = task
         await self._async_save()
@@ -181,7 +198,7 @@ class MaintTaskStore:
         )
         return task
 
-    async def async_update_task(
+    async def async_update_task(  # noqa: PLR0913
         self,
         entry_id: str,
         task_id: str,
@@ -189,6 +206,7 @@ class MaintTaskStore:
         description: str,
         last_completed: date,
         frequency: int,
+        frequency_unit: FrequencyUnit = FREQUENCY_UNIT_DAYS,
     ) -> MaintTask:
         """Update an existing task."""
         self.validate(
@@ -197,6 +215,7 @@ class MaintTaskStore:
             description=description,
             last_completed=last_completed,
             frequency=frequency,
+            frequency_unit=frequency_unit,
         )
 
         tasks = await self._async_get_entry_tasks(entry_id)
@@ -204,6 +223,7 @@ class MaintTaskStore:
         task.description = description
         task.last_completed = last_completed
         task.frequency = int(frequency)
+        task.frequency_unit = frequency_unit
         await self._async_save()
         async_dispatcher_send(self._hass, SIGNAL_TASK_UPDATED, entry_id, task)
         return task
@@ -228,7 +248,7 @@ class MaintTaskStore:
         return tasks[task_id]
 
     @classmethod
-    def validate(
+    def validate(  # noqa: PLR0913
         cls,
         *,
         entry_id: str | None = None,
@@ -236,6 +256,7 @@ class MaintTaskStore:
         description: str | None = None,
         frequency: int | None = None,
         last_completed: date | None = None,
+        frequency_unit: FrequencyUnit | None = None,
     ) -> None:
         """Validate task parameters."""
         if entry_id is not None and entry_id == "":
@@ -256,6 +277,10 @@ class MaintTaskStore:
 
         if frequency is not None and frequency <= 0:
             message = "frequency must be greater than 0"
+            raise ValueError(message)
+
+        if frequency_unit is not None and frequency_unit not in FREQUENCY_UNITS:
+            message = f"frequency_unit must be one of {', '.join(FREQUENCY_UNITS)}"
             raise ValueError(message)
 
 

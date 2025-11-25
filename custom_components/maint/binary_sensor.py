@@ -116,6 +116,7 @@ class MaintTaskBinarySensor(BinarySensorEntity):
             "description": self._task.description,
             "last_completed": self._task.last_completed.isoformat(),
             "frequency": self._task.frequency,
+            "frequency_unit": self._task.frequency_unit,
         }
 
     @callback
