@@ -166,13 +166,9 @@ class MaintTaskBinarySensor(BinarySensorEntity):
         self.hass.bus.async_fire(
             EVENT_TASK_DUE,
             {
-                "entry_id": self._entry.entry_id,
                 "entity_id": self.entity_id,
-                "task_id": self._task.task_id,
                 "description": self._task.description,
                 "last_completed": self._task.last_completed.isoformat(),
-                "frequency": self._task.frequency,
-                "frequency_unit": self._task.frequency_unit,
                 "next_scheduled": self._task.next_scheduled.isoformat(),
             },
         )
