@@ -14,6 +14,24 @@
         "panel": "new",
         "clear": true
       }
+    },
+    {
+      "label": "Clean Home Assistant config (preserve configuration.yaml)",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-c",
+        "set -euo pipefail\nCONFIG_DIR=\"${workspaceFolder}/config\"\nfind \"$CONFIG_DIR\" -mindepth 1 ! -name configuration.yaml -exec rm -rf {} +\n"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "clear": true
+      }
     }
   ]
 }
