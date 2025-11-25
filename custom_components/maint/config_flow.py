@@ -10,9 +10,12 @@ from homeassistant.core import callback
 
 from .const import (
     CONF_BINARY_SENSOR_PREFIX,
+    CONF_LOG_LEVEL,
     DEFAULT_BINARY_SENSOR_PREFIX,
+    DEFAULT_LOG_LEVEL,
     DEFAULT_TITLE,
     DOMAIN,
+    LOG_LEVEL_OPTIONS,
 )
 
 if TYPE_CHECKING:
@@ -67,6 +70,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         current_prefix = self.config_entry.options.get(
             CONF_BINARY_SENSOR_PREFIX, DEFAULT_BINARY_SENSOR_PREFIX
         )
+        current_log_level = self.config_entry.options.get(
+            CONF_LOG_LEVEL, DEFAULT_LOG_LEVEL
+        )
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
@@ -74,6 +80,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     vol.Required(
                         CONF_BINARY_SENSOR_PREFIX, default=current_prefix
                     ): vol.All(str, vol.Length(min=1)),
+                    vol.Optional(CONF_LOG_LEVEL, default=current_log_level): vol.In(
+                        LOG_LEVEL_OPTIONS
+                    ),
                 }
             ),
         )

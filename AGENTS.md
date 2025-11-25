@@ -17,3 +17,4 @@ tasks.
 - `scripts/lint` can be used to lint with ruff.
 - When Python or JavaScript files are changed always lint them and fix problems.
 - Include adequete debug and info logs.
+- Review and update the README.md with user facing features.

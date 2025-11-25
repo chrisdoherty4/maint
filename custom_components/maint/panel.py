@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from homeassistant.components import panel_custom
+from homeassistant.components import frontend, panel_custom
 from homeassistant.components.http import StaticPathConfig
 
 from .const import DOMAIN
@@ -50,3 +50,14 @@ async def async_register_panel(hass: HomeAssistant) -> None:
 
     data["panel_registered"] = True
     _LOGGER.debug("Registered Maint panel")
+
+
+async def async_unregister_panel(hass: HomeAssistant) -> None:
+    """Unregister the custom frontend panel."""
+    data = hass.data.get(DOMAIN)
+    if not data or not data.get("panel_registered"):
+        return
+
+    frontend.async_remove_panel(hass, DOMAIN)
+    data["panel_registered"] = False
+    _LOGGER.debug("Unregistered Maint panel")
