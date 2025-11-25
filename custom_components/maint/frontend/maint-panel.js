@@ -100,6 +100,9 @@ const STYLE = `
 
   .actions {
     text-align: right;
+    width: 110px;
+    min-width: 110px;
+    white-space: nowrap;
   }
 
   .actions button + button {
@@ -115,6 +118,11 @@ const STYLE = `
     align-items: center;
     justify-content: center;
     line-height: 1;
+  }
+
+  .icon-button ha-icon {
+    width: 20px;
+    height: 20px;
   }
 
   .info {
@@ -160,7 +168,7 @@ const STYLE = `
 
   .form-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 12px;
     flex-wrap: wrap;
     margin-bottom: 4px;
@@ -357,7 +365,9 @@ class MaintPanel extends HTMLElement {
       ? ""
       : `<p class="info">Add a Maint integration entry to start tracking tasks.</p>`;
 
-    const formToggleIcon = this._formExpanded ? "▾" : "▴";
+    const formToggleIcon = this._formExpanded
+      ? "mdi:chevron-down"
+      : "mdi:chevron-right";
     const formToggleLabel = this._formExpanded
       ? "Collapse form"
       : "Expand form";
@@ -375,22 +385,19 @@ class MaintPanel extends HTMLElement {
               aria-label="${formToggleLabel}"
               title="${formToggleLabel}"
             >
-              ${formToggleIcon}
+              <ha-icon icon="${formToggleIcon}" aria-hidden="true"></ha-icon>
             </button>
           </div>
-          ${
-            this._error
-              ? `<div class="error">${this._escape(this._error)}</div>`
-              : ""
-          }
-          ${
-            !hasEntries
-              ? `<p class="info">Add a Maint integration entry to enable task tracking.</p>`
-              : ""
-          }
-          ${
-            this._formExpanded
-              ? `<form id="task-form">
+          ${this._error
+        ? `<div class="error">${this._escape(this._error)}</div>`
+        : ""
+      }
+          ${!hasEntries
+        ? `<p class="info">Add a Maint integration entry to enable task tracking.</p>`
+        : ""
+      }
+          ${this._formExpanded
+        ? `<form id="task-form">
                   <div class="form-fields">
                     <label>
                       <span class="label-text">Description</span>
@@ -419,8 +426,8 @@ class MaintPanel extends HTMLElement {
                     </button>
                   </div>
                 </form>`
-              : ""
-          }
+        : ""
+      }
         </section>
       `;
 
@@ -439,35 +446,33 @@ class MaintPanel extends HTMLElement {
             ? "Saving…"
             : "Save"
           : "Edit";
-        const saveIcon = isEditing ? "✔" : "✎";
+        const saveIcon = isEditing ? "mdi:check" : "mdi:pencil";
         const saveDisabled = isEditing && this._busy ? "disabled" : "";
+        const deleteIcon = "mdi:delete-outline";
         return `
             <tr data-task-row="${taskId}">
               <td>
-                ${
-                  isEditing
-                    ? `<input type="text" name="description" value="${this._escape(description)}" />`
-                    : `<div class="task-description">${this._escape(description)}</div>`
-                }
+                ${isEditing
+            ? `<input type="text" name="description" value="${this._escape(description)}" />`
+            : `<div class="task-description">${this._escape(description)}</div>`
+          }
               </td>
               <td>
-                ${
-                  isEditing
-                    ? `<div class="frequency-editor">
+                ${isEditing
+            ? `<div class="frequency-editor">
                         <input type="number" name="frequency" min="1" step="1" value="${this._escape(frequencyValue ?? "")}" />
                         <select name="frequency_unit">
                           ${this._frequencyUnitOptions(frequencyUnit)}
                         </select>
                       </div>`
-                    : this._formatFrequency(task.frequency, task.frequency_unit)
-                }
+            : this._formatFrequency(task.frequency, task.frequency_unit)
+          }
               </td>
               <td>
-                ${
-                  isEditing
-                    ? `<input type="date" name="last_completed" value="${this._formatDateInput(task.last_completed)}" />`
-                    : this._formatDate(task.last_completed)
-                }
+                ${isEditing
+            ? `<input type="date" name="last_completed" value="${this._formatDateInput(task.last_completed)}" />`
+            : this._formatDate(task.last_completed)
+          }
               </td>
               <td>${this._formatDate(this._nextScheduled(task))}</td>
               <td class="actions">
@@ -479,7 +484,7 @@ class MaintPanel extends HTMLElement {
                   aria-label="${saveLabel}"
                   title="${saveLabel}"
                 >
-                  ${saveIcon}
+                  <ha-icon icon="${saveIcon}" aria-hidden="true"></ha-icon>
                 </button>
                 <button
                   type="button"
@@ -488,7 +493,7 @@ class MaintPanel extends HTMLElement {
                   aria-label="Delete"
                   title="Delete"
                 >
-                  🗑
+                  <ha-icon icon="${deleteIcon}" aria-hidden="true"></ha-icon>
                 </button>
               </td>
             </tr>
@@ -524,12 +529,11 @@ class MaintPanel extends HTMLElement {
     const tasksSection = `
         <section>
           <h2>Tasks</h2>
-          ${
-            formDisabled
-              ? `<p class="info">Add the Maint integration to start tracking tasks.</p>`
-              : this._tasks.length === 0
-                ? `<p class="info">No tasks yet. Use the form above to create one.</p>`
-                : `
+          ${formDisabled
+        ? `<p class="info">Add the Maint integration to start tracking tasks.</p>`
+        : this._tasks.length === 0
+          ? `<p class="info">No tasks yet. Use the form above to create one.</p>`
+          : `
                 <div class="task-table">
                   <table>
                     <thead>
@@ -547,7 +551,7 @@ class MaintPanel extends HTMLElement {
                   </table>
                 </div>
               `
-          }
+      }
         </section>
       `;
 
@@ -742,8 +746,8 @@ class MaintPanel extends HTMLElement {
   async _saveTaskEdits(taskId) {
     const row = this.shadowRoot
       ? Array.from(this.shadowRoot.querySelectorAll("[data-task-row]")).find(
-          (element) => element.dataset.taskRow === taskId,
-        )
+        (element) => element.dataset.taskRow === taskId,
+      )
       : null;
     if (!row) {
       return;
