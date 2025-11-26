@@ -1,6 +1,6 @@
-# Maint
-
 ![Logo](/brand/icon.png)
+
+# Maint
 
 ## Overview
 Maint is a Home Assistant custom component for tracking household maintenance tasks. It creates a
