@@ -12,10 +12,7 @@ import pytest
 from homeassistant.util import dt as dt_util
 
 from custom_components.maint.binary_sensor import MaintTaskBinarySensor
-from custom_components.maint.const import (
-    CONF_BINARY_SENSOR_PREFIX,
-    DEFAULT_BINARY_SENSOR_PREFIX,
-)
+from custom_components.maint.const import CONF_SENSOR_PREFIX, DEFAULT_SENSOR_PREFIX
 from custom_components.maint.models import MaintTask
 
 
@@ -48,9 +45,7 @@ def test_is_on_reflects_due_date(
     monkeypatch: pytest.MonkeyPatch, today: datetime, expected: bool
 ) -> None:
     """is_on is true when the current date is on or after next scheduled."""
-    monkeypatch.setattr(
-        "custom_components.maint.binary_sensor.dt_util.now", lambda: today
-    )
+    monkeypatch.setattr("custom_components.maint.models.dt_util.now", lambda: today)
     sensor = MaintTaskBinarySensor(entry=FakeEntry("entry-1"), task=_make_task())
 
     assert sensor.is_on is expected
@@ -60,7 +55,7 @@ def test_suggested_object_id_uses_prefix() -> None:
     """Suggested object id should slugify prefix and description."""
     entry = FakeEntry(
         entry_id="entry-1",
-        options={CONF_BINARY_SENSOR_PREFIX: "Maint Prefix"},
+        options={CONF_SENSOR_PREFIX: "Maint Prefix"},
     )
     sensor = MaintTaskBinarySensor(entry=entry, task=_make_task())
 
@@ -69,9 +64,7 @@ def test_suggested_object_id_uses_prefix() -> None:
 
 def test_handle_task_update_refreshes_name_and_state() -> None:
     """handle_task_update should swap tasks and trigger a state write."""
-    entry = FakeEntry(
-        "entry-1", options={CONF_BINARY_SENSOR_PREFIX: DEFAULT_BINARY_SENSOR_PREFIX}
-    )
+    entry = FakeEntry("entry-1", options={CONF_SENSOR_PREFIX: DEFAULT_SENSOR_PREFIX})
     sensor = MaintTaskBinarySensor(entry=entry, task=_make_task())
     sensor.async_write_ha_state = MagicMock()
 

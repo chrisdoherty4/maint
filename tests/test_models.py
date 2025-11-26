@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 
 import pytest
 from homeassistant.core import HomeAssistant, callback
@@ -32,6 +32,37 @@ def test_next_scheduled_uses_frequency_in_days() -> None:
     )
 
     assert task.next_scheduled == date(2024, 1, 15)
+
+
+@pytest.mark.parametrize(
+    ("today", "last_completed", "frequency", "expected"),
+    [
+        (date(2024, 1, 10), date(2024, 1, 1), 14, False),
+        (date(2024, 1, 15), date(2024, 1, 1), 14, True),
+        (date(2024, 1, 16), date(2024, 1, 1), 14, True),
+    ],
+)
+def test_is_due_reflects_next_scheduled(
+    monkeypatch: pytest.MonkeyPatch,
+    today: date,
+    last_completed: date,
+    frequency: int,
+    *,
+    expected: bool,
+) -> None:
+    """is_due should compare today's date to the next scheduled date."""
+    task = MaintTask(
+        task_id="abc",
+        description="Change air filter",
+        last_completed=last_completed,
+        frequency=frequency,
+    )
+    monkeypatch.setattr(
+        "custom_components.maint.models.dt_util.now",
+        lambda: datetime.combine(today, datetime.min.time()),
+    )
+
+    assert task.is_due is expected
 
 
 def test_task_serialization_round_trip_preserves_fields() -> None:

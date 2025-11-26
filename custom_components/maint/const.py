@@ -2,8 +2,8 @@
 
 DOMAIN = "maint"
 DEFAULT_TITLE = "Maintenance"
-CONF_BINARY_SENSOR_PREFIX = "binary_sensor_prefix"
-DEFAULT_BINARY_SENSOR_PREFIX = "maint"
+CONF_SENSOR_PREFIX = "sensor_prefix"
+DEFAULT_SENSOR_PREFIX = "maint"
 CONF_LOG_LEVEL = "log_level"
 DEFAULT_LOG_LEVEL = "info"
 LOG_LEVEL_OPTIONS = ("info", "debug")

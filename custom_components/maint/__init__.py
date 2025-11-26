@@ -19,7 +19,7 @@ from .panel import async_register_panel, async_unregister_panel
 from .websocket import async_register_websocket_handlers
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
-PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR]
+PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
 _LOGGER = logging.getLogger(__name__)
 _PACKAGE_LOGGER = logging.getLogger(__package__)
 LOG_LEVEL_MAP = {

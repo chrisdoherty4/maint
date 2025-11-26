@@ -6,6 +6,7 @@ events when tasks become due so you can automate reminders or actions.
 
 ## Features
 - Per-task binary sensors that turn on when a task is due, with suggested object IDs for tidy naming.
+- A summary sensor that reports how many tasks are due and includes the binary sensors tied to each.
 - Persistent task storage with create/update/delete flows exposed via websocket commands.
 - Frontend panel for managing tasks installed alongside the integration.
 - Event `maint_task_due` fired when a task’s binary sensor turns on, including task metadata for use

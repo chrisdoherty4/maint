@@ -73,6 +73,12 @@ class MaintTask:
         """Return the next scheduled date based on last completion and frequency."""
         return self.last_completed + timedelta(days=self.frequency)
 
+    @property
+    def is_due(self) -> bool:
+        """Return True if the task is due today or earlier."""
+        today = dt_util.now().date()
+        return today >= self.next_scheduled
+
     def to_dict(self) -> MaintTaskSerializedData:
         """Serialize the task for transport."""
         return {

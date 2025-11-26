@@ -13,7 +13,7 @@
         "step": {
             "init": {
                 "data": {
-                    "binary_sensor_prefix": "Binary sensor prefix"
+                    "sensor_prefix": "Sensor prefix"
                 }
             }
         }

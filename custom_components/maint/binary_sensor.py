@@ -8,18 +8,16 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
-from homeassistant.util import dt as dt_util
 from homeassistant.util import slugify
 
 from .const import (
-    CONF_BINARY_SENSOR_PREFIX,
-    DEFAULT_BINARY_SENSOR_PREFIX,
     DOMAIN,
     EVENT_TASK_DUE,
     SIGNAL_TASK_CREATED,
     SIGNAL_TASK_DELETED,
     SIGNAL_TASK_UPDATED,
 )
+from .util import configured_sensor_prefix
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -105,9 +103,7 @@ class MaintTaskBinarySensor(BinarySensorEntity):
         self._task = task
         self._attr_unique_id = f"{entry.entry_id}_{task.task_id}"
         self._attr_name = task.description
-        self._binary_sensor_prefix = entry.options.get(
-            CONF_BINARY_SENSOR_PREFIX, DEFAULT_BINARY_SENSOR_PREFIX
-        )
+        self._sensor_prefix = configured_sensor_prefix(entry)
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
             "name": entry.title,
@@ -117,8 +113,7 @@ class MaintTaskBinarySensor(BinarySensorEntity):
     @property
     def is_on(self) -> bool:
         """Return True when the maintenance task is due."""
-        today = dt_util.now().date()
-        return today >= self._task.next_scheduled
+        return self._task.is_due
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -133,7 +128,7 @@ class MaintTaskBinarySensor(BinarySensorEntity):
     @property
     def suggested_object_id(self) -> str | None:
         """Return the suggested object ID using the configured prefix."""
-        prefix = slugify(self._binary_sensor_prefix)
+        prefix = self._sensor_prefix
         task_slug = slugify(self._task.description)
         return f"{prefix}_{task_slug}" if prefix else task_slug
 
