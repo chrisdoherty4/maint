@@ -22,6 +22,6 @@ tasks.
 - When Python or JavaScript files are changed always lint them and fix problems.
 - Testing: run `python -m pytest`; add/update tests in `/tests`, especially for new async HA flows.
 - Strings/translations: keep `custom_components/maint/strings.json` and `custom_components/maint/translations/en.json` in sync when copy changes.
-- Storage changes (`MaintTaskStore`): bump `STORAGE_VERSION`, add migration logic, and cover with tests.
+- Storage changes (`MaintTaskStore`): maintain `STORAGE_VERSION`, do not add migration logic - just change the existing code, and cover with tests.
 - Review and update `README.md` for user-facing changes and refresh `custom_components/maint/quality_scale.yaml` when requirements are met.
 - Include adequate debug/info logs and honor configurable log levels (`info`/`debug`).
