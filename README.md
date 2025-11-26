@@ -1,8 +1,5 @@
-![Logo](/brand/icon.png)
-
 # Maint
 
-## Overview
 Maint is a Home Assistant custom component for tracking household maintenance tasks. It creates a
 binary sensor for every task, keeps the schedule in sync through the UI and websocket API, and emits
 events when tasks become due so you can automate reminders or actions.
