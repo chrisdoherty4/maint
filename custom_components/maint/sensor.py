@@ -74,7 +74,7 @@ class MaintTasksDueSensor(SensorEntity):
     """Sensor counting due Maint binary sensors."""
 
     _attr_has_entity_name = True
-    _attr_name = "Tasks due"
+    _attr_name = "Tasks Due"
 
     def __init__(self, entry: MaintConfigEntry, tasks: list[MaintTask]) -> None:
         """Initialize the sensor."""

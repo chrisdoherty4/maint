@@ -21,7 +21,6 @@ from .websocket import async_register_websocket_handlers
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
 _LOGGER = logging.getLogger(__name__)
-_PACKAGE_LOGGER = logging.getLogger(__package__)
 LOG_LEVEL_MAP = {
     "debug": logging.DEBUG,
     "info": logging.INFO,
