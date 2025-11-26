@@ -606,6 +606,33 @@ class MaintPanel extends HTMLElement {
     if (cancelDelete) {
       cancelDelete.addEventListener("click", () => this._cancelDelete());
     }
+    this._bindDatePickers();
+  }
+
+  _bindDatePickers() {
+    if (!this.shadowRoot) {
+      return;
+    }
+    const dateInputs = this.shadowRoot.querySelectorAll(
+      'input[type="date"][name="last_completed"]',
+    );
+    dateInputs.forEach((input) => {
+      const openPicker = () => {
+        if (typeof input.showPicker === "function") {
+          try {
+            input.showPicker();
+          } catch (err) {
+            // Ignore unsupported browsers that block programmatic picker opens.
+          }
+        }
+      };
+      input.addEventListener("focus", openPicker);
+      input.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        input.focus();
+        openPicker();
+      });
+    });
   }
 
   async _handleCreate(event) {
