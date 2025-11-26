@@ -3,20 +3,16 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date, datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
 import pytest
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 
-from custom_components.maint.const import (
-    CONF_SENSOR_PREFIX,
-    DEFAULT_SENSOR_PREFIX,
-    DOMAIN,
-)
+from custom_components.maint.const import DOMAIN
 from custom_components.maint.models import MaintTask
 from custom_components.maint.sensor import MaintTasksDueSensor
 
@@ -29,8 +25,7 @@ class FakeEntry:
     """Minimal ConfigEntry stand-in for tests."""
 
     entry_id: str
-    options: dict[str, Any] = field(default_factory=dict)
-    title: str = "Maintenance"
+    title: str = "Maint"
 
 
 def _make_task(
@@ -97,24 +92,6 @@ async def test_extra_state_attributes_include_binary_sensor(
             "binary_sensor": entity.entity_id,
         }
     ]
-
-
-@pytest.mark.parametrize(
-    ("prefix", "expected"),
-    [
-        (DEFAULT_SENSOR_PREFIX, "maint_tasks_due"),
-        ("Custom Prefix", "custom_prefix_tasks_due"),
-        ("", "tasks_due"),
-    ],
-)
-def test_suggested_object_id_uses_sensor_prefix(prefix: str, expected: str) -> None:
-    """Sensor should honor the configured prefix when suggesting an object id."""
-    sensor = MaintTasksDueSensor(
-        entry=FakeEntry("entry-1", options={CONF_SENSOR_PREFIX: prefix}),
-        tasks=[],
-    )
-
-    assert sensor.suggested_object_id == expected
 
 
 def test_handle_task_updates_refresh_state(

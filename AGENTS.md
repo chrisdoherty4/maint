@@ -25,3 +25,5 @@ tasks.
 - Storage changes (`MaintTaskStore`): maintain `STORAGE_VERSION`, do not add migration logic - just change the existing code, and cover with tests.
 - Review and update `README.md` for user-facing changes and refresh `custom_components/maint/quality_scale.yaml` when requirements are met.
 - Include adequate debug/info logs and honor configurable log levels (`info`/`debug`).
+- Consult https://developers.home-assistant.io/ for information on developing Home Assistant integrations.
+- Provide type hints for all function parameters and returns.

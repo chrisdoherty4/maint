@@ -16,7 +16,6 @@ from .const import (
     SIGNAL_TASK_DELETED,
     SIGNAL_TASK_UPDATED,
 )
-from .util import configured_sensor_prefix
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -86,13 +85,6 @@ class MaintTasksDueSensor(SensorEntity):
             "identifiers": {(DOMAIN, entry.entry_id)},
             "name": entry.title,
         }
-        self._sensor_prefix = configured_sensor_prefix(entry)
-
-    @property
-    def suggested_object_id(self) -> str | None:
-        """Use a stable object id for the summary sensor."""
-        base = "tasks_due"
-        return f"{self._sensor_prefix}_{base}" if self._sensor_prefix else base
 
     @property
     def native_value(self) -> int:

@@ -17,7 +17,6 @@ from .const import (
     SIGNAL_TASK_DELETED,
     SIGNAL_TASK_UPDATED,
 )
-from .util import configured_sensor_prefix
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -101,14 +100,18 @@ class MaintTaskBinarySensor(BinarySensorEntity):
         """Initialize the binary sensor."""
         self._entry = entry
         self._task = task
-        self._attr_unique_id = f"{entry.entry_id}_{task.task_id}"
         self._attr_name = task.description
-        self._sensor_prefix = configured_sensor_prefix(entry)
+        self._attr_unique_id = f"{entry.entry_id}_{task.task_id}"
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
             "name": entry.title,
         }
         self._last_is_on: bool | None = None
+
+    @property
+    def suggested_object_id(self) -> str | None:
+        """Use a stable object id for the task sensor."""
+        return slugify(f"{self._entry.title}_{self._task.description}")
 
     @property
     def is_on(self) -> bool:
@@ -121,16 +124,7 @@ class MaintTaskBinarySensor(BinarySensorEntity):
         return {
             "description": self._task.description,
             "last_completed": self._task.last_completed.isoformat(),
-            "frequency": self._task.frequency,
-            "frequency_unit": self._task.frequency_unit,
         }
-
-    @property
-    def suggested_object_id(self) -> str | None:
-        """Return the suggested object ID using the configured prefix."""
-        prefix = self._sensor_prefix
-        task_slug = slugify(self._task.description)
-        return f"{prefix}_{task_slug}" if prefix else task_slug
 
     def async_write_ha_state(self) -> None:
         """Write state to Home Assistant and emit events on activation."""

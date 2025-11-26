@@ -3,16 +3,14 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
 from homeassistant.util import dt as dt_util
 
 from custom_components.maint.binary_sensor import MaintTaskBinarySensor
-from custom_components.maint.const import CONF_SENSOR_PREFIX, DEFAULT_SENSOR_PREFIX
 from custom_components.maint.models import MaintTask
 
 
@@ -21,8 +19,7 @@ class FakeEntry:
     """Minimal ConfigEntry stand-in for tests."""
 
     entry_id: str
-    options: dict[str, Any] = field(default_factory=dict)
-    title: str = "Maintenance"
+    title: str = "Maint"
 
 
 def _make_task(frequency: int = 10) -> MaintTask:
@@ -52,19 +49,16 @@ def test_is_on_reflects_due_date(
 
 
 def test_suggested_object_id_uses_prefix() -> None:
-    """Suggested object id should slugify prefix and description."""
-    entry = FakeEntry(
-        entry_id="entry-1",
-        options={CONF_SENSOR_PREFIX: "Maint Prefix"},
-    )
+    """Suggested object id should slugify title and description."""
+    entry = FakeEntry(entry_id="entry-1", title="Maint")
     sensor = MaintTaskBinarySensor(entry=entry, task=_make_task())
 
-    assert sensor.suggested_object_id == "maint_prefix_change_air_filter"
+    assert sensor.suggested_object_id == "maint_change_air_filter"
 
 
 def test_handle_task_update_refreshes_name_and_state() -> None:
     """handle_task_update should swap tasks and trigger a state write."""
-    entry = FakeEntry("entry-1", options={CONF_SENSOR_PREFIX: DEFAULT_SENSOR_PREFIX})
+    entry = FakeEntry("entry-1")
     sensor = MaintTaskBinarySensor(entry=entry, task=_make_task())
     sensor.async_write_ha_state = MagicMock()
 

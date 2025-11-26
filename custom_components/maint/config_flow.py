@@ -10,9 +10,7 @@ from homeassistant.core import callback
 
 from .const import (
     CONF_LOG_LEVEL,
-    CONF_SENSOR_PREFIX,
     DEFAULT_LOG_LEVEL,
-    DEFAULT_SENSOR_PREFIX,
     DEFAULT_TITLE,
     DOMAIN,
     LOG_LEVEL_OPTIONS,
@@ -67,9 +65,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        current_prefix = (
-            self.config_entry.options.get(CONF_SENSOR_PREFIX) or DEFAULT_SENSOR_PREFIX
-        )
         current_log_level = self.config_entry.options.get(
             CONF_LOG_LEVEL, DEFAULT_LOG_LEVEL
         )
@@ -77,9 +72,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             step_id="init",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_SENSOR_PREFIX, default=current_prefix): vol.All(
-                        str, vol.Length(min=1)
-                    ),
                     vol.Optional(CONF_LOG_LEVEL, default=current_log_level): vol.In(
                         LOG_LEVEL_OPTIONS
                     ),
