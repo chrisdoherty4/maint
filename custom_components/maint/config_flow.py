@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import voluptuous as vol
 from homeassistant import config_entries
 
 from .const import (
@@ -14,8 +13,6 @@ from .const import (
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
-
-    from homeassistant.config_entries import ConfigEntry
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
