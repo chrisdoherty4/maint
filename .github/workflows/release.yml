@@ -10,11 +10,6 @@ permissions:
   contents: write
 
 jobs:
-  lint:
-    name: Lint
-    uses: ./.github/workflows/lint.yml
-    secrets: inherit
-
   validate:
     name: Validate
     uses: ./.github/workflows/validate.yml
@@ -23,7 +18,6 @@ jobs:
   publish:
     name: Publish GitHub release
     needs:
-      - lint
       - validate
     runs-on: ubuntu-latest
     steps:
