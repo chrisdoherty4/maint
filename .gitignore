@@ -209,3 +209,9 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Node
+node_modules/
+
+# Keep the compiled frontend since its needed for HACS install.
+!/custom_components/maint/frontend/dist

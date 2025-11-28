@@ -1,8 +1,20 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-set -e
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+FRONTEND_DIR="${ROOT_DIR}/custom_components/maint/frontend"
 
-cd "$(dirname "$0")/.."
+cd "${ROOT_DIR}"
 
 ruff format .
 ruff check . --fix
+
+if [ -f "${FRONTEND_DIR}/package.json" ]; then
+  cd "${FRONTEND_DIR}"
+  if [ -f package-lock.json ]; then
+    npm ci
+  else
+    npm install
+  fi
+  npm run lint
+fi

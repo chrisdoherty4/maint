@@ -18,8 +18,10 @@ _LOGGER = logging.getLogger(__name__)
 
 PANEL_STATIC_PATH = "/api/maint_panel_static"
 WEB_COMPONENT_NAME = "maint-panel"
-MODULE_URL = f"{PANEL_STATIC_PATH}/maint-panel.js"
 PANEL_DIR = Path(__file__).parent / "frontend"
+DIST_DIR = PANEL_DIR / "dist"
+MODULE_URL = f"{PANEL_STATIC_PATH}/dist/main.js"
+MODULE_FILE = DIST_DIR / "main.js"
 
 
 async def async_register_panel(hass: HomeAssistant) -> None:
@@ -27,6 +29,12 @@ async def async_register_panel(hass: HomeAssistant) -> None:
     data = hass.data.setdefault(DOMAIN, {})
     if data.get("panel_registered"):
         return
+
+    if not MODULE_FILE.exists():
+        _LOGGER.warning(
+            "Maint panel build missing at %s; run scripts/frontend to compile assets",
+            MODULE_FILE,
+        )
 
     await hass.http.async_register_static_paths(
         [

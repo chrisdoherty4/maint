@@ -42,6 +42,8 @@
         "ghcr.io/devcontainers-extra/features/apt-packages:1": {
             "packages": "ffmpeg,libturbojpeg0,libpcap-dev,ripgrep"
         },
-        "ghcr.io/jsburckhardt/devcontainer-features/codex:1": {}
+        "ghcr.io/jsburckhardt/devcontainer-features/codex:1": {},
+        "ghcr.io/devcontainers/features/node:1": {},
+        "ghcr.io/devcontainers-community/npm-features/typescript:1": {}
     }
 }
