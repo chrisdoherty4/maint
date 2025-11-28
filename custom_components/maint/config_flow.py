@@ -6,13 +6,12 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant import config_entries
 
-from .const import (
-    DEFAULT_TITLE,
-    DOMAIN,
-)
+from .domain import DOMAIN
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+
+DEFAULT_TITLE = "Maint"
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):

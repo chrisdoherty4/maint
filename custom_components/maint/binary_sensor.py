@@ -10,13 +10,8 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.util import slugify
 
-from .const import (
-    DOMAIN,
-    EVENT_TASK_DUE,
-    SIGNAL_TASK_CREATED,
-    SIGNAL_TASK_DELETED,
-    SIGNAL_TASK_UPDATED,
-)
+from .domain import DOMAIN
+from .models import SIGNAL_TASK_CREATED, SIGNAL_TASK_DELETED, SIGNAL_TASK_UPDATED
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -24,6 +19,7 @@ if TYPE_CHECKING:
     from .models import MaintConfigEntry, MaintTask
 
 _LOGGER = logging.getLogger(__name__)
+EVENT_TASK_DUE = "maint_task_due"
 
 
 async def async_setup_entry(
@@ -37,38 +33,38 @@ async def async_setup_entry(
     tasks = await store.async_list_tasks(entry.entry_id)
 
     entities: dict[str, MaintTaskBinarySensor] = {}
-    async_add_entities(
-        [
-            entities.setdefault(
-                task.task_id, MaintTaskBinarySensor(entry=entry, task=task)
-            )
-            for task in tasks
-        ]
-    )
+    initial_entities = []
+    for task in tasks:
+        entity = MaintTaskBinarySensor(entry=entry, task=task)
+        entities[task.task_id] = entity
+        initial_entities.append(entity)
+    async_add_entities(initial_entities)
+
+    def _upsert_entity(task: MaintTask) -> MaintTaskBinarySensor | None:
+        """Create or update an entity for a task and return it if newly added."""
+        if existing := entities.get(task.task_id):
+            existing.handle_task_update(task)
+            return None
+
+        entity = MaintTaskBinarySensor(entry=entry, task=task)
+        entities[task.task_id] = entity
+        return entity
 
     @callback
     def handle_task_created(entry_id: str, task: MaintTask) -> None:
         """Create a sensor when a new task is added."""
         if entry_id != entry.entry_id:
             return
-        if task.task_id in entities:
-            entities[task.task_id].handle_task_update(task)
-            return
-        entity = MaintTaskBinarySensor(entry=entry, task=task)
-        entities[task.task_id] = entity
-        async_add_entities([entity])
+        if entity := _upsert_entity(task):
+            async_add_entities([entity])
 
     @callback
     def handle_task_updated(entry_id: str, task: MaintTask) -> None:
         """Update an existing sensor when a task is modified."""
         if entry_id != entry.entry_id:
             return
-        if entity := entities.get(task.task_id):
-            entity.handle_task_update(task)
-            return
-        entity = MaintTaskBinarySensor(entry=entry, task=task)
-        entities[task.task_id] = entity
-        async_add_entities([entity])
+        if entity := _upsert_entity(task):
+            async_add_entities([entity])
 
     @callback
     def handle_task_deleted(entry_id: str, task: MaintTask) -> None:

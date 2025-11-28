@@ -11,14 +11,7 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
 
-from .const import (
-    DOMAIN,
-    WS_TYPE_KEY,
-    WS_TYPE_TASK_CREATE,
-    WS_TYPE_TASK_DELETE,
-    WS_TYPE_TASK_LIST,
-    WS_TYPE_TASK_UPDATE,
-)
+from .domain import DOMAIN
 from .models import (
     FREQUENCY_UNIT_DAYS,
     FREQUENCY_UNIT_MONTHS,
@@ -33,6 +26,12 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
+
+WS_TYPE_KEY = "type"
+WS_TYPE_TASK_CREATE = "maint/task/create"
+WS_TYPE_TASK_DELETE = "maint/task/delete"
+WS_TYPE_TASK_UPDATE = "maint/task/update"
+WS_TYPE_TASK_LIST = "maint/task/list"
 
 
 def _validated_description(value: Any) -> str:
@@ -85,13 +84,17 @@ def _resolve_task_store(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> tuple[MaintTaskStore, MaintConfigEntry] | None:
     """Return the task store for a config entry."""
+    request_id = msg["id"]
     entry_id = msg[TASK_ENTRY_ID_KEY]
+    command = msg.get(WS_TYPE_KEY, "unknown")
     entry = hass.config_entries.async_get_entry(entry_id)
 
     if entry is None or entry.domain != DOMAIN:
         _LOGGER.warning("Websocket request for unknown Maint entry %s", entry_id)
         connection.send_error(
-            msg["id"], "entry_not_found", f"Entry {entry_id} not found"
+            request_id,
+            "entry_not_found",
+            f"Entry {entry_id} not found",
         )
         return None
 
@@ -99,10 +102,10 @@ def _resolve_task_store(
         _LOGGER.debug(
             "Maint entry %s not loaded for websocket request %s",
             entry_id,
-            msg.get(WS_TYPE_KEY, "unknown"),
+            command,
         )
         connection.send_error(
-            msg["id"], "entry_not_loaded", f"Entry {entry_id} is not loaded"
+            request_id, "entry_not_loaded", f"Entry {entry_id} is not loaded"
         )
         return None
 
@@ -110,7 +113,9 @@ def _resolve_task_store(
     if not isinstance(runtime_data, MaintRuntimeData):
         _LOGGER.warning("Runtime data missing for Maint entry %s", entry_id)
         connection.send_error(
-            msg["id"], "runtime_data_missing", f"Entry {entry_id} has no runtime data"
+            request_id,
+            "runtime_data_missing",
+            f"Entry {entry_id} has no runtime data",
         )
         return None
 
@@ -249,7 +254,7 @@ async def websocket_delete_task(
     if resolved is None:
         return
     store, entry = resolved
-    task_id = msg["task_id"]
+    task_id = msg[TASK_ID_KEY]
     try:
         task = await store.async_delete_task(entry.entry_id, task_id)
     except KeyError:

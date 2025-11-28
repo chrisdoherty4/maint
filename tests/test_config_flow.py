@@ -9,8 +9,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from homeassistant.data_entry_flow import FlowResultType
 
-from custom_components.maint.config_flow import ConfigFlow
-from custom_components.maint.const import DEFAULT_TITLE, DOMAIN
+from custom_components.maint.config_flow import DEFAULT_TITLE, ConfigFlow
+from custom_components.maint.domain import DOMAIN
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant

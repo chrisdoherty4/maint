@@ -10,12 +10,8 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
-from .const import (
-    DOMAIN,
-    SIGNAL_TASK_CREATED,
-    SIGNAL_TASK_DELETED,
-    SIGNAL_TASK_UPDATED,
-)
+from .domain import DOMAIN
+from .models import SIGNAL_TASK_CREATED, SIGNAL_TASK_DELETED, SIGNAL_TASK_UPDATED
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddEntitiesCallback

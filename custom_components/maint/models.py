@@ -13,18 +13,18 @@ from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .const import (
-    SIGNAL_TASK_CREATED,
-    SIGNAL_TASK_DELETED,
-    SIGNAL_TASK_UPDATED,
-)
+from .domain import DOMAIN
 
 if TYPE_CHECKING:
-    from homeassistant.config_entries import ConfigEntry
     from homeassistant.core import HomeAssistant
 
-STORAGE_KEY = "maint.tasks"
+SIGNAL_TASK_CREATED = "maint_task_created"
+SIGNAL_TASK_UPDATED = "maint_task_updated"
+SIGNAL_TASK_DELETED = "maint_task_deleted"
+
+STORAGE_KEY = f"{DOMAIN}.store"
 STORAGE_VERSION = 1
+
 FREQUENCY_UNIT_DAYS: Literal["days"] = "days"
 FREQUENCY_UNIT_WEEKS: Literal["weeks"] = "weeks"
 FREQUENCY_UNIT_MONTHS: Literal["months"] = "months"
@@ -35,12 +35,6 @@ FREQUENCY_UNITS = (
 )
 FrequencyUnit = Literal["days", "weeks", "months"]
 
-
-class _UnsetType:
-    """Sentinel type for unset optional values."""
-
-
-UNSET = _UnsetType()
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -140,29 +134,25 @@ class MaintTaskStore:
             return
         _LOGGER.debug("Loading Maint tasks from storage")
         data = await self._store.async_load()
-        if not data:
-            self._tasks = {}
-        else:
-            entries = data.get("entries", {})
-            tasks_by_entry: dict[str, dict[str, MaintTask]] = {}
-            for entry_id, tasks in entries.items():
-                entry_tasks: dict[str, MaintTask] = {}
-                for task_data in tasks:
-                    entry_tasks[task_data["task_id"]] = MaintTask.from_dict(task_data)
-                tasks_by_entry[entry_id] = entry_tasks
-            self._tasks = tasks_by_entry
-        total_tasks = sum(len(tasks) for tasks in self._tasks.values())
+        entries = data.get("entries", {}) if data else {}
+        self._tasks = {
+            entry_id: {
+                task_data["task_id"]: MaintTask.from_dict(task_data)
+                for task_data in tasks
+            }
+            for entry_id, tasks in entries.items()
+        }
+        entries_count, tasks_count = self._counts()
         _LOGGER.debug(
             "Loaded Maint task store: %s entries, %s tasks",
-            len(self._tasks),
-            total_tasks,
+            entries_count,
+            tasks_count,
         )
         self._loaded = True
 
     async def _async_save(self) -> None:
         """Persist tasks to disk."""
-        entries_count = len(self._tasks)
-        tasks_count = sum(len(tasks) for tasks in self._tasks.values())
+        entries_count, tasks_count = self._counts()
         await self._store.async_save(
             {
                 "entries": {
@@ -176,6 +166,10 @@ class MaintTaskStore:
             entries_count,
             tasks_count,
         )
+
+    def _counts(self) -> tuple[int, int]:
+        """Return counts of entries and tasks for logging."""
+        return len(self._tasks), sum(len(tasks) for tasks in self._tasks.values())
 
     async def _async_get_entry_tasks(self, entry_id: str) -> dict[str, MaintTask]:
         """Return the task mapping for an entry."""
@@ -314,8 +308,8 @@ class MaintTaskStore:
             message = "description cannot be empty"
             raise ValueError(message)
 
-        if last_completed is not None and last_completed == "":
-            message = "last_completed cannot be empty"
+        if last_completed is not None and not isinstance(last_completed, date):
+            message = "last_completed must be a date"
             raise ValueError(message)
 
         if frequency is not None and frequency <= 0:

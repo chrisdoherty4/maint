@@ -9,14 +9,12 @@ import pytest
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
-from custom_components.maint.const import (
-    SIGNAL_TASK_CREATED,
-    SIGNAL_TASK_DELETED,
-    SIGNAL_TASK_UPDATED,
-)
 from custom_components.maint.models import (
     FREQUENCY_UNIT_MONTHS,
     FREQUENCY_UNIT_WEEKS,
+    SIGNAL_TASK_CREATED,
+    SIGNAL_TASK_DELETED,
+    SIGNAL_TASK_UPDATED,
     MaintTask,
     MaintTaskStore,
 )

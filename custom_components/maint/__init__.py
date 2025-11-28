@@ -3,22 +3,31 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.const import Platform
 from homeassistant.helpers import config_validation as cv
 
-from .const import (
-    DEFAULT_TITLE,
-    DOMAIN,
-)
+from .config_flow import DEFAULT_TITLE
+from .domain import DOMAIN
 from .models import MaintConfigEntry, MaintRuntimeData, MaintTaskStore
 from .panel import async_register_panel, async_unregister_panel
 from .websocket import async_register_websocket_handlers
 
+# We only support setup from the UI so we need to load a config entry only schema.
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+# Define the platforms we use.
 PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
+
+# Define a key for storing and retrieving the task store in hass.data
+DATA_KEY_TASK_STORE = "task_store"
+
+# Define a key for indicating whether or not websockets have been registered.
+DATA_KEY_WS_REGISTERED = "ws_registered"
+
 _LOGGER = logging.getLogger(__name__)
+
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -28,13 +37,13 @@ if TYPE_CHECKING:
 
 async def async_setup(hass: HomeAssistant, _config: ConfigType) -> bool:
     """Set up Maint."""
-    data = hass.data.setdefault(DOMAIN, {})
+    data: dict[str, Any] = hass.data.setdefault(DOMAIN, {})
     _LOGGER.info("Setting up Maint integration")
     await _async_get_task_store(hass)
     await async_register_panel(hass)
-    if not data.get("ws_registered"):
+    if not data.get(DATA_KEY_WS_REGISTERED):
         async_register_websocket_handlers(hass)
-        data["ws_registered"] = True
+        data[DATA_KEY_WS_REGISTERED] = True
         _LOGGER.debug("Registered Maint websocket handlers")
     return True
 
@@ -83,12 +92,12 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def _async_get_task_store(hass: HomeAssistant) -> MaintTaskStore:
     """Return the shared Maint task store."""
-    data = hass.data.setdefault(DOMAIN, {})
-    if (store := data.get("task_store")) is None:
+    data: dict[str, Any] = hass.data.setdefault(DOMAIN, {})
+    if (store := data.get(DATA_KEY_TASK_STORE)) is None:
         _LOGGER.debug("Creating Maint task store")
         store = MaintTaskStore(hass)
         await store.async_load()
-        data["task_store"] = store
+        data[DATA_KEY_TASK_STORE] = store
     else:
         _LOGGER.debug("Reusing existing Maint task store")
     return store

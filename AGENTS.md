@@ -27,3 +27,5 @@ tasks.
 - Include adequate debug/info logs and honor configurable log levels (`info`/`debug`).
 - Consult https://developers.home-assistant.io/ for information on developing Home Assistant integrations.
 - Provide type hints for all function parameters and returns.
+- Avoid packages/modules named common, utils, const etc. Instead, prefer placing constants an interfaces near the consumer where possible.
+- Prioritize readable, maintainable code.

@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from homeassistant.components import frontend, panel_custom
 from homeassistant.components.http import StaticPathConfig
 
-from .const import DOMAIN
+from .domain import DOMAIN
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
