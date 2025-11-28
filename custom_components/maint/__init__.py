@@ -9,8 +9,6 @@ from homeassistant.const import Platform
 from homeassistant.helpers import config_validation as cv
 
 from .const import (
-    CONF_LOG_LEVEL,
-    DEFAULT_LOG_LEVEL,
     DEFAULT_TITLE,
     DOMAIN,
 )
@@ -21,10 +19,6 @@ from .websocket import async_register_websocket_handlers
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
 _LOGGER = logging.getLogger(__name__)
-LOG_LEVEL_MAP = {
-    "debug": logging.DEBUG,
-    "info": logging.INFO,
-}
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -35,7 +29,6 @@ if TYPE_CHECKING:
 async def async_setup(hass: HomeAssistant, _config: ConfigType) -> bool:
     """Set up Maint."""
     data = hass.data.setdefault(DOMAIN, {})
-    _apply_log_level(DEFAULT_LOG_LEVEL)
     _LOGGER.info("Setting up Maint integration")
     await _async_get_task_store(hass)
     await async_register_panel(hass)
@@ -48,12 +41,9 @@ async def async_setup(hass: HomeAssistant, _config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: MaintConfigEntry) -> bool:
     """Set up Maint from a config entry."""
-    configured_level = entry.options.get(CONF_LOG_LEVEL, DEFAULT_LOG_LEVEL)
-    _apply_log_level(configured_level)
     _LOGGER.info(
-        "Setting up Maint config entry %s (log_level=%s)",
+        "Setting up Maint config entry %s",
         entry.entry_id,
-        configured_level,
     )
     if entry.unique_id is None:
         hass.config_entries.async_update_entry(entry, unique_id=DOMAIN)
@@ -102,18 +92,3 @@ async def _async_get_task_store(hass: HomeAssistant) -> MaintTaskStore:
     else:
         _LOGGER.debug("Reusing existing Maint task store")
     return store
-
-
-def _apply_log_level(log_level: str) -> None:
-    """Apply the configured log level for Maint loggers."""
-    level = LOG_LEVEL_MAP.get(log_level.lower(), logging.INFO)
-    # Ensure the package logger and all Maint child loggers share the same level.
-    package_prefix = f"{__package__}."
-    for logger_name in list(logging.root.manager.loggerDict):
-        if logger_name == __package__ or logger_name.startswith(package_prefix):
-            logging.getLogger(logger_name).setLevel(level)
-    _LOGGER.debug(
-        "Applied Maint log level %s (%s)",
-        log_level,
-        level,
-    )

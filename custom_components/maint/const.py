@@ -2,9 +2,6 @@
 
 DOMAIN = "maint"
 DEFAULT_TITLE = "Maint"
-CONF_LOG_LEVEL = "log_level"
-DEFAULT_LOG_LEVEL = "info"
-LOG_LEVEL_OPTIONS = ("info", "debug")
 
 WS_TYPE_KEY = "type"
 WS_TYPE_TASK_CREATE = "maint/task/create"
