@@ -1,4 +1,4 @@
-import type { FrequencyUnit, MaintTask } from "./types.js";
+import type { FrequencyUnit, MaintTask } from "./api.js";
 
 export const normalizeFrequencyUnit = (value: string): FrequencyUnit => {
   const normalized = (value ?? "").toString().trim();

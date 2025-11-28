@@ -2,6 +2,7 @@
 
 set -e
 
+# Move into the root directory.
 cd "$(dirname "$0")/.."
 
 # Create config dir if not present
@@ -15,6 +16,9 @@ fi
 ## while at the same time have Home Assistant configuration inside <root>/config
 ## without resulting to symlinks.
 export PYTHONPATH="${PYTHONPATH}:${PWD}/custom_components"
+
+# Build the frontend.
+./scripts/frontend
 
 # Start Home Assistant
 hass --config "${PWD}/config" --debug

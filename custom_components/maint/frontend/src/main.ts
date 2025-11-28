@@ -1,7 +1,17 @@
 import { html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
-import { createTask, deleteTask, fetchEntries, fetchTasks, updateTask } from "./api.js";
+import {
+  createTask,
+  deleteTask,
+  fetchEntries,
+  fetchTasks,
+  updateTask,
+  type FrequencyUnit,
+  type HassConnection,
+  type MaintEntry,
+  type MaintTask
+} from "./api.js";
 import { validateTaskFields } from "./forms.js";
 import {
   formatDate,
@@ -12,7 +22,6 @@ import {
   normalizeTask
 } from "./formatting.js";
 import { styles } from "./styles.js";
-import type { FrequencyUnit, HassConnection, MaintEntry, MaintTask } from "./types.js";
 
 @customElement("maint-panel")
 export class MaintPanel extends LitElement {

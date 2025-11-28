@@ -1,5 +1,5 @@
 import { parseDate, parseFrequency, parseFrequencyUnit } from "./formatting.js";
-import type { FrequencyUnit, TaskPayload } from "./types.js";
+import type { FrequencyUnit, TaskPayload } from "./api.js";
 
 export interface ValidationResult {
   values?: TaskPayload;
