@@ -6,7 +6,7 @@ import calendar
 import logging
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import TYPE_CHECKING, Literal, NotRequired, TypedDict, cast
+from typing import TYPE_CHECKING, Literal, TypedDict, cast
 from uuid import uuid4
 
 from homeassistant.config_entries import ConfigEntry
@@ -67,25 +67,6 @@ def _add_months(base: date, months: int) -> date:
     target_month = month_index + 1
     day = min(base.day, _last_day_of_month(target_year, target_month))
     return date(target_year, target_month, day)
-
-
-def _nth_weekday_of_month(
-    year: int, month: int, *, weekday: WeekdayIndex, occurrence: int
-) -> date:
-    """Return the nth weekday for a month (e.g., 2nd Tuesday)."""
-    if occurrence < 1:
-        message = "occurrence must be >= 1"
-        raise ValueError(message)
-    first_weekday, days_in_month = calendar.monthrange(year, month)
-    offset = (weekday - first_weekday) % 7
-    day = 1 + offset + (occurrence - 1) * 7
-    if day > days_in_month:
-        message = (
-            f"{occurrence} occurrence for weekday {weekday} "
-            f"does not exist in {year}-{month}"
-        )
-        raise ValueError(message)
-    return date(year, month, day)
 
 
 @dataclass(slots=True)
@@ -217,7 +198,6 @@ class MaintTask:
             "description": self.description,
             "last_completed": _serialize_date(self.last_completed),
             "recurrence": self.recurrence.to_dict(),
-            "next_scheduled": _serialize_date(self.next_scheduled),
         }
 
     @classmethod
@@ -242,7 +222,6 @@ class MaintTaskSerializedData(TypedDict):
     description: str
     last_completed: str
     recurrence: RecurrenceSerialized
-    next_scheduled: NotRequired[str]
 
 
 class MaintTaskStoreData(TypedDict):
