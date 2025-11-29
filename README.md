@@ -32,5 +32,10 @@ entity or pass `entry_id` and `task_id`, and optionally include `last_completed`
 completion (defaults to today).
 
 ## What's next
+
 - Publish Maint to the HACS default registry so it can be installed without adding a custom
   repository.
+- Integrate with Todo lists.
+- Integrate with Calendar.
+- Support multiple languages.
+- Use locale for date rendering.
