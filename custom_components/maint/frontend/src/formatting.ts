@@ -10,13 +10,14 @@ const parseIsoDate = (value: string): Date | null => {
   if ([year, month, day].some((part) => Number.isNaN(part))) {
     return null;
   }
-  return new Date(Date.UTC(year, month - 1, day));
+  // Use local time to avoid UTC offsets shifting the displayed day.
+  return new Date(year, month - 1, day);
 };
 
 const formatIsoDate = (value: Date): string =>
-  `${value.getUTCFullYear().toString().padStart(4, "0")}-${(value.getUTCMonth() + 1)
+  `${value.getFullYear().toString().padStart(4, "0")}-${(value.getMonth() + 1)
     .toString()
-    .padStart(2, "0")}-${value.getUTCDate().toString().padStart(2, "0")}`;
+    .padStart(2, "0")}-${value.getDate().toString().padStart(2, "0")}`;
 
 export const parseDate = (value: string | FormDataEntryValue | null | undefined): string | null => {
   if (value === null || value === undefined) {

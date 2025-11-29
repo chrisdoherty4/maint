@@ -12,6 +12,8 @@ events when tasks become due so you can automate reminders or actions.
 - Flexible schedules: intervals (every N days/weeks/months) and custom weekly patterns.
 - Event `maint_task_due` fired when a task’s binary sensor turns on, including task metadata for use
   in automations.
+- Service `maint.reset_last_completed` to mark a task as completed (defaults to today, or provide a
+  specific date).
 
 ## Install
 
@@ -22,6 +24,12 @@ events when tasks become due so you can automate reminders or actions.
    as a *Integration* repository.
 3) Find **Maint** under HACS Integrations and install it.
 4) Restart Home Assistant, then add the Maint integration from *Settings → Devices & Services*.
+
+## Service
+
+Call the `maint.reset_last_completed` service to mark a task complete. Target a Maint binary sensor
+entity or pass `entry_id` and `task_id`, and optionally include `last_completed` to backdate the
+completion (defaults to today).
 
 ## What's next
 - Publish Maint to the HACS default registry so it can be installed without adding a custom

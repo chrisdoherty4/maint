@@ -12,6 +12,7 @@ from .config_flow import DEFAULT_TITLE
 from .domain import DOMAIN
 from .models import MaintConfigEntry, MaintRuntimeData, MaintTaskStore
 from .panel import async_register_panel, async_unregister_panel
+from .services import async_register_services
 from .websocket import async_register_websocket_handlers
 
 # We only support setup from the UI so we need to load a config entry only schema.
@@ -40,6 +41,7 @@ async def async_setup(hass: HomeAssistant, _config: ConfigType) -> bool:
     data: dict[str, Any] = hass.data.setdefault(DOMAIN, {})
     _LOGGER.info("Setting up Maint integration")
     await _async_get_task_store(hass)
+    async_register_services(hass, _async_get_task_store)
     await async_register_panel(hass)
     if not data.get(DATA_KEY_WS_REGISTERED):
         async_register_websocket_handlers(hass)
@@ -88,6 +90,13 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if len(loaded_entries) == 1 and loaded_entries[0].entry_id == entry.entry_id:
             await async_unregister_panel(hass)
     return unload_ok
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Remove a config entry and purge its tasks."""
+    _LOGGER.debug("Removing Maint config entry %s; purging tasks", entry.entry_id)
+    store = await _async_get_task_store(hass)
+    await store.async_remove_entry(entry.entry_id)
 
 
 async def _async_get_task_store(hass: HomeAssistant) -> MaintTaskStore:

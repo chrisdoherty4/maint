@@ -174,3 +174,62 @@ async def test_task_store_create_update_delete_persists_and_emits_signals(
     assert task.task_id in event_task_ids
     assert updated.task_id in event_task_ids
     assert deleted.task_id in event_task_ids
+
+
+@pytest.mark.asyncio
+async def test_set_last_completed_updates_only_date(hass: HomeAssistant) -> None:
+    """Setting last completed should preserve description and recurrence."""
+    store = MaintTaskStore(hass)
+    entry_id = "entry-1"
+    recurrence_days = 10
+    task = await store.async_create_task(
+        entry_id=entry_id,
+        description="Test task",
+        last_completed=date(2024, 4, 1),
+        recurrence=_interval(recurrence_days),
+    )
+
+    updates: list[date] = []
+
+    @callback
+    def _record_update(_entry_id: str, updated_task: MaintTask) -> None:
+        updates.append(updated_task.last_completed)
+
+    unsubscribe = async_dispatcher_connect(hass, SIGNAL_TASK_UPDATED, _record_update)
+
+    try:
+        await store.async_set_last_completed(
+            entry_id=entry_id,
+            task_id=task.task_id,
+            last_completed=date(2024, 5, 5),
+        )
+    finally:
+        unsubscribe()
+
+    updated_task = await store.async_get_task(entry_id, task.task_id)
+    assert updated_task.last_completed == date(2024, 5, 5)
+    assert updated_task.description == "Test task"
+    assert updated_task.recurrence.every == recurrence_days
+    assert updates == [date(2024, 5, 5)]
+
+
+@pytest.mark.asyncio
+async def test_remove_entry_purges_tasks(hass: HomeAssistant) -> None:
+    """Removing an entry should delete all tasks and persist the removal."""
+    store = MaintTaskStore(hass)
+    entry_id = "entry-remove"
+    await store.async_create_task(
+        entry_id=entry_id,
+        description="Purge me",
+        last_completed=date(2024, 1, 1),
+        recurrence=_interval(7),
+    )
+
+    await store.async_remove_entry(entry_id)
+
+    tasks = await store.async_list_tasks(entry_id)
+    assert tasks == []
+
+    # Persistence check: reloading the store should not resurrect the tasks.
+    reloaded = MaintTaskStore(hass)
+    assert await reloaded.async_list_tasks(entry_id) == []

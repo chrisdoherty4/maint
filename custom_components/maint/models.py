@@ -371,6 +371,33 @@ class MaintTaskStore:
         )
         return task
 
+    async def async_set_last_completed(
+        self,
+        entry_id: str,
+        task_id: str,
+        *,
+        last_completed: date,
+    ) -> MaintTask:
+        """Update only the last completed date for a task."""
+        self.validate(
+            entry_id=entry_id,
+            task_id=task_id,
+            last_completed=last_completed,
+        )
+
+        tasks = await self._async_get_entry_tasks(entry_id)
+        task = tasks[task_id]
+        task.last_completed = last_completed
+        await self._async_save()
+        async_dispatcher_send(self._hass, SIGNAL_TASK_UPDATED, entry_id, task)
+        _LOGGER.debug(
+            "Updated last completed for Maint task %s for entry %s to %s",
+            task_id,
+            entry_id,
+            task.last_completed,
+        )
+        return task
+
     async def async_delete_task(self, entry_id: str, task_id: str) -> MaintTask:
         """Delete and return a task."""
         self.validate(entry_id=entry_id, task_id=task_id)
@@ -383,6 +410,22 @@ class MaintTaskStore:
         async_dispatcher_send(self._hass, SIGNAL_TASK_DELETED, entry_id, task)
         _LOGGER.debug("Deleted Maint task %s for entry %s", task.task_id, entry_id)
         return task
+
+    async def async_remove_entry(self, entry_id: str) -> None:
+        """Remove all tasks for an entry and persist."""
+        self.validate(entry_id=entry_id)
+        await self.async_load()
+        if entry_id not in self._tasks:
+            _LOGGER.debug("No Maint tasks to remove for entry %s", entry_id)
+            return
+
+        removed = self._tasks.pop(entry_id)
+        await self._async_save()
+        _LOGGER.debug(
+            "Removed Maint entry %s from task store (%s tasks purged)",
+            entry_id,
+            len(removed),
+        )
 
     async def async_get_task(self, entry_id: str, task_id: str) -> MaintTask:
         """Return a task by id."""

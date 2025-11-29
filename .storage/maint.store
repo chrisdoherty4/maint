@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "minor_version": 1,
+  "key": "maint.store",
+  "data": {
+    "entries": {
+      "entry": [
+        {
+          "task_id": "40ab9650c1ca40458c4fdb0e9ac91f64",
+          "description": "Test",
+          "last_completed": "2024-02-02",
+          "recurrence": {
+            "type": "interval",
+            "every": 7,
+            "unit": "days"
+          }
+        }
+      ]
+    }
+  }
+}

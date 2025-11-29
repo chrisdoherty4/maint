@@ -635,9 +635,9 @@ var parseIsoDate = (value) => {
   if ([year, month, day].some((part) => Number.isNaN(part))) {
     return null;
   }
-  return new Date(Date.UTC(year, month - 1, day));
+  return new Date(year, month - 1, day);
 };
-var formatIsoDate = (value) => `${value.getUTCFullYear().toString().padStart(4, "0")}-${(value.getUTCMonth() + 1).toString().padStart(2, "0")}-${value.getUTCDate().toString().padStart(2, "0")}`;
+var formatIsoDate = (value) => `${value.getFullYear().toString().padStart(4, "0")}-${(value.getMonth() + 1).toString().padStart(2, "0")}-${value.getDate().toString().padStart(2, "0")}`;
 var parseDate = (value) => {
   if (value === null || value === void 0) {
     return null;
