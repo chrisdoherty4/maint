@@ -32,6 +32,8 @@ type EditFormState = {
   weekly_days: string[];
 };
 
+const WEEKDAY_SHORT_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
 @customElement("maint-panel")
 export class MaintPanel extends LitElement {
   @property({ attribute: false }) public hass?: HassConnection;
@@ -813,21 +815,20 @@ export class MaintPanel extends LitElement {
     return nothing;
   }
 
-  private weekdayOptions(selected: number) {
-    const labels = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-    return labels.map((label, index) => {
+  private weekdayCheckboxes(selectedDays: Array<number | string>, disabled = false) {
+    const selectedSet = new Set(selectedDays.map((day) => day.toString()));
+    return WEEKDAY_SHORT_LABELS.map((label, index) => {
       const value = index.toString();
-      return html`<option value=${value} ?selected=${selected === index}>${label}</option>`;
-    });
-  }
-
-  private weekdayCheckboxes(selectedDays: number[]) {
-    const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    return labels.map((label, index) => {
-      const checked = selectedDays.includes(index);
+      const checked = selectedSet.has(value);
       return html`
         <label class="weekday-chip">
-          <input type="checkbox" name="weekly_days" value=${index} ?checked=${checked} />
+          <input
+            type="checkbox"
+            name="weekly_days"
+            value=${value}
+            ?checked=${checked}
+            ?disabled=${disabled}
+          />
           <span>${label}</span>
         </label>
       `;
@@ -881,25 +882,9 @@ export class MaintPanel extends LitElement {
     }
 
     if (this.editForm.recurrence_type === "weekly") {
-      const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
       return html`
         <div class="weekday-grid" @change=${this.handleEditWeeklyDayChange}>
-          ${labels.map((label, index) => {
-        const value = index.toString();
-        const checked = this.editForm?.weekly_days.includes(value);
-        return html`
-              <label class="weekday-chip">
-                <input
-                  type="checkbox"
-                  name="weekly_days"
-                  value=${value}
-                  ?checked=${checked}
-                  ?disabled=${this.busy}
-                />
-                <span>${label}</span>
-              </label>
-            `;
-      })}
+          ${this.weekdayCheckboxes(this.editForm.weekly_days, this.busy)}
         </div>
       `;
     }
