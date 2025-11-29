@@ -872,60 +872,165 @@ var styles = i`
     cursor: not-allowed;
   }
 
-  table {
+  .task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-top: 12px;
+  }
+
+  .task-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 0;
     width: 100%;
-    border-collapse: collapse;
   }
 
-  th,
-  td {
-    padding: 12px 8px;
-    text-align: left;
-    vertical-align: middle;
+.task-row + .task-row {
+  border-top: 1px solid var(--divider-color);
+}
+
+  .task-details {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
-  th {
-    color: var(--secondary-text-color);
-    font-weight: 600;
-    border-bottom: 1px solid var(--divider-color);
-  }
-
-  td {
-    border-bottom: 1px solid var(--divider-color);
+  .task-description-line {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    flex-wrap: wrap;
   }
 
   .task-description {
-    font-weight: 400;
+    font-weight: 700;
     white-space: pre-wrap;
     color: var(--primary-text-color);
+    margin-bottom: 2px;
   }
 
-  .actions {
-    text-align: right;
-    width: 110px;
-    min-width: 110px;
-    white-space: nowrap;
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-primary-color);
+    line-height: 1;
   }
 
-  .actions button + button {
-    margin-left: 8px;
+  .pill-due {
+    background: var(--warning-color);
   }
 
-  .icon-button {
-    background: none;
-    color: var(--primary-text-color);
-    padding: 8px;
-    min-width: 36px;
+  .task-meta {
+    display: grid;
+    grid-template-columns: minmax(120px, auto) minmax(0, 1fr);
+    gap: 8px 24px;
+    color: var(--secondary-text-color);
+    font-size: 14px;
+  }
+
+  .task-meta-column {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .task-meta-title {
+    font-style: italic;
+    font-weight: 700;
+    color: var(--secondary-text-color);
+  }
+
+  .task-meta-value {
+    color: var(--secondary-text-color);
+  }
+
+  .task-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    margin-left: 12px;
+    min-width: 140px;
+  }
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.tasks-section h2 {
+  margin-bottom: 12px;
+}
+
+.icon-button {
+  background: none;
+  color: var(--primary-text-color);
+  padding: 8px;
+  min-width: 36px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     line-height: 1;
   }
 
-  .icon-button ha-icon {
-    width: 20px;
-    height: 20px;
-  }
+.icon-button ha-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.tooltipped {
+  position: relative;
+}
+
+.tooltipped::after {
+  content: attr(data-label);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 12px);
+  transform: translate(-50%, 4px);
+  background: var(--primary-color);
+  color: var(--text-primary-color);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 6px 10px;
+  white-space: nowrap;
+  font-size: 12px;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+  transition: opacity 0.2s ease 0.6s, transform 0.2s ease 0.6s;
+  z-index: 2;
+}
+
+.tooltipped::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 2px);
+  transform: translate(-50%, 8px);
+  border: 8px solid transparent;
+  border-top-color: var(--primary-color);
+  opacity: 0;
+  filter: drop-shadow(0 -1px 0 rgba(0, 0, 0, 0.15));
+  transition: opacity 0.2s ease 0.6s, transform 0.2s ease 0.6s;
+  z-index: 1;
+}
+
+.tooltipped:hover::after,
+.tooltipped:focus-visible::after,
+.tooltipped:hover::before,
+.tooltipped:focus-visible::before {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
 
   .info {
     color: var(--secondary-text-color);
@@ -1087,26 +1192,32 @@ var styles = i`
       padding: 16px;
     }
 
-    table,
-    thead,
-    tbody,
-    th,
-    td,
-    tr {
-      display: block;
+    .task-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px;
     }
 
-    th {
-      display: none;
+    .task-actions {
+      width: 100%;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      margin-left: 0;
+      min-width: 0;
     }
 
-    td {
-      border: none;
-      padding: 8px 0;
-    }
-
-    .actions {
+    .task-last-completed {
       text-align: left;
+    }
+
+    .action-buttons {
+      margin-left: auto;
+    }
+
+    .task-meta {
+      grid-template-columns: 1fr;
     }
   }
 `;
@@ -1229,24 +1340,11 @@ var MaintPanel = class extends i4 {
   renderTasksSection(formDisabled) {
     const hasTasks = this.tasks.length > 0;
     return x`
-      <section>
+      <section class="tasks-section">
         <h2>Tasks</h2>
         ${formDisabled ? x`<p class="info">Add the Maint integration to start tracking tasks.</p>` : !hasTasks ? x`<p class="info">No tasks yet. Use the form above to create one.</p>` : x`
-                <div class="task-table">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Description</th>
-                        <th>Frequency</th>
-                        <th>Last completed</th>
-                        <th>Next scheduled</th>
-                        <th class="actions">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${this.tasks.map((task) => this.renderTaskRow(task))}
-                    </tbody>
-                  </table>
+                <div class="task-list" role="list">
+                  ${this.tasks.map((task) => this.renderTaskRow(task))}
                 </div>
               `}
       </section>
@@ -1255,44 +1353,84 @@ var MaintPanel = class extends i4 {
   renderTaskRow(task) {
     const editLabel = "Edit";
     const editIcon = "mdi:pencil";
+    const completeLabel = "Mark complete";
+    const actionsDisabled = this.busy || Boolean(this.editingTaskId);
+    const isDue = this.isTaskDue(task);
+    const rowClass = isDue ? "task-row due" : "task-row";
     return x`
-      <tr data-task-row=${task.task_id}>
-        <td>
-          <div class="task-description">${task.description}</div>
-        </td>
-        <td>
-          ${formatRecurrence(task.recurrence)}
-        </td>
-        <td>
-          ${formatDate(task.last_completed)}
-        </td>
-        <td>${formatDate(nextScheduled(task))}</td>
-        <td class="actions">
-          <button
-            type="button"
-            class="icon-button edit-task"
-            data-task=${task.task_id}
-            ?disabled=${this.busy || Boolean(this.editingTaskId)}
-            aria-label=${editLabel}
-            title=${editLabel}
-            @click=${this.handleEditTask}
-          >
-            <ha-icon icon=${editIcon} aria-hidden="true"></ha-icon>
-          </button>
-          <button
-            type="button"
-            class="icon-button delete-task"
-            data-task=${task.task_id}
-            aria-label="Delete"
-            title="Delete"
-            ?disabled=${this.busy || Boolean(this.editingTaskId)}
-            @click=${this.promptDelete}
-          >
-            <ha-icon icon="mdi:delete-outline" aria-hidden="true"></ha-icon>
-          </button>
-        </td>
-      </tr>
+      <div class=${rowClass} data-task-row=${task.task_id} role="listitem">
+        <div class="task-details">
+          <div class="task-description-line">
+            <div class="task-description">${task.description}</div>
+            ${isDue ? x`<span class="pill pill-due">Due</span>` : E}
+          </div>
+          <div class="task-meta">
+            <div class="task-meta-column">
+              <div class="task-meta-title">Next scheduled</div>
+              <div class="task-meta-value">${formatDate(nextScheduled(task))}</div>
+            </div>
+            <div class="task-meta-column">
+              <div class="task-meta-title">Schedule</div>
+              <div class="task-meta-value">${formatRecurrence(task.recurrence)}</div>
+            </div>
+          </div>
+        </div>
+        <div class="task-actions">
+          <div class="action-buttons">
+            <button
+              type="button"
+              class="icon-button complete-button tooltipped"
+              data-task=${task.task_id}
+              ?disabled=${actionsDisabled}
+              aria-label=${completeLabel}
+              title=${completeLabel}
+              data-label=${completeLabel}
+              @click=${this.markTaskComplete}
+            >
+              <ha-icon icon="mdi:check" aria-hidden="true"></ha-icon>
+            </button>
+            <button
+              type="button"
+              class="icon-button edit-task tooltipped"
+              data-task=${task.task_id}
+              ?disabled=${actionsDisabled}
+              aria-label=${editLabel}
+              title=${editLabel}
+              data-label=${editLabel}
+              @click=${this.handleEditTask}
+            >
+              <ha-icon icon=${editIcon} aria-hidden="true"></ha-icon>
+            </button>
+            <button
+              type="button"
+              class="icon-button delete-task tooltipped"
+              data-task=${task.task_id}
+              aria-label="Delete"
+              title="Delete"
+              data-label="Delete"
+              ?disabled=${actionsDisabled}
+              @click=${this.promptDelete}
+            >
+              <ha-icon icon="mdi:delete-outline" aria-hidden="true"></ha-icon>
+            </button>
+          </div>
+        </div>
+      </div>
     `;
+  }
+  isTaskDue(task) {
+    const next = nextScheduled(task);
+    if (!next) {
+      return false;
+    }
+    const nextDate = new Date(next);
+    if (Number.isNaN(nextDate.getTime())) {
+      return false;
+    }
+    const today = /* @__PURE__ */ new Date();
+    today.setHours(0, 0, 0, 0);
+    nextDate.setHours(0, 0, 0, 0);
+    return nextDate <= today;
   }
   renderDeleteModal() {
     if (!this.confirmTaskId) {
@@ -1443,6 +1581,33 @@ var MaintPanel = class extends i4 {
     } catch (error) {
       console.error("Maint panel failed to load tasks", error);
       this.error = "Unable to load tasks.";
+    } finally {
+      this.busy = false;
+    }
+  }
+  async markTaskComplete(event) {
+    const target = event.currentTarget;
+    const taskId = target?.getAttribute("data-task");
+    if (!taskId || !this.selectedEntryId || !this.hass) {
+      return;
+    }
+    const task = this.tasks.find((item) => item.task_id === taskId);
+    if (!task) {
+      return;
+    }
+    const today = /* @__PURE__ */ new Date();
+    const lastCompleted = `${today.getFullYear().toString().padStart(4, "0")}-${(today.getMonth() + 1).toString().padStart(2, "0")}-${today.getDate().toString().padStart(2, "0")}`;
+    try {
+      this.busy = true;
+      await updateTask(this.hass, this.selectedEntryId, taskId, {
+        description: task.description,
+        last_completed: lastCompleted,
+        recurrence: task.recurrence
+      });
+      await this.loadTasks();
+    } catch (error) {
+      console.error("Failed to mark maint task complete", error);
+      this.error = "Unable to mark task complete.";
     } finally {
       this.busy = false;
     }

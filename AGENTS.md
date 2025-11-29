@@ -34,7 +34,7 @@ tasks.
 ### Frontend
 
 - The frontend is written in TypeScript - always modify the TypeScript and compile down to JavaScript.
-- Compile using the `./script/frontend`.
+- Compile using the `./scripts/frontend`.
 
 ## Temporary Constraints
 

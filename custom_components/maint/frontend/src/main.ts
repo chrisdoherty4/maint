@@ -163,28 +163,15 @@ export class MaintPanel extends LitElement {
     const hasTasks = this.tasks.length > 0;
 
     return html`
-      <section>
+      <section class="tasks-section">
         <h2>Tasks</h2>
         ${formDisabled
         ? html`<p class="info">Add the Maint integration to start tracking tasks.</p>`
         : !hasTasks
           ? html`<p class="info">No tasks yet. Use the form above to create one.</p>`
           : html`
-                <div class="task-table">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Description</th>
-                        <th>Frequency</th>
-                        <th>Last completed</th>
-                        <th>Next scheduled</th>
-                        <th class="actions">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${this.tasks.map((task) => this.renderTaskRow(task))}
-                    </tbody>
-                  </table>
+                <div class="task-list" role="list">
+                  ${this.tasks.map((task) => this.renderTaskRow(task))}
                 </div>
               `}
       </section>
@@ -194,45 +181,89 @@ export class MaintPanel extends LitElement {
   private renderTaskRow(task: MaintTask) {
     const editLabel = "Edit";
     const editIcon = "mdi:pencil";
+    const completeLabel = "Mark complete";
+    const actionsDisabled = this.busy || Boolean(this.editingTaskId);
+    const isDue = this.isTaskDue(task);
+    const rowClass = isDue ? "task-row due" : "task-row";
 
     return html`
-      <tr data-task-row=${task.task_id}>
-        <td>
-          <div class="task-description">${task.description}</div>
-        </td>
-        <td>
-          ${formatRecurrence(task.recurrence)}
-        </td>
-        <td>
-          ${formatDate(task.last_completed)}
-        </td>
-        <td>${formatDate(nextScheduled(task))}</td>
-        <td class="actions">
-          <button
-            type="button"
-            class="icon-button edit-task"
-            data-task=${task.task_id}
-            ?disabled=${this.busy || Boolean(this.editingTaskId)}
-            aria-label=${editLabel}
-            title=${editLabel}
-            @click=${this.handleEditTask}
-          >
-            <ha-icon icon=${editIcon} aria-hidden="true"></ha-icon>
-          </button>
-          <button
-            type="button"
-            class="icon-button delete-task"
-            data-task=${task.task_id}
-            aria-label="Delete"
-            title="Delete"
-            ?disabled=${this.busy || Boolean(this.editingTaskId)}
-            @click=${this.promptDelete}
-          >
-            <ha-icon icon="mdi:delete-outline" aria-hidden="true"></ha-icon>
-          </button>
-        </td>
-      </tr>
+      <div class=${rowClass} data-task-row=${task.task_id} role="listitem">
+        <div class="task-details">
+          <div class="task-description-line">
+            <div class="task-description">${task.description}</div>
+            ${isDue ? html`<span class="pill pill-due">Due</span>` : nothing}
+          </div>
+          <div class="task-meta">
+            <div class="task-meta-column">
+              <div class="task-meta-title">Next scheduled</div>
+              <div class="task-meta-value">${formatDate(nextScheduled(task))}</div>
+            </div>
+            <div class="task-meta-column">
+              <div class="task-meta-title">Schedule</div>
+              <div class="task-meta-value">${formatRecurrence(task.recurrence)}</div>
+            </div>
+          </div>
+        </div>
+        <div class="task-actions">
+          <div class="action-buttons">
+            <button
+              type="button"
+              class="icon-button complete-button tooltipped"
+              data-task=${task.task_id}
+              ?disabled=${actionsDisabled}
+              aria-label=${completeLabel}
+              title=${completeLabel}
+              data-label=${completeLabel}
+              @click=${this.markTaskComplete}
+            >
+              <ha-icon icon="mdi:check" aria-hidden="true"></ha-icon>
+            </button>
+            <button
+              type="button"
+              class="icon-button edit-task tooltipped"
+              data-task=${task.task_id}
+              ?disabled=${actionsDisabled}
+              aria-label=${editLabel}
+              title=${editLabel}
+              data-label=${editLabel}
+              @click=${this.handleEditTask}
+            >
+              <ha-icon icon=${editIcon} aria-hidden="true"></ha-icon>
+            </button>
+            <button
+              type="button"
+              class="icon-button delete-task tooltipped"
+              data-task=${task.task_id}
+              aria-label="Delete"
+              title="Delete"
+              data-label="Delete"
+              ?disabled=${actionsDisabled}
+              @click=${this.promptDelete}
+            >
+              <ha-icon icon="mdi:delete-outline" aria-hidden="true"></ha-icon>
+            </button>
+          </div>
+        </div>
+      </div>
     `;
+  }
+
+  private isTaskDue(task: MaintTask): boolean {
+    const next = nextScheduled(task);
+    if (!next) {
+      return false;
+    }
+
+    const nextDate = new Date(next);
+    if (Number.isNaN(nextDate.getTime())) {
+      return false;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    nextDate.setHours(0, 0, 0, 0);
+
+    return nextDate <= today;
   }
 
   private renderDeleteModal() {
@@ -395,6 +426,40 @@ export class MaintPanel extends LitElement {
     } catch (error) {
       console.error("Maint panel failed to load tasks", error);
       this.error = "Unable to load tasks.";
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  private async markTaskComplete(event: Event): Promise<void> {
+    const target = event.currentTarget as HTMLElement | null;
+    const taskId = target?.getAttribute("data-task");
+
+    if (!taskId || !this.selectedEntryId || !this.hass) {
+      return;
+    }
+
+    const task = this.tasks.find((item) => item.task_id === taskId);
+    if (!task) {
+      return;
+    }
+
+    const today = new Date();
+    const lastCompleted = `${today.getFullYear().toString().padStart(4, "0")}-${(today.getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}-${today.getDate().toString().padStart(2, "0")}`;
+
+    try {
+      this.busy = true;
+      await updateTask(this.hass, this.selectedEntryId, taskId, {
+        description: task.description,
+        last_completed: lastCompleted,
+        recurrence: task.recurrence
+      });
+      await this.loadTasks();
+    } catch (error) {
+      console.error("Failed to mark maint task complete", error);
+      this.error = "Unable to mark task complete.";
     } finally {
       this.busy = false;
     }
