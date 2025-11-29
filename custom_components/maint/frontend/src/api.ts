@@ -1,4 +1,21 @@
 export type FrequencyUnit = "days" | "weeks" | "months";
+export type RecurrenceType = "interval" | "weekly";
+export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+export type IntervalRecurrence = {
+  type: "interval";
+  every: number;
+  unit: FrequencyUnit;
+};
+
+export type WeeklyRecurrence = {
+  type: "weekly";
+  days: Weekday[];
+};
+
+export type Recurrence =
+  | IntervalRecurrence
+  | WeeklyRecurrence;
 
 export interface MaintEntry {
   entry_id: string;
@@ -8,17 +25,15 @@ export interface MaintEntry {
 export interface MaintTask {
   task_id: string;
   description: string;
-  frequency: number;
-  frequency_unit: FrequencyUnit;
   last_completed: string | null;
+  recurrence: Recurrence;
   next_scheduled?: string | null;
 }
 
 export interface TaskPayload {
   description: string;
-  frequency: number;
-  frequency_unit: FrequencyUnit;
   last_completed: string;
+  recurrence: Recurrence;
 }
 
 export interface HassConnection {

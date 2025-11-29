@@ -12,15 +12,7 @@ from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
 
 from .domain import DOMAIN
-from .models import (
-    FREQUENCY_UNIT_DAYS,
-    FREQUENCY_UNIT_MONTHS,
-    FREQUENCY_UNIT_WEEKS,
-    FREQUENCY_UNITS,
-    MaintConfigEntry,
-    MaintRuntimeData,
-    MaintTaskStore,
-)
+from .models import MaintConfigEntry, MaintRuntimeData, MaintTaskStore, Recurrence
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -52,13 +44,30 @@ TASK_ID_VALIDATION = cv.string
 TASK_DESCRIPTION_KEY = "description"
 TASK_DESCRIPTION_VALIDATION = _validated_description
 
-TASK_FREQUENCY_KEY = "frequency"
-TASK_FREQUENCY_VALIDATION = cv.positive_int
-TASK_FREQUENCY_UNIT_KEY = "frequency_unit"
-TASK_FREQUENCY_UNIT_VALIDATION = vol.In(FREQUENCY_UNITS)
-
 TASK_LAST_COMPLETED_KEY = "last_completed"
 TASK_LAST_COMPLETED_VALIDATION = cv.date
+TASK_RECURRENCE_KEY = "recurrence"
+
+RECURRENCE_TYPE = vol.In(["interval", "weekly"])
+
+WEEKDAY_VALIDATION = vol.All(int, vol.Range(min=0, max=6))
+RECURRENCE_VALIDATION = vol.Any(
+    vol.Schema(
+        {
+            vol.Required("type"): "interval",
+            vol.Required("every"): cv.positive_int,
+            vol.Required("unit"): vol.In(["days", "weeks", "months"]),
+        },
+        extra=vol.PREVENT_EXTRA,
+    ),
+    vol.Schema(
+        {
+            vol.Required("type"): "weekly",
+            vol.Required("days"): vol.All([WEEKDAY_VALIDATION], vol.Length(min=1)),
+        },
+        extra=vol.PREVENT_EXTRA,
+    ),
+)
 
 
 @callback
@@ -69,15 +78,6 @@ def async_register_websocket_handlers(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, websocket_create_task)
     websocket_api.async_register_command(hass, websocket_update_task)
     websocket_api.async_register_command(hass, websocket_delete_task)
-
-
-def _convert_frequency_to_days(frequency: int, unit: str) -> int:
-    """Normalize a frequency value into days for storage."""
-    if unit == FREQUENCY_UNIT_WEEKS:
-        return frequency * 7
-    if unit == FREQUENCY_UNIT_MONTHS:
-        return frequency * 30
-    return frequency
 
 
 def _resolve_task_store(
@@ -122,6 +122,11 @@ def _resolve_task_store(
     return runtime_data.task_store, entry  # MaintRuntimeData ensures store availability
 
 
+def _parse_recurrence(raw: dict[str, Any]) -> Recurrence:
+    """Convert validated recurrence data into a Recurrence object."""
+    return Recurrence.from_dict(raw)
+
+
 @websocket_api.websocket_command(
     {
         vol.Required(WS_TYPE_KEY): WS_TYPE_TASK_LIST,
@@ -152,11 +157,8 @@ async def websocket_list_tasks(
         vol.Required(WS_TYPE_KEY): WS_TYPE_TASK_CREATE,
         vol.Required(TASK_ENTRY_ID_KEY): TASK_ENTRY_ID_VALIDATION,
         vol.Required(TASK_DESCRIPTION_KEY): TASK_DESCRIPTION_VALIDATION,
-        vol.Required(TASK_FREQUENCY_KEY): TASK_FREQUENCY_VALIDATION,
-        vol.Optional(
-            TASK_FREQUENCY_UNIT_KEY, default=FREQUENCY_UNIT_DAYS
-        ): TASK_FREQUENCY_UNIT_VALIDATION,
         vol.Required(TASK_LAST_COMPLETED_KEY): TASK_LAST_COMPLETED_VALIDATION,
+        vol.Required(TASK_RECURRENCE_KEY): RECURRENCE_VALIDATION,
     }
 )
 @websocket_api.async_response
@@ -169,14 +171,12 @@ async def websocket_create_task(
         return
 
     store, entry = resolved
-    frequency_unit = msg[TASK_FREQUENCY_UNIT_KEY]
-    frequency = _convert_frequency_to_days(msg[TASK_FREQUENCY_KEY], frequency_unit)
+    recurrence = _parse_recurrence(msg[TASK_RECURRENCE_KEY])
     task = await store.async_create_task(
         entry.entry_id,
         description=msg[TASK_DESCRIPTION_KEY],
         last_completed=msg[TASK_LAST_COMPLETED_KEY],
-        frequency=frequency,
-        frequency_unit=frequency_unit,
+        recurrence=recurrence,
     )
     connection.send_result(msg["id"], task.to_dict())
     _LOGGER.debug(
@@ -193,10 +193,7 @@ async def websocket_create_task(
         vol.Required(TASK_ID_KEY): TASK_ID_VALIDATION,
         vol.Required(TASK_DESCRIPTION_KEY): TASK_DESCRIPTION_VALIDATION,
         vol.Required(TASK_LAST_COMPLETED_KEY): TASK_LAST_COMPLETED_VALIDATION,
-        vol.Required(TASK_FREQUENCY_KEY): TASK_FREQUENCY_VALIDATION,
-        vol.Optional(
-            TASK_FREQUENCY_UNIT_KEY, default=FREQUENCY_UNIT_DAYS
-        ): TASK_FREQUENCY_UNIT_VALIDATION,
+        vol.Required(TASK_RECURRENCE_KEY): RECURRENCE_VALIDATION,
     }
 )
 @websocket_api.async_response
@@ -211,8 +208,7 @@ async def websocket_update_task(
     task_id = msg[TASK_ID_KEY]
     last_completed = msg[TASK_LAST_COMPLETED_KEY]
     description = msg[TASK_DESCRIPTION_KEY]
-    frequency_unit = msg[TASK_FREQUENCY_UNIT_KEY]
-    frequency = _convert_frequency_to_days(msg[TASK_FREQUENCY_KEY], frequency_unit)
+    recurrence = _parse_recurrence(msg[TASK_RECURRENCE_KEY])
 
     try:
         task = await store.async_update_task(
@@ -220,8 +216,7 @@ async def websocket_update_task(
             task_id,
             description=description,
             last_completed=last_completed,
-            frequency=frequency,
-            frequency_unit=frequency_unit,
+            recurrence=recurrence,
         )
     except KeyError:
         _LOGGER.debug(

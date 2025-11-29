@@ -628,33 +628,16 @@ var deleteTask = (hass, entryId, taskId) => hass.callWS({
 });
 
 // src/formatting.ts
-var normalizeFrequencyUnit = (value) => {
-  const normalized = (value ?? "").toString().trim();
-  if (normalized === "weeks" || normalized === "months") {
-    return normalized;
+var WEEKDAY_LABELS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+var toMondayIndex = (sundayIndex) => (sundayIndex + 6) % 7;
+var parseIsoDate = (value) => {
+  const [year, month, day] = value.toString().split("T")[0].split("-").map(Number);
+  if ([year, month, day].some((part) => Number.isNaN(part))) {
+    return null;
   }
-  return "days";
+  return new Date(Date.UTC(year, month - 1, day));
 };
-var parseFrequencyUnit = (value) => {
-  if (value === null || value === void 0) {
-    return null;
-  }
-  return normalizeFrequencyUnit(value);
-};
-var parseFrequency = (value) => {
-  if (value === null || value === void 0) {
-    return null;
-  }
-  const rawValue = value.toString().trim();
-  if (!rawValue) {
-    return null;
-  }
-  const parsed = Number(rawValue);
-  if (Number.isNaN(parsed) || parsed <= 0) {
-    return null;
-  }
-  return Math.floor(parsed);
-};
+var formatIsoDate = (value) => `${value.getUTCFullYear().toString().padStart(4, "0")}-${(value.getUTCMonth() + 1).toString().padStart(2, "0")}-${value.getUTCDate().toString().padStart(2, "0")}`;
 var parseDate = (value) => {
   if (value === null || value === void 0) {
     return null;
@@ -673,62 +656,63 @@ var formatDate = (value) => {
   if (!value) {
     return "\u2014";
   }
-  const [year, month, day] = value.toString().split("T")[0].split("-").map(Number);
-  if ([year, month, day].some((part) => Number.isNaN(part))) {
+  const parsed = parseIsoDate(value);
+  if (!parsed) {
     return "\u2014";
   }
-  const date = new Date(year, month - 1, day);
-  return date.toLocaleDateString();
+  return parsed.toLocaleDateString();
 };
 var formatDateInput = (value) => {
   if (!value) {
     return "";
   }
-  const [year, month, day] = value.toString().split("T")[0].split("-").map(Number);
-  if ([year, month, day].some((part) => Number.isNaN(part))) {
+  const parsed = parseIsoDate(value);
+  if (!parsed) {
     return "";
   }
-  return `${year.toString().padStart(4, "0")}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+  return formatIsoDate(parsed);
 };
-var frequencyUnitMultiplier = (unit) => {
-  switch (normalizeFrequencyUnit(unit)) {
-    case "weeks":
-      return 7;
-    case "months":
-      return 30;
+var normalizeWeekdays = (days) => Array.from(new Set(days)).sort((a3, b3) => a3 - b3);
+var formatRecurrence = (recurrence) => {
+  switch (recurrence.type) {
+    case "interval": {
+      const unitLabel = recurrence.unit === "days" ? recurrence.every === 1 ? "day" : "days" : recurrence.unit === "weeks" ? recurrence.every === 1 ? "week" : "weeks" : recurrence.every === 1 ? "month" : "months";
+      if (recurrence.unit === "days" && recurrence.every === 1) {
+        return "Every day";
+      }
+      return `Every ${recurrence.every} ${unitLabel}`;
+    }
+    case "weekly": {
+      const labels = normalizeWeekdays(recurrence.days).map((day) => WEEKDAY_LABELS[day]);
+      return `Weekly on ${labels.join(", ")}`;
+    }
     default:
-      return 1;
+      return "\u2014";
   }
 };
-var formatFrequencyValue = (frequencyDays, frequencyUnit = "days") => {
-  if (!frequencyDays || Number.isNaN(Number(frequencyDays))) {
-    return "";
+var computeNextSchedule = (lastCompleted, recurrence) => {
+  switch (recurrence.type) {
+    case "interval": {
+      const days = recurrence.unit === "weeks" ? recurrence.every * 7 : recurrence.every;
+      const next = new Date(lastCompleted.getTime());
+      next.setUTCDate(next.getUTCDate() + days);
+      return next;
+    }
+    case "weekly": {
+      const current = toMondayIndex(lastCompleted.getUTCDay());
+      for (let offset = 1; offset <= 7; offset += 1) {
+        const candidateWeekday = (current + offset) % 7;
+        if (recurrence.days.includes(candidateWeekday)) {
+          const next = new Date(lastCompleted.getTime());
+          next.setUTCDate(next.getUTCDate() + offset);
+          return next;
+        }
+      }
+      return null;
+    }
+    default:
+      return null;
   }
-  const unit = normalizeFrequencyUnit(frequencyUnit);
-  const multiplier = frequencyUnitMultiplier(unit);
-  const normalized = Number(frequencyDays) / multiplier;
-  if (!Number.isFinite(normalized)) {
-    return "";
-  }
-  return Number.isInteger(normalized) ? normalized.toString() : normalized.toFixed(2);
-};
-var formatFrequency = (frequencyDays, frequencyUnit = "days") => {
-  if (!frequencyDays || Number.isNaN(Number(frequencyDays))) {
-    return "\u2014";
-  }
-  const unit = normalizeFrequencyUnit(frequencyUnit);
-  const value = Number(formatFrequencyValue(frequencyDays, unit));
-  if (!value || Number.isNaN(value)) {
-    return "\u2014";
-  }
-  const unitLabel = unit === "days" ? value === 1 ? "day" : "days" : unit === "weeks" ? value === 1 ? "week" : "weeks" : value === 1 ? "month" : "months";
-  if (unit === "days" && value === 1) {
-    return "Every day";
-  }
-  if (value === 1) {
-    return `Every ${unitLabel}`;
-  }
-  return `Every ${value} ${unitLabel}`;
 };
 var nextScheduled = (task) => {
   if (!task) {
@@ -737,20 +721,19 @@ var nextScheduled = (task) => {
   if (task.next_scheduled) {
     return task.next_scheduled;
   }
-  if (!task.last_completed || !task.frequency) {
+  if (!task.last_completed || !task.recurrence) {
     return null;
   }
-  const [year, month, day] = task.last_completed.toString().split("T")[0].split("-").map(Number);
-  if ([year, month, day].some((part) => Number.isNaN(part))) {
+  const parsed = parseIsoDate(task.last_completed);
+  if (!parsed) {
     return null;
   }
-  const next = new Date(year, month - 1, day);
-  next.setDate(next.getDate() + Number(task.frequency));
-  return `${next.getFullYear().toString().padStart(4, "0")}-${(next.getMonth() + 1).toString().padStart(2, "0")}-${next.getDate().toString().padStart(2, "0")}`;
+  const next = computeNextSchedule(parsed, task.recurrence);
+  return next ? formatIsoDate(next) : null;
 };
 var normalizeTask = (task) => ({
   ...task,
-  frequency_unit: normalizeFrequencyUnit(task.frequency_unit)
+  recurrence: task.recurrence?.type === "weekly" ? { ...task.recurrence, days: normalizeWeekdays(task.recurrence.days) } : task.recurrence
 });
 
 // src/forms.ts
@@ -759,26 +742,63 @@ var validateTaskFields = (fields) => {
   if (!description) {
     return { error: "Enter a description." };
   }
-  const frequency = parseFrequency(fields.frequency);
-  if (frequency === null) {
-    return { error: "Enter how often the task repeats." };
-  }
-  const frequencyUnit = parseFrequencyUnit(fields.frequency_unit);
-  if (!frequencyUnit) {
-    return { error: "Choose a frequency unit." };
-  }
   const lastCompleted = parseDate(fields.last_completed);
   if (lastCompleted === null) {
     return { error: "Enter a valid date for last completed." };
   }
+  const recurrence = parseRecurrence(fields);
+  if (!recurrence.ok) {
+    return { error: recurrence.error ?? "Choose a schedule." };
+  }
   return {
     values: {
       description,
-      frequency,
-      frequency_unit: frequencyUnit,
-      last_completed: lastCompleted
+      last_completed: lastCompleted,
+      recurrence: recurrence.value
     }
   };
+};
+var toRecurrenceType = (value) => {
+  const normalized = (value ?? "interval").toString();
+  if (normalized === "interval" || normalized === "weekly") {
+    return normalized;
+  }
+  return "interval";
+};
+var parsePositiveInt = (value) => {
+  const parsed = Number((value ?? "").toString());
+  if (Number.isNaN(parsed) || parsed <= 0) {
+    return null;
+  }
+  return Math.floor(parsed);
+};
+var parseWeekdays = (value) => {
+  const entries = Array.isArray(value) ? value : value === void 0 ? [] : [value];
+  const parsed = entries.map((entry) => Number(entry)).filter((num) => Number.isInteger(num) && num >= 0 && num <= 6);
+  const unique = Array.from(new Set(parsed)).sort((a3, b3) => a3 - b3);
+  return unique.length ? unique : null;
+};
+var parseRecurrence = (fields) => {
+  const type = toRecurrenceType(fields.recurrence_type);
+  if (type === "interval") {
+    const every = parsePositiveInt(fields.interval_every);
+    const unit = (fields.interval_unit ?? "").toString();
+    if (!every) {
+      return { ok: false, error: "Enter how often the task repeats." };
+    }
+    if (unit !== "days" && unit !== "weeks" && unit !== "months") {
+      return { ok: false, error: "Choose a frequency unit." };
+    }
+    return { ok: true, value: { type: "interval", every, unit } };
+  }
+  if (type === "weekly") {
+    const days = parseWeekdays(fields.weekly_days);
+    if (!days) {
+      return { ok: false, error: "Select at least one day of the week." };
+    }
+    return { ok: true, value: { type: "weekly", days } };
+  }
+  return { ok: false, error: "Choose a schedule." };
 };
 
 // src/styles.ts
@@ -938,14 +958,44 @@ var styles = i`
 
   .frequency-editor {
     display: grid;
-    grid-template-columns: 1fr 140px;
-    gap: 8px;
-    align-items: center;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    align-items: flex-start;
   }
 
   .frequency-editor select,
   .frequency-editor input {
     width: 100%;
+  }
+
+  .recurrence-fields {
+    margin-top: 4px;
+  }
+
+  .weekday-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .weekday-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--divider-color);
+    background: var(--card-background-color);
+  }
+
+  .weekday-chip input {
+    width: auto;
+    margin: 0;
+  }
+
+  .stacked {
+    display: flex;
+    flex-direction: column;
   }
 
   .form-header {
@@ -1068,6 +1118,8 @@ var MaintPanel = class extends i4 {
     this.editingTaskId = null;
     this.confirmTaskId = null;
     this.formExpanded = true;
+    this.createRecurrenceType = "interval";
+    this.editingRecurrenceTypes = {};
     this.initialized = false;
   }
   updated(changedProps) {
@@ -1133,21 +1185,13 @@ var MaintPanel = class extends i4 {
                   </label>
                   <div class="inline-fields">
                     <label>
-                      <span class="label-text">Frequency</span>
-                      <input
-                        type="number"
-                        name="frequency"
-                        min="1"
-                        step="1"
-                        required
-                        placeholder="90"
+                      <span class="label-text">Schedule type</span>
+                      <select
+                        name="recurrence_type"
+                        @change=${this.handleRecurrenceTypeChange}
                         ?disabled=${formDisabled}
-                      />
-                    </label>
-                    <label>
-                      <span class="label-text">Unit</span>
-                      <select name="frequency_unit" ?disabled=${formDisabled}>
-                        ${this.frequencyUnitOptions()}
+                      >
+                        ${this.recurrenceTypeOptions(this.createRecurrenceType)}
                       </select>
                     </label>
                     <label>
@@ -1160,6 +1204,9 @@ var MaintPanel = class extends i4 {
                         ?disabled=${formDisabled}
                       />
                     </label>
+                  </div>
+                  <div class="recurrence-fields">
+                    ${this.renderRecurrenceFields(this.createRecurrenceType)}
                   </div>
                 </div>
                 <div class="form-actions">
@@ -1212,18 +1259,25 @@ var MaintPanel = class extends i4 {
         <td>
           ${isEditing ? x`
                 <div class="frequency-editor">
-                  <input
-                    type="number"
-                    name="frequency"
-                    min="1"
-                    step="1"
-                    .value=${formatFrequencyValue(task.frequency, task.frequency_unit)}
-                  />
-                  <select name="frequency_unit">
-                    ${this.frequencyUnitOptions(task.frequency_unit)}
-                  </select>
+                  <label class="stacked">
+                    <span class="label-text">Type</span>
+                    <select
+                      name="recurrence_type"
+                      .value=${this.resolveRecurrenceType(task)}
+                      @change=${(event) => this.handleEditRecurrenceTypeChange(task.task_id, event)}
+                    >
+                      ${this.recurrenceTypeOptions(this.resolveRecurrenceType(task))}
+                    </select>
+                  </label>
+                  <div class="recurrence-fields">
+                    ${this.renderRecurrenceFields(
+      this.resolveRecurrenceType(task),
+      task.recurrence,
+      task.task_id
+    )}
+                  </div>
                 </div>
-              ` : formatFrequency(task.frequency, task.frequency_unit)}
+              ` : formatRecurrence(task.recurrence)}
         </td>
         <td>
           ${isEditing ? x`
@@ -1353,9 +1407,11 @@ var MaintPanel = class extends i4 {
     const formData = new FormData(form);
     const result = validateTaskFields({
       description: formData.get("description"),
-      frequency: formData.get("frequency"),
-      frequency_unit: formData.get("frequency_unit"),
-      last_completed: formData.get("last_completed")
+      last_completed: formData.get("last_completed"),
+      recurrence_type: formData.get("recurrence_type"),
+      interval_every: formData.get("interval_every"),
+      interval_unit: formData.get("interval_unit"),
+      weekly_days: formData.getAll("weekly_days")
     });
     if (result.error) {
       this.error = result.error;
@@ -1404,14 +1460,18 @@ var MaintPanel = class extends i4 {
       return;
     }
     const descriptionInput = row.querySelector('input[name="description"]');
-    const frequencyInput = row.querySelector('input[name="frequency"]');
-    const frequencyUnitSelect = row.querySelector('select[name="frequency_unit"]');
     const dateInput = row.querySelector('input[name="last_completed"]');
+    const recurrenceTypeSelect = row.querySelector('select[name="recurrence_type"]');
+    const weeklyDayInputs = row.querySelectorAll('input[name="weekly_days"]:checked');
+    const intervalEveryInput = row.querySelector('input[name="interval_every"]');
+    const intervalUnitSelect = row.querySelector('select[name="interval_unit"]');
     const result = validateTaskFields({
       description: descriptionInput?.value,
-      frequency: frequencyInput?.value,
-      frequency_unit: frequencyUnitSelect?.value,
-      last_completed: dateInput?.value
+      last_completed: dateInput?.value,
+      recurrence_type: recurrenceTypeSelect?.value,
+      interval_every: intervalEveryInput?.value,
+      interval_unit: intervalUnitSelect?.value,
+      weekly_days: Array.from(weeklyDayInputs).map((input) => input.value)
     });
     if (result.error) {
       this.error = result.error;
@@ -1431,6 +1491,9 @@ var MaintPanel = class extends i4 {
       this.tasks = this.tasks.map(
         (task) => task.task_id === taskId ? normalizeTask(updated) : task
       );
+      const updatedTypes = { ...this.editingRecurrenceTypes };
+      delete updatedTypes[taskId];
+      this.editingRecurrenceTypes = updatedTypes;
       this.editingTaskId = null;
     } catch (error) {
       console.error("Maint panel failed to update task", error);
@@ -1500,13 +1563,93 @@ var MaintPanel = class extends i4 {
       }
     }
   }
-  frequencyUnitOptions(selected = "days") {
-    const normalized = selected === "weeks" || selected === "months" ? selected : "days";
-    return [
-      x`<option value="days" ?selected=${normalized === "days"}>Days</option>`,
-      x`<option value="weeks" ?selected=${normalized === "weeks"}>Weeks</option>`,
-      x`<option value="months" ?selected=${normalized === "months"}>Months</option>`
+  recurrenceTypeOptions(selected) {
+    const options = [
+      { value: "interval", label: "Every N days/weeks/months" },
+      { value: "weekly", label: "Weekly on selected days" }
     ];
+    return options.map(
+      (option) => x`<option value=${option.value} ?selected=${option.value === selected}>
+          ${option.label}
+        </option>`
+    );
+  }
+  renderRecurrenceFields(type, recurrence, taskId) {
+    if (type === "interval") {
+      const every = recurrence?.type === "interval" ? recurrence.every : "";
+      const unit = recurrence?.type === "interval" ? recurrence.unit : "days";
+      return x`
+        <div class="inline-fields">
+          <label>
+            <span class="label-text">Every</span>
+            <input
+              type="number"
+              name="interval_every"
+              min="1"
+              step="1"
+              required
+              .value=${every}
+            />
+          </label>
+          <label>
+            <span class="label-text">Unit</span>
+            <select name="interval_unit">
+              <option value="days" ?selected=${unit === "days"}>Days</option>
+              <option value="weeks" ?selected=${unit === "weeks"}>Weeks</option>
+              <option value="months" ?selected=${unit === "months"}>Months</option>
+            </select>
+          </label>
+        </div>
+      `;
+    }
+    if (type === "weekly") {
+      const selectedDays = recurrence?.type === "weekly" ? recurrence.days : [0];
+      return x`
+        <div class="weekday-grid" data-task=${taskId ?? ""}>
+          ${this.weekdayCheckboxes(selectedDays)}
+        </div>
+      `;
+    }
+    return E;
+  }
+  weekdayOptions(selected) {
+    const labels = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    return labels.map((label, index) => {
+      const value = index.toString();
+      return x`<option value=${value} ?selected=${selected === index}>${label}</option>`;
+    });
+  }
+  weekdayCheckboxes(selectedDays) {
+    const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    return labels.map((label, index) => {
+      const checked = selectedDays.includes(index);
+      return x`
+        <label class="weekday-chip">
+          <input type="checkbox" name="weekly_days" value=${index} ?checked=${checked} />
+          <span>${label}</span>
+        </label>
+      `;
+    });
+  }
+  handleRecurrenceTypeChange(event) {
+    const select = event.currentTarget;
+    if (!select) {
+      return;
+    }
+    this.createRecurrenceType = select.value;
+  }
+  handleEditRecurrenceTypeChange(taskId, event) {
+    const select = event.currentTarget;
+    if (!select) {
+      return;
+    }
+    this.editingRecurrenceTypes = {
+      ...this.editingRecurrenceTypes,
+      [taskId]: select.value
+    };
+  }
+  resolveRecurrenceType(task) {
+    return this.editingRecurrenceTypes[task.task_id] ?? task.recurrence.type;
   }
 };
 MaintPanel.styles = styles;
@@ -1537,6 +1680,12 @@ __decorateClass([
 __decorateClass([
   r5()
 ], MaintPanel.prototype, "formExpanded", 2);
+__decorateClass([
+  r5()
+], MaintPanel.prototype, "createRecurrenceType", 2);
+__decorateClass([
+  r5()
+], MaintPanel.prototype, "editingRecurrenceTypes", 2);
 MaintPanel = __decorateClass([
   t3("maint-panel")
 ], MaintPanel);

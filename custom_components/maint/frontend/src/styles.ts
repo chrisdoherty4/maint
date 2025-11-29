@@ -156,14 +156,44 @@ export const styles = css`
 
   .frequency-editor {
     display: grid;
-    grid-template-columns: 1fr 140px;
-    gap: 8px;
-    align-items: center;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    align-items: flex-start;
   }
 
   .frequency-editor select,
   .frequency-editor input {
     width: 100%;
+  }
+
+  .recurrence-fields {
+    margin-top: 4px;
+  }
+
+  .weekday-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .weekday-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--divider-color);
+    background: var(--card-background-color);
+  }
+
+  .weekday-chip input {
+    width: auto;
+    margin: 0;
+  }
+
+  .stacked {
+    display: flex;
+    flex-direction: column;
   }
 
   .form-header {

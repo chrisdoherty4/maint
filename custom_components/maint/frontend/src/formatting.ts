@@ -1,39 +1,24 @@
-import type { FrequencyUnit, MaintTask } from "./api.js";
+import type { MaintTask, Recurrence, Weekday } from "./api.js";
 
-export const normalizeFrequencyUnit = (value: string): FrequencyUnit => {
-  const normalized = (value ?? "").toString().trim();
-  if (normalized === "weeks" || normalized === "months") {
-    return normalized;
+const WEEKDAY_LABELS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+const toMondayIndex = (sundayIndex: number): Weekday =>
+  (((sundayIndex + 6) % 7) as Weekday);
+
+const parseIsoDate = (value: string): Date | null => {
+  const [year, month, day] = value.toString().split("T")[0].split("-").map(Number);
+  if ([year, month, day].some((part) => Number.isNaN(part))) {
+    return null;
   }
-  return "days";
+  return new Date(Date.UTC(year, month - 1, day));
 };
 
-export const parseFrequencyUnit = (value: string): FrequencyUnit | null => {
-  if (value === null || value === undefined) {
-    return null;
-  }
-  return normalizeFrequencyUnit(value);
-};
+const formatIsoDate = (value: Date): string =>
+  `${value.getUTCFullYear().toString().padStart(4, "0")}-${(value.getUTCMonth() + 1)
+    .toString()
+    .padStart(2, "0")}-${value.getUTCDate().toString().padStart(2, "0")}`;
 
-export const parseFrequency = (value: string): number | null => {
-  if (value === null || value === undefined) {
-    return null;
-  }
-
-  const rawValue = value.toString().trim();
-  if (!rawValue) {
-    return null;
-  }
-
-  const parsed = Number(rawValue);
-  if (Number.isNaN(parsed) || parsed <= 0) {
-    return null;
-  }
-
-  return Math.floor(parsed);
-};
-
-export const parseDate = (value: string): string | null => {
+export const parseDate = (value: string | FormDataEntryValue | null | undefined): string | null => {
   if (value === null || value === undefined) {
     return null;
   }
@@ -56,13 +41,12 @@ export const formatDate = (value: string | null | undefined): string => {
     return "—";
   }
 
-  const [year, month, day] = value.toString().split("T")[0].split("-").map(Number);
-  if ([year, month, day].some((part) => Number.isNaN(part))) {
+  const parsed = parseIsoDate(value);
+  if (!parsed) {
     return "—";
   }
 
-  const date = new Date(year, month - 1, day);
-  return date.toLocaleDateString();
+  return parsed.toLocaleDateString();
 };
 
 export const formatDateInput = (value: string | null | undefined): string => {
@@ -70,83 +54,69 @@ export const formatDateInput = (value: string | null | undefined): string => {
     return "";
   }
 
-  const [year, month, day] = value.toString().split("T")[0].split("-").map(Number);
-  if ([year, month, day].some((part) => Number.isNaN(part))) {
+  const parsed = parseIsoDate(value);
+  if (!parsed) {
     return "";
   }
 
-  return `${year.toString().padStart(4, "0")}-${month
-    .toString()
-    .padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+  return formatIsoDate(parsed);
 };
 
-const frequencyUnitMultiplier = (unit: FrequencyUnit): number => {
-  switch (normalizeFrequencyUnit(unit)) {
-    case "weeks":
-      return 7;
-    case "months":
-      return 30;
+const normalizeWeekdays = (days: Weekday[]): Weekday[] =>
+  Array.from(new Set(days)).sort((a, b) => a - b) as Weekday[];
+
+export const formatRecurrence = (recurrence: Recurrence): string => {
+  switch (recurrence.type) {
+    case "interval": {
+      const unitLabel =
+        recurrence.unit === "days"
+          ? recurrence.every === 1
+            ? "day"
+            : "days"
+          : recurrence.unit === "weeks"
+            ? recurrence.every === 1
+              ? "week"
+              : "weeks"
+            : recurrence.every === 1
+              ? "month"
+              : "months";
+      if (recurrence.unit === "days" && recurrence.every === 1) {
+        return "Every day";
+      }
+      return `Every ${recurrence.every} ${unitLabel}`;
+    }
+    case "weekly": {
+      const labels = normalizeWeekdays(recurrence.days).map((day) => WEEKDAY_LABELS[day]);
+      return `Weekly on ${labels.join(", ")}`;
+    }
     default:
-      return 1;
+      return "—";
   }
 };
 
-export const formatFrequencyValue = (
-  frequencyDays: number | string,
-  frequencyUnit: FrequencyUnit = "days"
-): string => {
-  if (!frequencyDays || Number.isNaN(Number(frequencyDays))) {
-    return "";
+const computeNextSchedule = (lastCompleted: Date, recurrence: Recurrence): Date | null => {
+  switch (recurrence.type) {
+    case "interval": {
+      const days = recurrence.unit === "weeks" ? recurrence.every * 7 : recurrence.every;
+      const next = new Date(lastCompleted.getTime());
+      next.setUTCDate(next.getUTCDate() + days);
+      return next;
+    }
+    case "weekly": {
+      const current = toMondayIndex(lastCompleted.getUTCDay());
+      for (let offset = 1; offset <= 7; offset += 1) {
+        const candidateWeekday = (current + offset) % 7;
+        if (recurrence.days.includes(candidateWeekday as Weekday)) {
+          const next = new Date(lastCompleted.getTime());
+          next.setUTCDate(next.getUTCDate() + offset);
+          return next;
+        }
+      }
+      return null;
+    }
+    default:
+      return null;
   }
-
-  const unit = normalizeFrequencyUnit(frequencyUnit);
-  const multiplier = frequencyUnitMultiplier(unit);
-  const normalized = Number(frequencyDays) / multiplier;
-
-  if (!Number.isFinite(normalized)) {
-    return "";
-  }
-
-  return Number.isInteger(normalized) ? normalized.toString() : normalized.toFixed(2);
-};
-
-export const formatFrequency = (
-  frequencyDays: number | string,
-  frequencyUnit: FrequencyUnit = "days"
-): string => {
-  if (!frequencyDays || Number.isNaN(Number(frequencyDays))) {
-    return "—";
-  }
-
-  const unit = normalizeFrequencyUnit(frequencyUnit);
-  const value = Number(formatFrequencyValue(frequencyDays, unit));
-
-  if (!value || Number.isNaN(value)) {
-    return "—";
-  }
-
-  const unitLabel =
-    unit === "days"
-      ? value === 1
-        ? "day"
-        : "days"
-      : unit === "weeks"
-        ? value === 1
-          ? "week"
-          : "weeks"
-        : value === 1
-          ? "month"
-          : "months";
-
-  if (unit === "days" && value === 1) {
-    return "Every day";
-  }
-
-  if (value === 1) {
-    return `Every ${unitLabel}`;
-  }
-
-  return `Every ${value} ${unitLabel}`;
 };
 
 export const nextScheduled = (task: MaintTask | null | undefined): string | null => {
@@ -158,29 +128,23 @@ export const nextScheduled = (task: MaintTask | null | undefined): string | null
     return task.next_scheduled;
   }
 
-  if (!task.last_completed || !task.frequency) {
+  if (!task.last_completed || !task.recurrence) {
     return null;
   }
 
-  const [year, month, day] = task.last_completed
-    .toString()
-    .split("T")[0]
-    .split("-")
-    .map(Number);
-
-  if ([year, month, day].some((part) => Number.isNaN(part))) {
+  const parsed = parseIsoDate(task.last_completed);
+  if (!parsed) {
     return null;
   }
 
-  const next = new Date(year, month - 1, day);
-  next.setDate(next.getDate() + Number(task.frequency));
-
-  return `${next.getFullYear().toString().padStart(4, "0")}-${(next.getMonth() + 1)
-    .toString()
-    .padStart(2, "0")}-${next.getDate().toString().padStart(2, "0")}`;
+  const next = computeNextSchedule(parsed, task.recurrence);
+  return next ? formatIsoDate(next) : null;
 };
 
 export const normalizeTask = (task: MaintTask): MaintTask => ({
   ...task,
-  frequency_unit: normalizeFrequencyUnit(task.frequency_unit)
+  recurrence:
+    task.recurrence?.type === "weekly"
+      ? { ...task.recurrence, days: normalizeWeekdays(task.recurrence.days) }
+      : task.recurrence
 });

@@ -7,22 +7,9 @@ import pytest
 import voluptuous as vol
 
 from custom_components.maint.websocket import (
-    _convert_frequency_to_days,
+    _parse_recurrence,
     _validated_description,
 )
-
-
-@pytest.mark.parametrize(
-    ("frequency", "unit", "expected"),
-    [
-        (5, "days", 5),
-        (2, "weeks", 14),
-        (1, "months", 30),
-    ],
-)
-def test_convert_frequency_to_days(frequency: int, unit: str, expected: int) -> None:
-    """Frequencies should normalize to days."""
-    assert _convert_frequency_to_days(frequency, unit) == expected
 
 
 def test_validated_description_trims_and_accepts_text() -> None:
@@ -34,3 +21,11 @@ def test_validated_description_rejects_empty() -> None:
     """Empty or whitespace-only descriptions should raise."""
     with pytest.raises(vol.Invalid):
         _validated_description("   ")
+
+
+def test_parse_recurrence_normalizes_weekly_days() -> None:
+    """Recurrence parsing should sort and de-dupe weekly days."""
+    recurrence = _parse_recurrence({"type": "weekly", "days": [5, 1, 1]})
+
+    assert recurrence.type == "weekly"
+    assert recurrence.days_of_week == (1, 5)

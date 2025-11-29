@@ -12,8 +12,8 @@ import pytest
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 
-from custom_components.maint.const import DOMAIN
-from custom_components.maint.models import MaintTask
+from custom_components.maint.domain import DOMAIN
+from custom_components.maint.models import MaintTask, Recurrence
 from custom_components.maint.sensor import MaintTasksDueSensor
 
 if TYPE_CHECKING:
@@ -29,13 +29,16 @@ class FakeEntry:
 
 
 def _make_task(
-    task_id: str, last_completed: date, frequency: int, description: str = "Test task"
+    task_id: str,
+    last_completed: date,
+    days: int,
+    description: str = "Test task",
 ) -> MaintTask:
     return MaintTask(
         task_id=task_id,
         description=description,
         last_completed=last_completed,
-        frequency=frequency,
+        recurrence=Recurrence(type="interval", every=days, unit="days"),
     )
 
 
@@ -47,8 +50,8 @@ def test_native_value_counts_due_tasks(
         "custom_components.maint.models.dt_util.now",
         lambda: datetime(2024, 2, 10, tzinfo=dt_util.UTC),
     )
-    due_task = _make_task("task-1", date(2024, 2, 1), frequency=3)
-    future_task = _make_task("task-2", date(2024, 2, 9), frequency=7)
+    due_task = _make_task("task-1", date(2024, 2, 1), days=3)
+    future_task = _make_task("task-2", date(2024, 2, 9), days=7)
     sensor = MaintTasksDueSensor(
         entry=FakeEntry("entry-1"), tasks=[due_task, future_task]
     )
@@ -68,10 +71,10 @@ async def test_extra_state_attributes_include_binary_sensor(
     )
     entry = FakeEntry("entry-1")
     due_task = _make_task(
-        "task-1", date(2024, 3, 1), frequency=5, description="Replace filters"
+        "task-1", date(2024, 3, 1), days=5, description="Replace filters"
     )
     not_due_task = _make_task(
-        "task-2", date(2024, 3, 9), frequency=10, description="Inspect vents"
+        "task-2", date(2024, 3, 9), days=10, description="Inspect vents"
     )
     registry = er.async_get(hass)
     await registry.async_load()
@@ -103,13 +106,13 @@ def test_handle_task_updates_refresh_state(
         lambda: datetime(2024, 4, 1, tzinfo=dt_util.UTC),
     )
     entry = FakeEntry("entry-1")
-    original_task = _make_task("task-1", date(2024, 3, 1), frequency=20)
+    original_task = _make_task("task-1", date(2024, 3, 1), days=20)
     sensor = MaintTasksDueSensor(entry=entry, tasks=[original_task])
     sensor.hass = hass
     sensor.async_write_ha_state = MagicMock()
 
     updated_task = _make_task(
-        "task-1", date(2024, 3, 10), frequency=5, description="Updated"
+        "task-1", date(2024, 3, 10), days=5, description="Updated"
     )
     sensor.handle_task_updated(updated_task)
     assert sensor._tasks["task-1"] is updated_task

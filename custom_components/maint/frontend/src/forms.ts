@@ -1,5 +1,5 @@
-import { parseDate, parseFrequency, parseFrequencyUnit } from "./formatting.js";
-import type { FrequencyUnit, TaskPayload } from "./api.js";
+import type { Recurrence, RecurrenceType, TaskPayload, Weekday } from "./api.js";
+import { parseDate } from "./formatting.js";
 
 export interface ValidationResult {
   values?: TaskPayload;
@@ -8,9 +8,11 @@ export interface ValidationResult {
 
 export interface TaskFields {
   description?: unknown;
-  frequency?: unknown;
-  frequency_unit?: unknown;
   last_completed?: unknown;
+  recurrence_type?: unknown;
+  interval_every?: unknown;
+  interval_unit?: unknown;
+  weekly_days?: unknown;
 }
 
 export const validateTaskFields = (fields: TaskFields): ValidationResult => {
@@ -19,27 +21,77 @@ export const validateTaskFields = (fields: TaskFields): ValidationResult => {
     return { error: "Enter a description." };
   }
 
-  const frequency = parseFrequency(fields.frequency);
-  if (frequency === null) {
-    return { error: "Enter how often the task repeats." };
-  }
-
-  const frequencyUnit = parseFrequencyUnit(fields.frequency_unit);
-  if (!frequencyUnit) {
-    return { error: "Choose a frequency unit." };
-  }
-
   const lastCompleted = parseDate(fields.last_completed);
   if (lastCompleted === null) {
     return { error: "Enter a valid date for last completed." };
   }
 
+  const recurrence = parseRecurrence(fields);
+  if (!recurrence.ok) {
+    return { error: recurrence.error ?? "Choose a schedule." };
+  }
+
   return {
     values: {
       description,
-      frequency,
-      frequency_unit: frequencyUnit as FrequencyUnit,
-      last_completed: lastCompleted
+      last_completed: lastCompleted,
+      recurrence: recurrence.value
     }
   };
+};
+
+const toRecurrenceType = (value: unknown): RecurrenceType => {
+  const normalized = (value ?? "interval").toString();
+  if (
+    normalized === "interval" ||
+    normalized === "weekly"
+  ) {
+    return normalized;
+  }
+  return "interval";
+};
+
+const parsePositiveInt = (value: unknown): number | null => {
+  const parsed = Number((value ?? "").toString());
+  if (Number.isNaN(parsed) || parsed <= 0) {
+    return null;
+  }
+  return Math.floor(parsed);
+};
+
+const parseWeekdays = (value: unknown): Weekday[] | null => {
+  const entries = Array.isArray(value) ? value : value === undefined ? [] : [value];
+  const parsed = entries
+    .map((entry) => Number(entry))
+    .filter((num) => Number.isInteger(num) && num >= 0 && num <= 6) as Weekday[];
+  const unique = Array.from(new Set(parsed)).sort((a, b) => a - b) as Weekday[];
+  return unique.length ? unique : null;
+};
+
+const parseRecurrence = (
+  fields: TaskFields
+): { ok: true; value: Recurrence } | { ok: false; error?: string } => {
+  const type = toRecurrenceType(fields.recurrence_type);
+
+  if (type === "interval") {
+    const every = parsePositiveInt(fields.interval_every);
+    const unit = (fields.interval_unit ?? "").toString();
+    if (!every) {
+      return { ok: false, error: "Enter how often the task repeats." };
+    }
+    if (unit !== "days" && unit !== "weeks" && unit !== "months") {
+      return { ok: false, error: "Choose a frequency unit." };
+    }
+    return { ok: true, value: { type: "interval", every, unit } };
+  }
+
+  if (type === "weekly") {
+    const days = parseWeekdays(fields.weekly_days);
+    if (!days) {
+      return { ok: false, error: "Select at least one day of the week." };
+    }
+    return { ok: true, value: { type: "weekly", days } };
+  }
+
+  return { ok: false, error: "Choose a schedule." };
 };

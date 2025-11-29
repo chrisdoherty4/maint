@@ -7,17 +7,17 @@ import {
   fetchEntries,
   fetchTasks,
   updateTask,
-  type FrequencyUnit,
   type HassConnection,
   type MaintEntry,
-  type MaintTask
+  type MaintTask,
+  type Recurrence,
+  type RecurrenceType
 } from "./api.js";
 import { validateTaskFields } from "./forms.js";
 import {
   formatDate,
   formatDateInput,
-  formatFrequency,
-  formatFrequencyValue,
+  formatRecurrence,
   nextScheduled,
   normalizeTask
 } from "./formatting.js";
@@ -35,6 +35,8 @@ export class MaintPanel extends LitElement {
   @state() private editingTaskId: string | null = null;
   @state() private confirmTaskId: string | null = null;
   @state() private formExpanded = true;
+  @state() private createRecurrenceType: RecurrenceType = "interval";
+  @state() private editingRecurrenceTypes: Record<string, RecurrenceType> = {};
 
   private initialized = false;
 
@@ -110,21 +112,13 @@ export class MaintPanel extends LitElement {
                   </label>
                   <div class="inline-fields">
                     <label>
-                      <span class="label-text">Frequency</span>
-                      <input
-                        type="number"
-                        name="frequency"
-                        min="1"
-                        step="1"
-                        required
-                        placeholder="90"
+                      <span class="label-text">Schedule type</span>
+                      <select
+                        name="recurrence_type"
+                        @change=${this.handleRecurrenceTypeChange}
                         ?disabled=${formDisabled}
-                      />
-                    </label>
-                    <label>
-                      <span class="label-text">Unit</span>
-                      <select name="frequency_unit" ?disabled=${formDisabled}>
-                        ${this.frequencyUnitOptions()}
+                      >
+                        ${this.recurrenceTypeOptions(this.createRecurrenceType)}
                       </select>
                     </label>
                     <label>
@@ -137,6 +131,9 @@ export class MaintPanel extends LitElement {
                         ?disabled=${formDisabled}
                       />
                     </label>
+                  </div>
+                  <div class="recurrence-fields">
+                    ${this.renderRecurrenceFields(this.createRecurrenceType)}
                   </div>
                 </div>
                 <div class="form-actions">
@@ -201,19 +198,27 @@ export class MaintPanel extends LitElement {
           ${isEditing
         ? html`
                 <div class="frequency-editor">
-                  <input
-                    type="number"
-                    name="frequency"
-                    min="1"
-                    step="1"
-                    .value=${formatFrequencyValue(task.frequency, task.frequency_unit)}
-                  />
-                  <select name="frequency_unit">
-                    ${this.frequencyUnitOptions(task.frequency_unit)}
-                  </select>
+                  <label class="stacked">
+                    <span class="label-text">Type</span>
+                    <select
+                      name="recurrence_type"
+                      .value=${this.resolveRecurrenceType(task)}
+                      @change=${(event: Event) =>
+        this.handleEditRecurrenceTypeChange(task.task_id, event)}
+                    >
+                      ${this.recurrenceTypeOptions(this.resolveRecurrenceType(task))}
+                    </select>
+                  </label>
+                  <div class="recurrence-fields">
+                    ${this.renderRecurrenceFields(
+        this.resolveRecurrenceType(task),
+        task.recurrence,
+        task.task_id
+      )}
+                  </div>
                 </div>
               `
-        : formatFrequency(task.frequency, task.frequency_unit)}
+        : formatRecurrence(task.recurrence)}
         </td>
         <td>
           ${isEditing
@@ -359,9 +364,11 @@ export class MaintPanel extends LitElement {
     const formData = new FormData(form);
     const result = validateTaskFields({
       description: formData.get("description"),
-      frequency: formData.get("frequency"),
-      frequency_unit: formData.get("frequency_unit"),
-      last_completed: formData.get("last_completed")
+      last_completed: formData.get("last_completed"),
+      recurrence_type: formData.get("recurrence_type"),
+      interval_every: formData.get("interval_every"),
+      interval_unit: formData.get("interval_unit"),
+      weekly_days: formData.getAll("weekly_days"),
     });
 
     if (result.error) {
@@ -423,17 +430,21 @@ export class MaintPanel extends LitElement {
 
     const descriptionInput =
       row.querySelector<HTMLInputElement>('input[name="description"]');
-    const frequencyInput =
-      row.querySelector<HTMLInputElement>('input[name="frequency"]');
-    const frequencyUnitSelect =
-      row.querySelector<HTMLSelectElement>('select[name="frequency_unit"]');
     const dateInput = row.querySelector<HTMLInputElement>('input[name="last_completed"]');
+    const recurrenceTypeSelect =
+      row.querySelector<HTMLSelectElement>('select[name="recurrence_type"]');
+    const weeklyDayInputs = row.querySelectorAll<HTMLInputElement>('input[name="weekly_days"]:checked');
+    const intervalEveryInput =
+      row.querySelector<HTMLInputElement>('input[name="interval_every"]');
+    const intervalUnitSelect = row.querySelector<HTMLSelectElement>('select[name="interval_unit"]');
 
     const result = validateTaskFields({
       description: descriptionInput?.value,
-      frequency: frequencyInput?.value,
-      frequency_unit: frequencyUnitSelect?.value,
-      last_completed: dateInput?.value
+      last_completed: dateInput?.value,
+      recurrence_type: recurrenceTypeSelect?.value,
+      interval_every: intervalEveryInput?.value,
+      interval_unit: intervalUnitSelect?.value,
+      weekly_days: Array.from(weeklyDayInputs).map((input) => input.value)
     });
 
     if (result.error) {
@@ -457,6 +468,9 @@ export class MaintPanel extends LitElement {
       this.tasks = this.tasks.map((task) =>
         task.task_id === taskId ? normalizeTask(updated) : task
       );
+      const updatedTypes = { ...this.editingRecurrenceTypes };
+      delete updatedTypes[taskId];
+      this.editingRecurrenceTypes = updatedTypes;
       this.editingTaskId = null;
     } catch (error) {
       console.error("Maint panel failed to update task", error);
@@ -542,13 +556,113 @@ export class MaintPanel extends LitElement {
     }
   }
 
-  private frequencyUnitOptions(selected: FrequencyUnit = "days") {
-    const normalized = selected === "weeks" || selected === "months" ? selected : "days";
-    return [
-      html`<option value="days" ?selected=${normalized === "days"}>Days</option>`,
-      html`<option value="weeks" ?selected=${normalized === "weeks"}>Weeks</option>`,
-      html`<option value="months" ?selected=${normalized === "months"}>Months</option>`
+  private recurrenceTypeOptions(selected: RecurrenceType) {
+    const options: { value: RecurrenceType; label: string }[] = [
+      { value: "interval", label: "Every N days/weeks/months" },
+      { value: "weekly", label: "Weekly on selected days" }
     ];
+    return options.map(
+      (option) =>
+        html`<option value=${option.value} ?selected=${option.value === selected}>
+          ${option.label}
+        </option>`
+    );
+  }
+
+  private renderRecurrenceFields(
+    type: RecurrenceType,
+    recurrence?: Recurrence,
+    taskId?: string
+  ) {
+    if (type === "interval") {
+      const every =
+        recurrence?.type === "interval"
+          ? recurrence.every
+          : "";
+      const unit =
+        recurrence?.type === "interval"
+          ? recurrence.unit
+          : "days";
+      return html`
+        <div class="inline-fields">
+          <label>
+            <span class="label-text">Every</span>
+            <input
+              type="number"
+              name="interval_every"
+              min="1"
+              step="1"
+              required
+              .value=${every}
+            />
+          </label>
+          <label>
+            <span class="label-text">Unit</span>
+            <select name="interval_unit">
+              <option value="days" ?selected=${unit === "days"}>Days</option>
+              <option value="weeks" ?selected=${unit === "weeks"}>Weeks</option>
+              <option value="months" ?selected=${unit === "months"}>Months</option>
+            </select>
+          </label>
+        </div>
+      `;
+    }
+
+    if (type === "weekly") {
+      const selectedDays =
+        recurrence?.type === "weekly" ? recurrence.days : [0];
+      return html`
+        <div class="weekday-grid" data-task=${taskId ?? ""}>
+          ${this.weekdayCheckboxes(selectedDays)}
+        </div>
+      `;
+    }
+
+    return nothing;
+  }
+
+  private weekdayOptions(selected: number) {
+    const labels = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    return labels.map((label, index) => {
+      const value = index.toString();
+      return html`<option value=${value} ?selected=${selected === index}>${label}</option>`;
+    });
+  }
+
+  private weekdayCheckboxes(selectedDays: number[]) {
+    const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    return labels.map((label, index) => {
+      const checked = selectedDays.includes(index);
+      return html`
+        <label class="weekday-chip">
+          <input type="checkbox" name="weekly_days" value=${index} ?checked=${checked} />
+          <span>${label}</span>
+        </label>
+      `;
+    });
+  }
+
+  private handleRecurrenceTypeChange(event: Event): void {
+    const select = event.currentTarget as HTMLSelectElement | null;
+    if (!select) {
+      return;
+    }
+    this.createRecurrenceType = select.value as RecurrenceType;
+  }
+
+  private handleEditRecurrenceTypeChange(taskId: string, event: Event): void {
+    const select = event.currentTarget as HTMLSelectElement | null;
+    if (!select) {
+      return;
+    }
+    this.editingRecurrenceTypes = {
+      ...this.editingRecurrenceTypes,
+      [taskId]: select.value as RecurrenceType
+    };
+  }
+
+  private resolveRecurrenceType(task: MaintTask): RecurrenceType {
+    return this.editingRecurrenceTypes[task.task_id] ?? task.recurrence.type;
   }
 
   static styles = styles;

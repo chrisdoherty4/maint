@@ -10,26 +10,41 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from custom_components.maint.models import (
-    FREQUENCY_UNIT_MONTHS,
-    FREQUENCY_UNIT_WEEKS,
     SIGNAL_TASK_CREATED,
     SIGNAL_TASK_DELETED,
     SIGNAL_TASK_UPDATED,
     MaintTask,
     MaintTaskStore,
+    Recurrence,
 )
 
 
-def test_next_scheduled_uses_frequency_in_days() -> None:
-    """Ensure next_scheduled is derived from last completion date."""
+def _interval(days: int = 14) -> Recurrence:
+    return Recurrence(type="interval", every=days, unit="days")
+
+
+def test_next_scheduled_interval_uses_unit() -> None:
+    """Ensure next_scheduled is derived from interval recurrence."""
     task = MaintTask(
         task_id="abc",
         description="Change air filter",
         last_completed=date(2024, 1, 1),
-        frequency=14,
+        recurrence=_interval(14),
     )
 
     assert task.next_scheduled == date(2024, 1, 15)
+
+
+def test_next_scheduled_weekly_advances_to_next_selected_day() -> None:
+    """Weekly recurrences should move to the next chosen weekday."""
+    task = MaintTask(
+        task_id="abc",
+        description="Water plants",
+        last_completed=date(2024, 1, 5),  # Friday
+        recurrence=Recurrence(type="weekly", days_of_week=(0, 3)),  # Mon, Thu
+    )
+
+    assert task.next_scheduled == date(2024, 1, 8)
 
 
 @pytest.mark.parametrize(
@@ -53,7 +68,7 @@ def test_is_due_reflects_next_scheduled(
         task_id="abc",
         description="Change air filter",
         last_completed=last_completed,
-        frequency=frequency,
+        recurrence=_interval(frequency),
     )
     monkeypatch.setattr(
         "custom_components.maint.models.dt_util.now",
@@ -69,8 +84,7 @@ def test_task_serialization_round_trip_preserves_fields() -> None:
         task_id="task-1",
         description="Test serialize",
         last_completed=date(2024, 2, 10),
-        frequency=4,
-        frequency_unit=FREQUENCY_UNIT_WEEKS,
+        recurrence=Recurrence(type="weekly", days_of_week=(1, 4)),
     )
 
     restored = MaintTask.from_dict(original.to_dict())
@@ -78,17 +92,16 @@ def test_task_serialization_round_trip_preserves_fields() -> None:
     assert restored.task_id == original.task_id
     assert restored.description == original.description
     assert restored.last_completed == original.last_completed
-    assert restored.frequency == original.frequency
-    assert restored.frequency_unit == original.frequency_unit
+    assert restored.recurrence.type == "weekly"
+    assert restored.recurrence.days_of_week == (1, 4)
 
 
 @pytest.mark.parametrize(
     ("kwargs", "message"),
     [
-        ({"frequency": 0}, "frequency must be greater than 0"),
         ({"description": ""}, "description cannot be empty"),
         ({"entry_id": ""}, "entry_id cannot be empty"),
-        ({"frequency_unit": "years"}, "frequency_unit must be one of"),
+        ({"recurrence": "weekly"}, "recurrence must be provided"),
     ],
 )
 def test_validate_raises_on_invalid_inputs(
@@ -117,14 +130,14 @@ async def test_task_store_create_update_delete_persists_and_emits_signals(
     unsub_delete = async_dispatcher_connect(hass, SIGNAL_TASK_DELETED, _record_event)
 
     updated_frequency = 45
+    recurrence = Recurrence(type="interval", every=30, unit="days")
 
     try:
         task = await store.async_create_task(
             entry_id,
             description="Inspect roof",
             last_completed=date(2024, 3, 1),
-            frequency=30,
-            frequency_unit=FREQUENCY_UNIT_MONTHS,
+            recurrence=recurrence,
         )
 
         tasks = await store.async_list_tasks(entry_id)
@@ -141,11 +154,12 @@ async def test_task_store_create_update_delete_persists_and_emits_signals(
             task.task_id,
             description="Inspect roof and gutters",
             last_completed=date(2024, 3, 15),
-            frequency=updated_frequency,
-            frequency_unit=FREQUENCY_UNIT_MONTHS,
+            recurrence=Recurrence(
+                type="interval", every=updated_frequency, unit="days"
+            ),
         )
         assert updated.description.endswith("gutters")
-        assert updated.frequency == updated_frequency
+        assert updated.recurrence.every == updated_frequency
         assert updated.last_completed == date(2024, 3, 15)
 
         deleted = await store.async_delete_task(entry_id, task.task_id)

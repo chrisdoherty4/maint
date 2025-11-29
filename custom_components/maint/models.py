@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import calendar
 import logging
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import TYPE_CHECKING, Literal, NotRequired, TypedDict
+from typing import TYPE_CHECKING, Literal, NotRequired, TypedDict, cast
 from uuid import uuid4
 
 from homeassistant.config_entries import ConfigEntry
@@ -23,17 +24,11 @@ SIGNAL_TASK_UPDATED = "maint_task_updated"
 SIGNAL_TASK_DELETED = "maint_task_deleted"
 
 STORAGE_KEY = f"{DOMAIN}.store"
-STORAGE_VERSION = 1
+STORAGE_VERSION = 2
 
-FREQUENCY_UNIT_DAYS: Literal["days"] = "days"
-FREQUENCY_UNIT_WEEKS: Literal["weeks"] = "weeks"
-FREQUENCY_UNIT_MONTHS: Literal["months"] = "months"
-FREQUENCY_UNITS = (
-    FREQUENCY_UNIT_DAYS,
-    FREQUENCY_UNIT_WEEKS,
-    FREQUENCY_UNIT_MONTHS,
-)
-FrequencyUnit = Literal["days", "weeks", "months"]
+RecurrenceType = Literal["interval", "weekly"]
+IntervalUnit = Literal["days", "weeks", "months"]
+WeekdayIndex = Literal[0, 1, 2, 3, 4, 5, 6]
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,6 +47,149 @@ def _deserialize_date(value: str) -> date:
     return d
 
 
+def _validate_weekday(value: int) -> WeekdayIndex:
+    """Ensure a weekday index is within 0-6 (Monday=0)."""
+    if value not in range(7):
+        message = f"weekday must be between 0 and 6, got {value}"
+        raise ValueError(message)
+    return cast("WeekdayIndex", value)
+
+
+def _last_day_of_month(year: int, month: int) -> int:
+    """Return the final day number for the given month."""
+    return calendar.monthrange(year, month)[1]
+
+
+def _add_months(base: date, months: int) -> date:
+    """Add a number of months to a date, clamping to month end."""
+    total_months = (base.year * 12 + base.month - 1) + months
+    target_year, month_index = divmod(total_months, 12)
+    target_month = month_index + 1
+    day = min(base.day, _last_day_of_month(target_year, target_month))
+    return date(target_year, target_month, day)
+
+
+def _nth_weekday_of_month(
+    year: int, month: int, *, weekday: WeekdayIndex, occurrence: int
+) -> date:
+    """Return the nth weekday for a month (e.g., 2nd Tuesday)."""
+    if occurrence < 1:
+        message = "occurrence must be >= 1"
+        raise ValueError(message)
+    first_weekday, days_in_month = calendar.monthrange(year, month)
+    offset = (weekday - first_weekday) % 7
+    day = 1 + offset + (occurrence - 1) * 7
+    if day > days_in_month:
+        message = (
+            f"{occurrence} occurrence for weekday {weekday} "
+            f"does not exist in {year}-{month}"
+        )
+        raise ValueError(message)
+    return date(year, month, day)
+
+
+@dataclass(slots=True)
+class Recurrence:
+    """Recurrence rule for a maintenance task."""
+
+    type: RecurrenceType
+    every: int | None = None
+    unit: IntervalUnit | None = None
+    days_of_week: tuple[WeekdayIndex, ...] = ()
+    week: int | None = None
+    weekday: WeekdayIndex | None = None
+
+    def to_dict(self) -> RecurrenceSerialized:
+        """Serialize a recurrence rule."""
+        if self.type == "interval":
+            if self.every is None or self.unit is None:
+                message = "Interval recurrence missing configuration"
+                raise ValueError(message)
+            return {"type": "interval", "every": self.every, "unit": self.unit}
+
+        if self.type == "weekly":
+            return {
+                "type": "weekly",
+                "days": list(self.days_of_week),
+            }
+
+        message = f"Unknown recurrence type: {self.type}"
+        raise ValueError(message)
+
+    @classmethod
+    def from_dict(cls, data: RecurrenceSerialized) -> Recurrence:
+        """Create a recurrence rule from serialized data."""
+        recurrence_type = data.get("type")
+        if recurrence_type == "interval":
+            every = int(data["every"])
+            unit = data["unit"]
+            if every <= 0:
+                message = "every must be greater than 0"
+                raise ValueError(message)
+            if unit not in ("days", "weeks", "months"):
+                message = "unit must be one of days, weeks, months"
+                raise ValueError(message)
+            return cls(type="interval", every=every, unit=unit)
+
+        if recurrence_type == "weekly":
+            days_raw = data.get("days", [])
+            if not isinstance(days_raw, list) or not days_raw:
+                message = "weekly recurrence requires at least one day"
+                raise ValueError(message)
+            days: list[WeekdayIndex] = []
+            for raw in days_raw:
+                day = _validate_weekday(int(raw))
+                days.append(day)
+            unique_days = tuple(sorted(set(days)))
+            return cls(type="weekly", days_of_week=unique_days)
+
+        message = f"Unknown recurrence type: {recurrence_type}"
+        raise ValueError(message)
+
+
+class RecurrenceSerialized(TypedDict, total=False):
+    """Serialized recurrence formats."""
+
+    type: RecurrenceType
+    every: int
+    unit: IntervalUnit
+    days: list[int]
+
+
+def calculate_next_scheduled(last_completed: date, recurrence: Recurrence) -> date:
+    """Dispatch recurrence calculation based on type."""
+    if recurrence.type == "interval":
+        return _next_interval(last_completed, recurrence)
+    if recurrence.type == "weekly":
+        return _next_weekly(last_completed, recurrence)
+    message = f"Unknown recurrence type: {recurrence.type}"
+    raise ValueError(message)
+
+
+def _next_interval(last_completed: date, recurrence: Recurrence) -> date:
+    """Calculate the next scheduled date after the provided completion date."""
+    if recurrence.every is None or recurrence.unit is None:
+        message = "Interval recurrence missing configuration"
+        raise ValueError(message)
+
+    if recurrence.unit == "months":
+        return _add_months(last_completed, recurrence.every)
+
+    days = recurrence.every if recurrence.unit == "days" else recurrence.every * 7
+    return last_completed + timedelta(days=days)
+
+
+def _next_weekly(last_completed: date, recurrence: Recurrence) -> date:
+    """Calculate the next date for a weekly recurrence."""
+    current_weekday = last_completed.weekday()
+    for offset in range(1, 8):
+        next_weekday = (current_weekday + offset) % 7
+        if next_weekday in recurrence.days_of_week:
+            return last_completed + timedelta(days=offset)
+
+    return last_completed + timedelta(days=7)
+
+
 @dataclass(slots=True)
 class MaintTask:
     """Represent a recurring maintenance task."""
@@ -59,13 +197,12 @@ class MaintTask:
     task_id: str
     description: str
     last_completed: date
-    frequency: int
-    frequency_unit: FrequencyUnit = FREQUENCY_UNIT_DAYS
+    recurrence: Recurrence
 
     @property
     def next_scheduled(self) -> date:
-        """Return the next scheduled date based on last completion and frequency."""
-        return self.last_completed + timedelta(days=self.frequency)
+        """Return the next scheduled date after the last completion date."""
+        return calculate_next_scheduled(self.last_completed, self.recurrence)
 
     @property
     def is_due(self) -> bool:
@@ -79,24 +216,22 @@ class MaintTask:
             "task_id": self.task_id,
             "description": self.description,
             "last_completed": _serialize_date(self.last_completed),
-            "frequency": self.frequency,
-            "frequency_unit": self.frequency_unit,
+            "recurrence": self.recurrence.to_dict(),
+            "next_scheduled": _serialize_date(self.next_scheduled),
         }
 
     @classmethod
     def from_dict(cls, data: MaintTaskSerializedData) -> MaintTask:
         """Deserialize task data."""
         last_completed = _deserialize_date(data["last_completed"])
-        frequency = data["frequency"]
         description = data["description"]
-        frequency_unit = data.get("frequency_unit", FREQUENCY_UNIT_DAYS)
+        recurrence = Recurrence.from_dict(data["recurrence"])
 
         return cls(
             task_id=data["task_id"],
             description=description,
             last_completed=last_completed,
-            frequency=frequency,
-            frequency_unit=frequency_unit,
+            recurrence=recurrence,
         )
 
 
@@ -106,8 +241,8 @@ class MaintTaskSerializedData(TypedDict):
     task_id: str
     description: str
     last_completed: str
-    frequency: int
-    frequency_unit: NotRequired[FrequencyUnit]
+    recurrence: RecurrenceSerialized
+    next_scheduled: NotRequired[str]
 
 
 class MaintTaskStoreData(TypedDict):
@@ -192,16 +327,14 @@ class MaintTaskStore:
         *,
         description: str,
         last_completed: date,
-        frequency: int,
-        frequency_unit: FrequencyUnit = FREQUENCY_UNIT_DAYS,
+        recurrence: Recurrence,
     ) -> MaintTask:
         """Create and store a new task."""
         self.validate(
             entry_id=entry_id,
             description=description,
             last_completed=last_completed,
-            frequency=frequency,
-            frequency_unit=frequency_unit,
+            recurrence=recurrence,
         )
 
         tasks = await self._async_get_entry_tasks(entry_id)
@@ -209,8 +342,7 @@ class MaintTaskStore:
             task_id=uuid4().hex,
             description=description,
             last_completed=last_completed,
-            frequency=int(frequency),
-            frequency_unit=frequency_unit,
+            recurrence=recurrence,
         )
         tasks[task.task_id] = task
         await self._async_save()
@@ -221,20 +353,19 @@ class MaintTaskStore:
             "Created Maint task %s for entry %s (freq=%s %s)",
             task.task_id,
             entry_id,
-            task.frequency,
-            task.frequency_unit,
+            task.recurrence.type,
+            task.next_scheduled,
         )
         return task
 
-    async def async_update_task(  # noqa: PLR0913
+    async def async_update_task(
         self,
         entry_id: str,
         task_id: str,
         *,
         description: str,
         last_completed: date,
-        frequency: int,
-        frequency_unit: FrequencyUnit = FREQUENCY_UNIT_DAYS,
+        recurrence: Recurrence,
     ) -> MaintTask:
         """Update an existing task."""
         self.validate(
@@ -242,24 +373,22 @@ class MaintTaskStore:
             task_id=task_id,
             description=description,
             last_completed=last_completed,
-            frequency=frequency,
-            frequency_unit=frequency_unit,
+            recurrence=recurrence,
         )
 
         tasks = await self._async_get_entry_tasks(entry_id)
         task = tasks[task_id]
         task.description = description
         task.last_completed = last_completed
-        task.frequency = int(frequency)
-        task.frequency_unit = frequency_unit
+        task.recurrence = recurrence
         await self._async_save()
         async_dispatcher_send(self._hass, SIGNAL_TASK_UPDATED, entry_id, task)
         _LOGGER.debug(
             "Updated Maint task %s for entry %s (freq=%s %s)",
             task_id,
             entry_id,
-            task.frequency,
-            task.frequency_unit,
+            task.recurrence.type,
+            task.next_scheduled,
         )
         return task
 
@@ -285,15 +414,14 @@ class MaintTaskStore:
         return tasks[task_id]
 
     @classmethod
-    def validate(  # noqa: PLR0913
+    def validate(
         cls,
         *,
         entry_id: str | None = None,
         task_id: str | None = None,
         description: str | None = None,
-        frequency: int | None = None,
         last_completed: date | None = None,
-        frequency_unit: FrequencyUnit | None = None,
+        recurrence: Recurrence | None = None,
     ) -> None:
         """Validate task parameters."""
         if entry_id is not None and entry_id == "":
@@ -312,12 +440,8 @@ class MaintTaskStore:
             message = "last_completed must be a date"
             raise ValueError(message)
 
-        if frequency is not None and frequency <= 0:
-            message = "frequency must be greater than 0"
-            raise ValueError(message)
-
-        if frequency_unit is not None and frequency_unit not in FREQUENCY_UNITS:
-            message = f"frequency_unit must be one of {', '.join(FREQUENCY_UNITS)}"
+        if recurrence is not None and not isinstance(recurrence, Recurrence):
+            message = "recurrence must be provided"
             raise ValueError(message)
 
 

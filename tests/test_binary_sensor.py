@@ -11,7 +11,7 @@ import pytest
 from homeassistant.util import dt as dt_util
 
 from custom_components.maint.binary_sensor import MaintTaskBinarySensor
-from custom_components.maint.models import MaintTask
+from custom_components.maint.models import MaintTask, Recurrence
 
 
 @dataclass
@@ -27,7 +27,7 @@ def _make_task(frequency: int = 10) -> MaintTask:
         task_id="task-1",
         description="Change air filter",
         last_completed=date(2024, 1, 1),
-        frequency=frequency,
+        recurrence=Recurrence(type="interval", every=frequency, unit="days"),
     )
 
 
@@ -66,7 +66,7 @@ def test_handle_task_update_refreshes_name_and_state() -> None:
         task_id="task-1",
         description="Check smoke alarms",
         last_completed=date(2024, 2, 1),
-        frequency=30,
+        recurrence=Recurrence(type="interval", every=30, unit="days"),
     )
     sensor.handle_task_update(new_task)
 

@@ -9,6 +9,7 @@ events when tasks become due so you can automate reminders or actions.
 - A summary sensor that reports how many tasks are due and includes the binary sensors tied to each.
 - Persistent task storage with create/update/delete flows exposed via websocket commands.
 - Frontend panel for managing tasks installed alongside the integration.
+- Flexible schedules: intervals (every N days/weeks/months) and custom weekly patterns.
 - Event `maint_task_due` fired when a task’s binary sensor turns on, including task metadata for use
   in automations.
 
