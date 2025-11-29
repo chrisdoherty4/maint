@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from .models import MaintConfigEntry, MaintTask
 
 _LOGGER = logging.getLogger(__name__)
+
 EVENT_TASK_DUE = "maint_task_due"
 
 
@@ -118,6 +119,8 @@ class MaintTaskBinarySensor(BinarySensorEntity):
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return extra state data."""
         return {
+            "entry_id": self._entry.entry_id,
+            "task_id": self._task.task_id,
             "description": self._task.description,
             "last_completed": self._task.last_completed.isoformat(),
         }
@@ -152,6 +155,8 @@ class MaintTaskBinarySensor(BinarySensorEntity):
             EVENT_TASK_DUE,
             {
                 "entity_id": self.entity_id,
+                "entry_id": self._entry.entry_id,
+                "task_id": self._task.task_id,
                 "description": self._task.description,
                 "last_completed": self._task.last_completed.isoformat(),
                 "next_scheduled": self._task.next_scheduled.isoformat(),
