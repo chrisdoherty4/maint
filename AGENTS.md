@@ -15,17 +15,27 @@ tasks.
 
 - Use `scripts/develop` to start Home Assistant locally; it creates `config/`, sets `PYTHONPATH` so `custom_components/maint` is found, and boots HA for manual testing.
 
-## Development Workflow
+## Development
 
-- Code is linted using ruff; run `scripts/lint` (it formats then checks/fixes) after Python changes.
-- There is no JS build/lint pipeline; keep `custom_components/maint/frontend/maint-panel.js` as a plain ES module.
-- When Python or JavaScript files are changed always lint them and fix problems.
-- Testing: run `python -m pytest`; add/update tests in `/tests`, especially for new async HA flows.
-- Strings/translations: keep `custom_components/maint/strings.json` and `custom_components/maint/translations/en.json` in sync when copy changes.
-- Storage changes (`MaintTaskStore`): maintain `STORAGE_VERSION`, do not add migration logic - just change the existing code, and cover with tests.
 - Review and update `README.md` for user-facing changes and refresh `custom_components/maint/quality_scale.yaml` when requirements are met.
-- Include adequate debug/info logs and honor configurable log levels (`info`/`debug`).
+- Lint and test changes - fix any issues.
 - Consult https://developers.home-assistant.io/ for information on developing Home Assistant integrations.
-- Provide type hints for all function parameters and returns.
+- Prioritize readable, maintainable code. Keep changes aligned with module layout.
 - Avoid packages/modules named common, utils, const etc. Instead, prefer placing constants an interfaces near the consumer where possible.
-- Prioritize readable, maintainable code.
+
+### Backend
+
+- Provide type hints for all function parameters and returns.
+- Code is linted using ruff; run `scripts/lint` (it formats then checks/fixes) after Python changes.
+- Strings/translations: keep `custom_components/maint/strings.json` and `custom_components/maint/translations/en.json` in sync when copy changes.
+- Include adequete debug logging.
+- Testing: run `python -m pytest`; add/update tests in `/tests`, especially for new async HA flows.
+
+### Frontend
+
+- The frontend is written in TypeScript - always modify the TypeScript and compile down to JavaScript.
+- Compile using the `./script/frontend`.
+
+## Temporary Constraints
+
+- Do not attempt to maintain backward compatibility. We have not released yet so backwards compatibility is unnecessary.

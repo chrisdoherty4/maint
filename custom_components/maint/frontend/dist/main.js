@@ -1050,6 +1050,11 @@ var styles = i`
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   }
 
+  .modal.edit-modal {
+    max-width: 720px;
+    width: calc(100% - 48px);
+  }
+
   .modal h3 {
     margin: 0 0 8px;
     font-size: 18px;
@@ -1119,7 +1124,8 @@ var MaintPanel = class extends i4 {
     this.confirmTaskId = null;
     this.formExpanded = true;
     this.createRecurrenceType = "interval";
-    this.editingRecurrenceTypes = {};
+    this.editForm = null;
+    this.editError = null;
     this.initialized = false;
   }
   updated(changedProps) {
@@ -1139,6 +1145,7 @@ var MaintPanel = class extends i4 {
         ${this.renderCreateForm(formDisabled, hasEntries)}
         ${this.renderTasksSection(formDisabled)}
         ${this.renderDeleteModal()}
+        ${this.renderEditModal()}
       </div>
     `;
   }
@@ -1246,49 +1253,18 @@ var MaintPanel = class extends i4 {
     `;
   }
   renderTaskRow(task) {
-    const isEditing = this.editingTaskId === task.task_id;
-    const saveLabel = isEditing ? this.busy ? "Saving\u2026" : "Save" : "Edit";
-    const saveIcon = isEditing ? "mdi:check" : "mdi:pencil";
+    const editLabel = "Edit";
+    const editIcon = "mdi:pencil";
     return x`
       <tr data-task-row=${task.task_id}>
         <td>
-          ${isEditing ? x`
-                <input type="text" name="description" .value=${task.description} />
-              ` : x`<div class="task-description">${task.description}</div>`}
+          <div class="task-description">${task.description}</div>
         </td>
         <td>
-          ${isEditing ? x`
-                <div class="frequency-editor">
-                  <label class="stacked">
-                    <span class="label-text">Type</span>
-                    <select
-                      name="recurrence_type"
-                      .value=${this.resolveRecurrenceType(task)}
-                      @change=${(event) => this.handleEditRecurrenceTypeChange(task.task_id, event)}
-                    >
-                      ${this.recurrenceTypeOptions(this.resolveRecurrenceType(task))}
-                    </select>
-                  </label>
-                  <div class="recurrence-fields">
-                    ${this.renderRecurrenceFields(
-      this.resolveRecurrenceType(task),
-      task.recurrence,
-      task.task_id
-    )}
-                  </div>
-                </div>
-              ` : formatRecurrence(task.recurrence)}
+          ${formatRecurrence(task.recurrence)}
         </td>
         <td>
-          ${isEditing ? x`
-                <input
-                  type="date"
-                  name="last_completed"
-                  .value=${formatDateInput(task.last_completed)}
-                  @focus=${this.openDatePicker}
-                  @pointerdown=${this.openDatePicker}
-                />
-              ` : formatDate(task.last_completed)}
+          ${formatDate(task.last_completed)}
         </td>
         <td>${formatDate(nextScheduled(task))}</td>
         <td class="actions">
@@ -1296,12 +1272,12 @@ var MaintPanel = class extends i4 {
             type="button"
             class="icon-button edit-task"
             data-task=${task.task_id}
-            ?disabled=${isEditing && this.busy}
-            aria-label=${saveLabel}
-            title=${saveLabel}
+            ?disabled=${this.busy || Boolean(this.editingTaskId)}
+            aria-label=${editLabel}
+            title=${editLabel}
             @click=${this.handleEditTask}
           >
-            <ha-icon icon=${saveIcon} aria-hidden="true"></ha-icon>
+            <ha-icon icon=${editIcon} aria-hidden="true"></ha-icon>
           </button>
           <button
             type="button"
@@ -1309,6 +1285,7 @@ var MaintPanel = class extends i4 {
             data-task=${task.task_id}
             aria-label="Delete"
             title="Delete"
+            ?disabled=${this.busy || Boolean(this.editingTaskId)}
             @click=${this.promptDelete}
           >
             <ha-icon icon="mdi:delete-outline" aria-hidden="true"></ha-icon>
@@ -1354,6 +1331,76 @@ var MaintPanel = class extends i4 {
       </div>
     `;
   }
+  renderEditModal() {
+    if (!this.editingTaskId || !this.editForm) {
+      return E;
+    }
+    return x`
+      <div class="modal-backdrop">
+        <div class="modal edit-modal">
+          <h3>Edit task</h3>
+          <p>Update the task details below.</p>
+          ${this.editError ? x`<div class="error">${this.editError}</div>` : E}
+          <form id="edit-task-form" @submit=${this.handleEditSubmit}>
+            <label>
+              <span class="label-text">Description</span>
+              <input
+                type="text"
+                name="description"
+                required
+                .value=${this.editForm.description}
+                ?disabled=${this.busy}
+                @input=${this.handleEditFieldInput}
+              />
+            </label>
+            <div class="inline-fields">
+              <label>
+                <span class="label-text">Schedule type</span>
+                <select
+                  name="recurrence_type"
+                  .value=${this.editForm.recurrence_type}
+                  ?disabled=${this.busy}
+                  @change=${this.handleEditRecurrenceTypeChange}
+                >
+                  ${this.recurrenceTypeOptions(this.editForm.recurrence_type)}
+                </select>
+              </label>
+              <label>
+                <span class="label-text">Last completed</span>
+                <input
+                  type="date"
+                  name="last_completed"
+                  required
+                  .value=${this.editForm.last_completed}
+                  ?disabled=${this.busy}
+                  @focus=${this.openDatePicker}
+                  @pointerdown=${this.openDatePicker}
+                  @input=${this.handleEditFieldInput}
+                />
+              </label>
+            </div>
+            <div class="recurrence-fields">
+              ${this.renderEditRecurrenceFields()}
+            </div>
+            <div class="modal-actions">
+              <button
+                type="button"
+                class="button-secondary"
+                id="cancel-edit"
+                ?disabled=${this.busy}
+                @click=${this.cancelEdit}
+              >
+                Cancel
+              </button>
+              <button type="submit" ?disabled=${this.busy}>
+                ${this.busy ? "Saving\u2026" : "Save changes"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+  }
   async loadEntries() {
     if (!this.hass) {
       return;
@@ -1379,6 +1426,9 @@ var MaintPanel = class extends i4 {
     if (!this.selectedEntryId || !this.hass) {
       this.tasks = [];
       this.editingTaskId = null;
+      this.editForm = null;
+      this.editError = null;
+      this.confirmTaskId = null;
       return;
     }
     try {
@@ -1386,6 +1436,8 @@ var MaintPanel = class extends i4 {
       const tasks = await fetchTasks(this.hass, this.selectedEntryId);
       this.tasks = tasks.map((task) => normalizeTask(task));
       this.editingTaskId = null;
+      this.editForm = null;
+      this.editError = null;
       this.confirmTaskId = null;
       this.formExpanded = this.tasks.length === 0;
     } catch (error) {
@@ -1441,40 +1493,107 @@ var MaintPanel = class extends i4 {
     if (!taskId) {
       return;
     }
-    if (this.editingTaskId !== taskId) {
-      this.error = null;
-      this.editingTaskId = taskId;
+    const task = this.tasks.find((item) => item.task_id === taskId);
+    if (!task) {
       return;
     }
     this.error = null;
-    void this.saveTaskEdits(taskId);
+    this.openEditModal(task);
+  }
+  openEditModal(task) {
+    const baseForm = {
+      description: task.description ?? "",
+      last_completed: formatDateInput(task.last_completed),
+      recurrence_type: task.recurrence.type,
+      interval_every: "",
+      interval_unit: "days",
+      weekly_days: []
+    };
+    if (task.recurrence.type === "interval") {
+      baseForm.interval_every = task.recurrence.every.toString();
+      baseForm.interval_unit = task.recurrence.unit;
+    } else if (task.recurrence.type === "weekly") {
+      baseForm.weekly_days = task.recurrence.days.map((day) => day.toString());
+    }
+    this.editingTaskId = task.task_id;
+    this.editForm = baseForm;
+    this.editError = null;
+  }
+  cancelEdit() {
+    this.editingTaskId = null;
+    this.editForm = null;
+    this.editError = null;
+  }
+  handleEditFieldInput(event) {
+    if (!this.editForm) {
+      return;
+    }
+    const target = event.currentTarget;
+    if (!target || !target.name) {
+      return;
+    }
+    const nextForm = { ...this.editForm };
+    switch (target.name) {
+      case "description":
+        nextForm.description = target.value;
+        break;
+      case "last_completed":
+        nextForm.last_completed = target.value;
+        break;
+      case "interval_every":
+        nextForm.interval_every = target.value;
+        break;
+      case "interval_unit":
+        nextForm.interval_unit = target.value;
+        break;
+      default:
+        break;
+    }
+    this.editError = null;
+    this.editForm = nextForm;
+  }
+  handleEditWeeklyDayChange(event) {
+    if (!this.editForm) {
+      return;
+    }
+    const target = event.target;
+    if (!target || target.name !== "weekly_days") {
+      return;
+    }
+    const value = target.value;
+    const nextDays = new Set(this.editForm.weekly_days);
+    if (target.checked) {
+      nextDays.add(value);
+    } else {
+      nextDays.delete(value);
+    }
+    const sortedDays = Array.from(nextDays).sort((a3, b3) => Number(a3) - Number(b3));
+    this.editError = null;
+    this.editForm = {
+      ...this.editForm,
+      weekly_days: sortedDays
+    };
+  }
+  handleEditSubmit(event) {
+    event.preventDefault();
+    if (this.editingTaskId) {
+      void this.saveTaskEdits(this.editingTaskId);
+    }
   }
   async saveTaskEdits(taskId) {
-    if (!this.selectedEntryId || !this.hass) {
+    if (!this.selectedEntryId || !this.hass || !this.editForm) {
       return;
     }
-    const row = this.renderRoot.querySelector(
-      `[data-task-row="${taskId}"]`
-    );
-    if (!row) {
-      return;
-    }
-    const descriptionInput = row.querySelector('input[name="description"]');
-    const dateInput = row.querySelector('input[name="last_completed"]');
-    const recurrenceTypeSelect = row.querySelector('select[name="recurrence_type"]');
-    const weeklyDayInputs = row.querySelectorAll('input[name="weekly_days"]:checked');
-    const intervalEveryInput = row.querySelector('input[name="interval_every"]');
-    const intervalUnitSelect = row.querySelector('select[name="interval_unit"]');
     const result = validateTaskFields({
-      description: descriptionInput?.value,
-      last_completed: dateInput?.value,
-      recurrence_type: recurrenceTypeSelect?.value,
-      interval_every: intervalEveryInput?.value,
-      interval_unit: intervalUnitSelect?.value,
-      weekly_days: Array.from(weeklyDayInputs).map((input) => input.value)
+      description: this.editForm.description,
+      last_completed: this.editForm.last_completed,
+      recurrence_type: this.editForm.recurrence_type,
+      interval_every: this.editForm.interval_every,
+      interval_unit: this.editForm.interval_unit,
+      weekly_days: this.editForm.weekly_days
     });
     if (result.error) {
-      this.error = result.error;
+      this.editError = result.error;
       return;
     }
     if (!result.values) {
@@ -1482,6 +1601,7 @@ var MaintPanel = class extends i4 {
     }
     try {
       this.busy = true;
+      this.editError = null;
       const updated = await updateTask(
         this.hass,
         this.selectedEntryId,
@@ -1491,13 +1611,12 @@ var MaintPanel = class extends i4 {
       this.tasks = this.tasks.map(
         (task) => task.task_id === taskId ? normalizeTask(updated) : task
       );
-      const updatedTypes = { ...this.editingRecurrenceTypes };
-      delete updatedTypes[taskId];
-      this.editingRecurrenceTypes = updatedTypes;
       this.editingTaskId = null;
+      this.editForm = null;
+      this.editError = null;
     } catch (error) {
       console.error("Maint panel failed to update task", error);
-      this.error = "Could not update the task.";
+      this.editError = "Could not update the task.";
     } finally {
       this.busy = false;
     }
@@ -1523,6 +1642,8 @@ var MaintPanel = class extends i4 {
       this.tasks = this.tasks.filter((task) => task.task_id !== taskId);
       if (this.editingTaskId === taskId) {
         this.editingTaskId = null;
+        this.editForm = null;
+        this.editError = null;
       }
       if (this.tasks.length === 0) {
         this.formExpanded = true;
@@ -1638,18 +1759,82 @@ var MaintPanel = class extends i4 {
     }
     this.createRecurrenceType = select.value;
   }
-  handleEditRecurrenceTypeChange(taskId, event) {
+  renderEditRecurrenceFields() {
+    if (!this.editForm) {
+      return E;
+    }
+    if (this.editForm.recurrence_type === "interval") {
+      return x`
+        <div class="inline-fields">
+          <label>
+            <span class="label-text">Every</span>
+            <input
+              type="number"
+              name="interval_every"
+              min="1"
+              step="1"
+              required
+              .value=${this.editForm.interval_every}
+              ?disabled=${this.busy}
+              @input=${this.handleEditFieldInput}
+            />
+          </label>
+          <label>
+            <span class="label-text">Unit</span>
+            <select
+              name="interval_unit"
+              .value=${this.editForm.interval_unit}
+              ?disabled=${this.busy}
+              @change=${this.handleEditFieldInput}
+            >
+              <option value="days">Days</option>
+              <option value="weeks">Weeks</option>
+              <option value="months">Months</option>
+            </select>
+          </label>
+        </div>
+      `;
+    }
+    if (this.editForm.recurrence_type === "weekly") {
+      const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+      return x`
+        <div class="weekday-grid" @change=${this.handleEditWeeklyDayChange}>
+          ${labels.map((label, index) => {
+        const value = index.toString();
+        const checked = this.editForm?.weekly_days.includes(value);
+        return x`
+              <label class="weekday-chip">
+                <input
+                  type="checkbox"
+                  name="weekly_days"
+                  value=${value}
+                  ?checked=${checked}
+                  ?disabled=${this.busy}
+                />
+                <span>${label}</span>
+              </label>
+            `;
+      })}
+        </div>
+      `;
+    }
+    return E;
+  }
+  handleEditRecurrenceTypeChange(event) {
     const select = event.currentTarget;
-    if (!select) {
+    if (!select || !this.editForm) {
       return;
     }
-    this.editingRecurrenceTypes = {
-      ...this.editingRecurrenceTypes,
-      [taskId]: select.value
+    const nextType = select.value;
+    const nextForm = {
+      ...this.editForm,
+      recurrence_type: nextType
     };
-  }
-  resolveRecurrenceType(task) {
-    return this.editingRecurrenceTypes[task.task_id] ?? task.recurrence.type;
+    if (nextType === "weekly" && nextForm.weekly_days.length === 0) {
+      nextForm.weekly_days = ["0"];
+    }
+    this.editError = null;
+    this.editForm = nextForm;
   }
 };
 MaintPanel.styles = styles;
@@ -1685,7 +1870,10 @@ __decorateClass([
 ], MaintPanel.prototype, "createRecurrenceType", 2);
 __decorateClass([
   r5()
-], MaintPanel.prototype, "editingRecurrenceTypes", 2);
+], MaintPanel.prototype, "editForm", 2);
+__decorateClass([
+  r5()
+], MaintPanel.prototype, "editError", 2);
 MaintPanel = __decorateClass([
   t3("maint-panel")
 ], MaintPanel);

@@ -248,6 +248,11 @@ export const styles = css`
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   }
 
+  .modal.edit-modal {
+    max-width: 720px;
+    width: calc(100% - 48px);
+  }
+
   .modal h3 {
     margin: 0 0 8px;
     font-size: 18px;
