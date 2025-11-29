@@ -1,4 +1,4 @@
-import { html, LitElement, nothing } from "lit";
+import { html, LitElement, nothing, type PropertyValueMap } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
 import {
@@ -50,7 +50,7 @@ export class MaintPanel extends LitElement {
 
   private initialized = false;
 
-  protected updated(changedProps: Map<string, unknown>): void {
+  protected updated(changedProps: PropertyValueMap<this>): void {
     if (changedProps.has("hass") && this.hass && !this.initialized) {
       this.initialized = true;
       void this.loadEntries();

@@ -6,13 +6,18 @@ export interface ValidationResult {
   error?: string;
 }
 
+type ScalarField = string | number | boolean | FormDataEntryValue | null | undefined;
+type RecurrenceTypeField = ScalarField | RecurrenceType;
+type FrequencyUnitField = ScalarField | "days" | "weeks" | "months";
+type WeeklyDaysField = ScalarField | ScalarField[] | Weekday[];
+
 export interface TaskFields {
-  description?: unknown;
-  last_completed?: unknown;
-  recurrence_type?: unknown;
-  interval_every?: unknown;
-  interval_unit?: unknown;
-  weekly_days?: unknown;
+  description?: ScalarField;
+  last_completed?: ScalarField;
+  recurrence_type?: RecurrenceTypeField;
+  interval_every?: ScalarField;
+  interval_unit?: FrequencyUnitField;
+  weekly_days?: WeeklyDaysField;
 }
 
 export const validateTaskFields = (fields: TaskFields): ValidationResult => {
@@ -40,7 +45,7 @@ export const validateTaskFields = (fields: TaskFields): ValidationResult => {
   };
 };
 
-const toRecurrenceType = (value: unknown): RecurrenceType => {
+const toRecurrenceType = (value: RecurrenceTypeField): RecurrenceType => {
   const normalized = (value ?? "interval").toString();
   if (
     normalized === "interval" ||
@@ -51,7 +56,7 @@ const toRecurrenceType = (value: unknown): RecurrenceType => {
   return "interval";
 };
 
-const parsePositiveInt = (value: unknown): number | null => {
+const parsePositiveInt = (value: ScalarField): number | null => {
   const parsed = Number((value ?? "").toString());
   if (Number.isNaN(parsed) || parsed <= 0) {
     return null;
@@ -59,11 +64,11 @@ const parsePositiveInt = (value: unknown): number | null => {
   return Math.floor(parsed);
 };
 
-const parseWeekdays = (value: unknown): Weekday[] | null => {
+const parseWeekdays = (value: WeeklyDaysField): Weekday[] | null => {
   const entries = Array.isArray(value) ? value : value === undefined ? [] : [value];
   const parsed = entries
     .map((entry) => Number(entry))
-    .filter((num) => Number.isInteger(num) && num >= 0 && num <= 6) as Weekday[];
+    .filter((num): num is Weekday => Number.isInteger(num) && num >= 0 && num <= 6);
   const unique = Array.from(new Set(parsed)).sort((a, b) => a - b) as Weekday[];
   return unique.length ? unique : null;
 };

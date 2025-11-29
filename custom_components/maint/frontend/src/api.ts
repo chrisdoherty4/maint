@@ -17,6 +17,17 @@ export type Recurrence =
   | IntervalRecurrence
   | WeeklyRecurrence;
 
+type WsValue =
+  | string
+  | number
+  | boolean
+  | null
+  | Recurrence
+  | RecurrenceType
+  | FrequencyUnit
+  | string[];
+type WsRequest = { type: string } & Record<string, WsValue>;
+
 export interface MaintEntry {
   entry_id: string;
   title: string;
@@ -37,7 +48,7 @@ export interface TaskPayload {
 }
 
 export interface HassConnection {
-  callWS<T>(params: Record<string, unknown>): Promise<T>;
+  callWS<T>(params: WsRequest): Promise<T>;
 }
 
 const DOMAIN = "maint";
