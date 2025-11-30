@@ -5,16 +5,18 @@ binary sensor for every task, keeps the schedule in sync through the UI and webs
 events when tasks become due so you can automate reminders or actions.
 
 ## Features
-- Per-task binary sensors that turn on when a task is due, with suggested object IDs for tidy naming.
-- A summary sensor that reports how many tasks are due and includes the binary sensors tied to each.
-- Persistent task storage with create/update/delete flows exposed via websocket commands.
-- Frontend panel for managing tasks installed alongside the integration.
-- Flexible schedules: intervals (every N days/weeks/months) and custom weekly patterns with selectable
-  days and every-N-week spacing.
-- Event `maint_task_due` fired when a task’s binary sensor turns on, including task metadata for use
-  in automations.
-- Service `maint.reset_last_completed` to mark a task as completed (defaults to today, or provide a
-  specific date).
+- Built-in Maintenance panel installs alongside the integration so you can create, edit, delete, and
+  mark tasks complete for any Maint entry.
+- Per-task binary sensors with stable object IDs and helpful attributes (`entry_id`, `task_id`,
+  `last_completed`, `next_scheduled`) for automations.
+- A summary sensor per entry that counts due tasks and lists their binary sensors in `due_tasks`
+  attributes.
+- Recurring schedules: every N days/weeks/months or multi-day weekly patterns with every-N-week
+  spacing.
+- Tasks persist locally per entry and can be managed through websocket CRUD commands (used by the
+  panel).
+- Automation hooks: `maint_task_due` event fires when a task becomes due with task metadata, and the
+  `maint.reset_last_completed` service marks tasks complete (optionally backdated, default today).
 
 ## Install
 
