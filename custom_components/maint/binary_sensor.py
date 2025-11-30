@@ -124,6 +124,7 @@ class MaintTaskBinarySensor(BinarySensorEntity):
             "task_id": self._task.task_id,
             "description": self._task.description,
             "last_completed": self._task.last_completed.isoformat(),
+            "next_scheduled": self._task.next_scheduled.isoformat(),
         }
 
     def async_write_ha_state(self) -> None:
