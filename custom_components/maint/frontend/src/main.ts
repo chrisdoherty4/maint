@@ -754,8 +754,8 @@ export class MaintPanel extends LitElement {
 
   private recurrenceTypeOptions(selected: RecurrenceType) {
     const options: { value: RecurrenceType; label: string }[] = [
-      { value: "interval", label: "Every N days/weeks/months" },
-      { value: "weekly", label: "Weekly on selected days" }
+      { value: "interval", label: "Every N" },
+      { value: "weekly", label: "Weekly days" }
     ];
     return options.map(
       (option) =>

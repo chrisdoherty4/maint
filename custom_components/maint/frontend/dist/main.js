@@ -1020,6 +1020,7 @@ var styles = i`
 
   .task-description {
     font-weight: 700;
+    font-size: 16px;
     white-space: pre-wrap;
     color: var(--primary-text-color);
     margin-bottom: 2px;
@@ -1965,8 +1966,8 @@ var MaintPanel = class extends i4 {
   }
   recurrenceTypeOptions(selected) {
     const options = [
-      { value: "interval", label: "Every N days/weeks/months" },
-      { value: "weekly", label: "Weekly on selected days" }
+      { value: "interval", label: "Every N" },
+      { value: "weekly", label: "Weekly days" }
     ];
     return options.map(
       (option) => x`<option value=${option.value} ?selected=${option.value === selected}>

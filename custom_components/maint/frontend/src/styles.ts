@@ -106,6 +106,7 @@ export const styles = css`
 
   .task-description {
     font-weight: 700;
+    font-size: 16px;
     white-space: pre-wrap;
     color: var(--primary-text-color);
     margin-bottom: 2px;
