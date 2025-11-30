@@ -1,4 +1,4 @@
-name: Check version tag
+name: Check Manifest Version
 
 on:
   push:
