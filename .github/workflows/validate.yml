@@ -82,6 +82,7 @@ jobs:
           python3 -m coverage report
 
       - name: Upload coverage to Codecov
+        if: ${{ always() }}
         uses: codecov/codecov-action@v4
         with:
           files: ./coverage.xml
@@ -90,7 +91,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
+        if: ${{ always() }}
         uses: codecov/test-results-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
