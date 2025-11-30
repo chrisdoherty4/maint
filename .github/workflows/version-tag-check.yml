@@ -23,15 +23,9 @@ jobs:
         id: versions
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
-          MANIFEST_VERSION=$(python - <<'PY'
-import json
-from pathlib import Path
-
-manifest = Path("custom_components/maint/manifest.json")
-data = json.loads(manifest.read_text())
-print(data["version"])
-PY
-)
+          MANIFEST_VERSION=$(
+            python -c "import json; from pathlib import Path; print(json.loads(Path('custom_components/maint/manifest.json').read_text())['version'])"
+          )
           echo "tag_version=${TAG_VERSION}" >> "$GITHUB_OUTPUT"
           echo "manifest_version=${MANIFEST_VERSION}" >> "$GITHUB_OUTPUT"
 
