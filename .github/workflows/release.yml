@@ -42,7 +42,14 @@ jobs:
             -f target_commitish="${{ github.sha }}" \
             --jq '.body' > /tmp/base_notes.md
 
-          PREVIOUS_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+(-rc[0-9]+)?$' | sed -n '2p')
+          TAG_IS_RC=false
+          [[ "$TAG_NAME" == *-rc* ]] && TAG_IS_RC=true
+
+          if [ "$TAG_IS_RC" = true ]; then
+            PREVIOUS_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+(-rc[0-9]+)?$' | sed -n '2p')
+          else
+            PREVIOUS_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sed -n '2p')
+          fi
           if [ -z "$PREVIOUS_TAG" ]; then
             FIRST_COMMIT=$(git rev-list --max-parents=0 "$TAG_NAME" | head -n 1)
             RANGE="${FIRST_COMMIT}..${TAG_NAME}"
