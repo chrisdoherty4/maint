@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   compare-version:
-    name: Compare tag to manifest version
+    name: Check Manifest Version
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repository

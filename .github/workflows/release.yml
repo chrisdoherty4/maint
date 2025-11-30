@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   version-check:
-    name: Check manifest version matches tag
+    name: Check Manifest Version
     uses: ./.github/workflows/version-tag-check.yml
     secrets: inherit
 
@@ -21,7 +21,7 @@ jobs:
     secrets: inherit
 
   publish:
-    name: Publish GitHub release
+    name: Publish Release
     needs:
       - validate
       - version-check

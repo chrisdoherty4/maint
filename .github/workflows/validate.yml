@@ -16,7 +16,7 @@ permissions: {}
 
 jobs:
   hassfest: # https://developers.home-assistant.io/blog/2020/04/16/hassfest
-    name: Hassfest validation
+    name: Hassfest
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repository
@@ -26,7 +26,7 @@ jobs:
         uses: home-assistant/actions/hassfest@6778c32c6da322382854bd824e30fd4a4f3c20e5 # master
 
   hacs: # https://github.com/hacs/action
-    name: HACS validation
+    name: HACS
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repository
@@ -60,7 +60,7 @@ jobs:
         run: python3 -m ruff format . --check
 
   tests:
-    name: Unit tests
+    name: Unit Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repository
