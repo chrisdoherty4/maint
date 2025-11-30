@@ -10,6 +10,11 @@ permissions:
   contents: write
 
 jobs:
+  version-check:
+    name: Check manifest version matches tag
+    uses: ./.github/workflows/version-tag-check.yml
+    secrets: inherit
+
   validate:
     name: Validate
     uses: ./.github/workflows/validate.yml
@@ -19,6 +24,7 @@ jobs:
     name: Publish GitHub release
     needs:
       - validate
+      - version-check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repository
