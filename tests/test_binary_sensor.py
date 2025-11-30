@@ -5,16 +5,19 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 
 from custom_components.maint.binary_sensor import MaintTaskBinarySensor
 from custom_components.maint.domain import DOMAIN
 from custom_components.maint.models import MaintTask, Recurrence
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
 
 @dataclass
