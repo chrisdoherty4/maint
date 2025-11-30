@@ -1,3 +1,5 @@
+[![codecov](https://codecov.io/gh/chrisdoherty4/maint/graph/badge.svg?token=DV2TF78W8W)](https://codecov.io/gh/chrisdoherty4/maint)
+
 # Maint
 
 Maint is a Home Assistant custom component for tracking household maintenance tasks. It creates a
