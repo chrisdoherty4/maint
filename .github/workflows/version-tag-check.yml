@@ -1,0 +1,43 @@
+name: Check version tag
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+"
+
+permissions:
+  contents: read
+
+jobs:
+  compare-version:
+    name: Compare tag to manifest version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Read tag and manifest versions
+        id: versions
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          MANIFEST_VERSION=$(python - <<'PY'
+import json
+from pathlib import Path
+
+manifest = Path("custom_components/maint/manifest.json")
+data = json.loads(manifest.read_text())
+print(data["version"])
+PY
+)
+          echo "tag_version=${TAG_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "manifest_version=${MANIFEST_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Verify manifest version matches tag
+        run: |
+          if [ "${{ steps.versions.outputs.tag_version }}" != "${{ steps.versions.outputs.manifest_version }}" ]; then
+            echo "Version mismatch: tag 'v${{ steps.versions.outputs.tag_version }}' does not match manifest version '${{ steps.versions.outputs.manifest_version }}'." >&2
+            exit 1
+          fi
