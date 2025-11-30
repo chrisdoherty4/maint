@@ -28,4 +28,15 @@ def test_parse_recurrence_normalizes_weekly_days() -> None:
     recurrence = _parse_recurrence({"type": "weekly", "days": [5, 1, 1]})
 
     assert recurrence.type == "weekly"
+    assert recurrence.every == 1
     assert recurrence.days_of_week == (1, 5)
+
+
+def test_parse_recurrence_keeps_week_interval() -> None:
+    """Recurrence parsing should preserve the weekly cadence."""
+    interval_weeks = 3
+    recurrence = _parse_recurrence(
+        {"type": "weekly", "every": interval_weeks, "days": [0]}
+    )
+
+    assert recurrence.every == interval_weeks

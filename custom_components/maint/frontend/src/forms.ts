@@ -10,6 +10,7 @@ type ScalarField = string | number | boolean | FormDataEntryValue | null | undef
 type RecurrenceTypeField = ScalarField | RecurrenceType;
 type FrequencyUnitField = ScalarField | "days" | "weeks" | "months";
 type WeeklyDaysField = ScalarField | ScalarField[] | Weekday[];
+type WeeklyEveryField = ScalarField;
 
 export interface TaskFields {
   description?: ScalarField;
@@ -18,6 +19,7 @@ export interface TaskFields {
   interval_every?: ScalarField;
   interval_unit?: FrequencyUnitField;
   weekly_days?: WeeklyDaysField;
+  weekly_every?: WeeklyEveryField;
 }
 
 export const validateTaskFields = (fields: TaskFields): ValidationResult => {
@@ -91,11 +93,15 @@ const parseRecurrence = (
   }
 
   if (type === "weekly") {
+    const everyWeeks = parsePositiveInt(fields.weekly_every ?? "1");
+    if (!everyWeeks) {
+      return { ok: false, error: "Enter how many weeks between repeats." };
+    }
     const days = parseWeekdays(fields.weekly_days);
     if (!days) {
       return { ok: false, error: "Select at least one day of the week." };
     }
-    return { ok: true, value: { type: "weekly", days } };
+    return { ok: true, value: { type: "weekly", every: everyWeeks, days } };
   }
 
   return { ok: false, error: "Choose a schedule." };

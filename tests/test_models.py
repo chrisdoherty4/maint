@@ -47,6 +47,26 @@ def test_next_scheduled_weekly_advances_to_next_selected_day() -> None:
     assert task.next_scheduled == date(2024, 1, 8)
 
 
+def test_next_scheduled_weekly_respects_week_interval() -> None:
+    """Weekly recurrences should honor the configured week spacing."""
+    task = MaintTask(
+        task_id="abc",
+        description="Take out compost",
+        last_completed=date(2024, 1, 6),  # Saturday
+        recurrence=Recurrence(type="weekly", every=4, days_of_week=(5,)),
+    )
+
+    assert task.next_scheduled == date(2024, 2, 3)
+
+
+def test_weekly_recurrence_defaults_to_single_week_interval() -> None:
+    """Weekly recurrence should assume weekly cadence when not specified."""
+    recurrence = Recurrence.from_dict({"type": "weekly", "days": [1, 3]})
+
+    assert recurrence.every == 1
+    assert recurrence.days_of_week == (1, 3)
+
+
 @pytest.mark.parametrize(
     ("today", "last_completed", "frequency", "expected"),
     [
@@ -93,6 +113,7 @@ def test_task_serialization_round_trip_preserves_fields() -> None:
     assert restored.description == original.description
     assert restored.last_completed == original.last_completed
     assert restored.recurrence.type == "weekly"
+    assert restored.recurrence.every == 1
     assert restored.recurrence.days_of_week == (1, 4)
 
 

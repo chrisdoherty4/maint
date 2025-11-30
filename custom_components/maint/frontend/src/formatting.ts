@@ -5,7 +5,7 @@ const WEEKDAY_LABELS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", 
 const toMondayIndex = (sundayIndex: number): Weekday =>
   (((sundayIndex + 6) % 7) as Weekday);
 
-const parseIsoDate = (value: string): Date | null => {
+export const parseIsoDate = (value: string): Date | null => {
   const [year, month, day] = value.toString().split("T")[0].split("-").map(Number);
   if ([year, month, day].some((part) => Number.isNaN(part))) {
     return null;
@@ -87,8 +87,10 @@ export const formatRecurrence = (recurrence: Recurrence): string => {
       return `Every ${recurrence.every} ${unitLabel}`;
     }
     case "weekly": {
+      const every = Math.max(1, recurrence.every ?? 1);
       const labels = normalizeWeekdays(recurrence.days).map((day) => WEEKDAY_LABELS[day]);
-      return `Weekly on ${labels.join(", ")}`;
+      const prefix = every === 1 ? "Weekly" : `Every ${every} weeks`;
+      return `${prefix} on ${labels.join(", ")}`;
     }
     default:
       return "—";
@@ -100,20 +102,48 @@ const computeNextSchedule = (lastCompleted: Date, recurrence: Recurrence): Date 
     case "interval": {
       const days = recurrence.unit === "weeks" ? recurrence.every * 7 : recurrence.every;
       const next = new Date(lastCompleted.getTime());
-      next.setUTCDate(next.getUTCDate() + days);
+      next.setDate(next.getDate() + days);
       return next;
     }
     case "weekly": {
-      const current = toMondayIndex(lastCompleted.getUTCDay());
-      for (let offset = 1; offset <= 7; offset += 1) {
-        const candidateWeekday = (current + offset) % 7;
-        if (recurrence.days.includes(candidateWeekday as Weekday)) {
-          const next = new Date(lastCompleted.getTime());
-          next.setUTCDate(next.getUTCDate() + offset);
-          return next;
-        }
+      const days = normalizeWeekdays(recurrence.days);
+      if (days.length === 0) {
+        return null;
       }
-      return null;
+      const everyWeeks = Math.max(1, recurrence.every ?? 1);
+      const weekStart = new Date(
+        lastCompleted.getFullYear(),
+        lastCompleted.getMonth(),
+        lastCompleted.getDate()
+      );
+      weekStart.setDate(weekStart.getDate() - toMondayIndex(lastCompleted.getDay()));
+
+      const findInWeek = (start: Date): Date | null => {
+        for (const day of days) {
+          const candidate = new Date(start.getTime());
+          candidate.setDate(start.getDate() + day);
+          if (candidate > lastCompleted) {
+            return candidate;
+          }
+        }
+        return null;
+      };
+
+      const firstCandidate = findInWeek(weekStart);
+      if (firstCandidate) {
+        return firstCandidate;
+      }
+
+      let weeksAhead = everyWeeks;
+      while (true) {
+        const start = new Date(weekStart.getTime());
+        start.setDate(start.getDate() + weeksAhead * 7);
+        const candidate = findInWeek(start);
+        if (candidate) {
+          return candidate;
+        }
+        weeksAhead += everyWeeks;
+      }
     }
     default:
       return null;
@@ -146,6 +176,10 @@ export const normalizeTask = (task: MaintTask): MaintTask => ({
   ...task,
   recurrence:
     task.recurrence?.type === "weekly"
-      ? { ...task.recurrence, days: normalizeWeekdays(task.recurrence.days) }
+      ? {
+          ...task.recurrence,
+          every: task.recurrence.every ?? 1,
+          days: normalizeWeekdays(task.recurrence.days)
+        }
       : task.recurrence
 });

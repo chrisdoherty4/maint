@@ -276,10 +276,28 @@ export const styles = css`
     margin-top: 4px;
   }
 
+  .weekday-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
   .weekday-grid {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+  }
+
+  .week-interval-input {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .week-interval-input-field {
+    flex: 1;
+    min-width: 80px;
   }
 
   .weekday-chip {

@@ -10,6 +10,7 @@ export type IntervalRecurrence = {
 
 export type WeeklyRecurrence = {
   type: "weekly";
+  every: number;
   days: Weekday[];
 };
 

@@ -63,6 +63,7 @@ RECURRENCE_VALIDATION = vol.Any(
     vol.Schema(
         {
             vol.Required("type"): "weekly",
+            vol.Optional("every", default=1): cv.positive_int,
             vol.Required("days"): vol.All([WEEKDAY_VALIDATION], vol.Length(min=1)),
         },
         extra=vol.PREVENT_EXTRA,

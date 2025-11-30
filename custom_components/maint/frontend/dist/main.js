@@ -683,8 +683,10 @@ var formatRecurrence = (recurrence) => {
       return `Every ${recurrence.every} ${unitLabel}`;
     }
     case "weekly": {
+      const every = Math.max(1, recurrence.every ?? 1);
       const labels = normalizeWeekdays(recurrence.days).map((day) => WEEKDAY_LABELS[day]);
-      return `Weekly on ${labels.join(", ")}`;
+      const prefix = every === 1 ? "Weekly" : `Every ${every} weeks`;
+      return `${prefix} on ${labels.join(", ")}`;
     }
     default:
       return "\u2014";
@@ -695,20 +697,45 @@ var computeNextSchedule = (lastCompleted, recurrence) => {
     case "interval": {
       const days = recurrence.unit === "weeks" ? recurrence.every * 7 : recurrence.every;
       const next = new Date(lastCompleted.getTime());
-      next.setUTCDate(next.getUTCDate() + days);
+      next.setDate(next.getDate() + days);
       return next;
     }
     case "weekly": {
-      const current = toMondayIndex(lastCompleted.getUTCDay());
-      for (let offset = 1; offset <= 7; offset += 1) {
-        const candidateWeekday = (current + offset) % 7;
-        if (recurrence.days.includes(candidateWeekday)) {
-          const next = new Date(lastCompleted.getTime());
-          next.setUTCDate(next.getUTCDate() + offset);
-          return next;
-        }
+      const days = normalizeWeekdays(recurrence.days);
+      if (days.length === 0) {
+        return null;
       }
-      return null;
+      const everyWeeks = Math.max(1, recurrence.every ?? 1);
+      const weekStart = new Date(
+        lastCompleted.getFullYear(),
+        lastCompleted.getMonth(),
+        lastCompleted.getDate()
+      );
+      weekStart.setDate(weekStart.getDate() - toMondayIndex(lastCompleted.getDay()));
+      const findInWeek = (start) => {
+        for (const day of days) {
+          const candidate = new Date(start.getTime());
+          candidate.setDate(start.getDate() + day);
+          if (candidate > lastCompleted) {
+            return candidate;
+          }
+        }
+        return null;
+      };
+      const firstCandidate = findInWeek(weekStart);
+      if (firstCandidate) {
+        return firstCandidate;
+      }
+      let weeksAhead = everyWeeks;
+      while (true) {
+        const start = new Date(weekStart.getTime());
+        start.setDate(start.getDate() + weeksAhead * 7);
+        const candidate = findInWeek(start);
+        if (candidate) {
+          return candidate;
+        }
+        weeksAhead += everyWeeks;
+      }
     }
     default:
       return null;
@@ -733,7 +760,11 @@ var nextScheduled = (task) => {
 };
 var normalizeTask = (task) => ({
   ...task,
-  recurrence: task.recurrence?.type === "weekly" ? { ...task.recurrence, days: normalizeWeekdays(task.recurrence.days) } : task.recurrence
+  recurrence: task.recurrence?.type === "weekly" ? {
+    ...task.recurrence,
+    every: task.recurrence.every ?? 1,
+    days: normalizeWeekdays(task.recurrence.days)
+  } : task.recurrence
 });
 
 // src/data-service.ts
@@ -802,11 +833,15 @@ var parseRecurrence = (fields) => {
     return { ok: true, value: { type: "interval", every, unit } };
   }
   if (type === "weekly") {
+    const everyWeeks = parsePositiveInt(fields.weekly_every ?? "1");
+    if (!everyWeeks) {
+      return { ok: false, error: "Enter how many weeks between repeats." };
+    }
     const days = parseWeekdays(fields.weekly_days);
     if (!days) {
       return { ok: false, error: "Select at least one day of the week." };
     }
-    return { ok: true, value: { type: "weekly", days } };
+    return { ok: true, value: { type: "weekly", every: everyWeeks, days } };
   }
   return { ok: false, error: "Choose a schedule." };
 };
@@ -861,10 +896,31 @@ var renderRecurrenceFields = (type, recurrence, taskId) => {
     `;
   }
   if (type === "weekly") {
+    const every = recurrence?.type === "weekly" ? recurrence.every ?? 1 : 1;
     const selectedDays = recurrence?.type === "weekly" ? recurrence.days : [0];
     return x`
-      <div class="weekday-grid" data-task=${taskId ?? ""}>
-        ${weekdayCheckboxes(selectedDays)}
+      <div class="inline-fields">
+        <label class="week-interval">
+          <span class="label-text">Every</span>
+          <div class="week-interval-input">
+            <input
+              class="week-interval-input-field"
+              type="number"
+              name="weekly_every"
+              min="1"
+              step="1"
+              required
+              .value=${every}
+            />
+            <span class="week-interval-suffix">week(s)</span>
+          </div>
+        </label>
+        <div class="weekday-field">
+          <span class="label-text">On</span>
+          <div class="weekday-grid" data-task=${taskId ?? ""}>
+            ${weekdayCheckboxes(selectedDays)}
+          </div>
+        </div>
       </div>
     `;
   }
@@ -905,8 +961,30 @@ var renderEditRecurrenceFields = (form, busy, onFieldInput, onWeekdayChange) => 
   }
   if (form.recurrence_type === "weekly") {
     return x`
-      <div class="weekday-grid" @change=${onWeekdayChange}>
-        ${weekdayCheckboxes(form.weekly_days, busy)}
+      <div class="inline-fields">
+        <label class="week-interval">
+          <span class="label-text">Every</span>
+          <div class="week-interval-input">
+            <input
+              class="week-interval-input-field"
+              type="number"
+              name="weekly_every"
+              min="1"
+              step="1"
+              required
+              .value=${form.weekly_every}
+              ?disabled=${busy}
+              @input=${onFieldInput}
+            />
+            <span class="week-interval-suffix">week(s)</span>
+          </div>
+        </label>
+        <div class="weekday-field">
+          <span class="label-text">On</span>
+          <div class="weekday-grid" @change=${onWeekdayChange}>
+            ${weekdayCheckboxes(form.weekly_days, busy)}
+          </div>
+        </div>
       </div>
     `;
   }
@@ -1190,10 +1268,28 @@ var styles = i`
     margin-top: 4px;
   }
 
+  .weekday-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
   .weekday-grid {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+  }
+
+  .week-interval-input {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .week-interval-input-field {
+    flex: 1;
+    min-width: 80px;
   }
 
   .weekday-chip {
@@ -1536,13 +1632,12 @@ var MaintPanel = class extends i4 {
     if (!next) {
       return false;
     }
-    const nextDate = new Date(next);
-    if (Number.isNaN(nextDate.getTime())) {
+    const nextDate = parseIsoDate(next);
+    if (!nextDate) {
       return false;
     }
     const today = /* @__PURE__ */ new Date();
     today.setHours(0, 0, 0, 0);
-    nextDate.setHours(0, 0, 0, 0);
     return nextDate <= today;
   }
   renderDeleteModal() {
@@ -1741,6 +1836,7 @@ var MaintPanel = class extends i4 {
       recurrence_type: formData.get("recurrence_type"),
       interval_every: formData.get("interval_every"),
       interval_unit: formData.get("interval_unit"),
+      weekly_every: formData.get("weekly_every"),
       weekly_days: formData.getAll("weekly_days")
     });
     if (result.error) {
@@ -1785,12 +1881,14 @@ var MaintPanel = class extends i4 {
       recurrence_type: task.recurrence.type,
       interval_every: "",
       interval_unit: "days",
+      weekly_every: "1",
       weekly_days: []
     };
     if (task.recurrence.type === "interval") {
       baseForm.interval_every = task.recurrence.every.toString();
       baseForm.interval_unit = task.recurrence.unit;
     } else if (task.recurrence.type === "weekly") {
+      baseForm.weekly_every = (task.recurrence.every ?? 1).toString();
       baseForm.weekly_days = task.recurrence.days.map((day) => day.toString());
     }
     this.editingTaskId = task.task_id;
@@ -1823,6 +1921,9 @@ var MaintPanel = class extends i4 {
         break;
       case "interval_unit":
         nextForm.interval_unit = target.value;
+        break;
+      case "weekly_every":
+        nextForm.weekly_every = target.value;
         break;
       default:
         break;
@@ -1870,6 +1971,7 @@ var MaintPanel = class extends i4 {
       recurrence_type: formData.get("recurrence_type"),
       interval_every: formData.get("interval_every"),
       interval_unit: formData.get("interval_unit"),
+      weekly_every: formData.get("weekly_every"),
       weekly_days: formData.getAll("weekly_days")
     });
     if (result.error) {
@@ -1967,7 +2069,7 @@ var MaintPanel = class extends i4 {
   recurrenceTypeOptions(selected) {
     const options = [
       { value: "interval", label: "Every N" },
-      { value: "weekly", label: "Weekly days" }
+      { value: "weekly", label: "Days of the week" }
     ];
     return options.map(
       (option) => x`<option value=${option.value} ?selected=${option.value === selected}>
@@ -2008,6 +2110,7 @@ var MaintPanel = class extends i4 {
     };
     if (nextType === "weekly" && nextForm.weekly_days.length === 0) {
       nextForm.weekly_days = ["0"];
+      nextForm.weekly_every = "1";
     }
     this.editError = null;
     this.editForm = nextForm;

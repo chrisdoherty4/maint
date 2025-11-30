@@ -7,6 +7,7 @@ export interface RecurrenceFormState {
   recurrence_type: RecurrenceType;
   interval_every: string;
   interval_unit: "days" | "weeks" | "months";
+  weekly_every: string;
   weekly_days: string[];
 }
 
@@ -73,11 +74,35 @@ export const renderRecurrenceFields = (
   }
 
   if (type === "weekly") {
+    const every =
+      recurrence?.type === "weekly"
+        ? recurrence.every ?? 1
+        : 1;
     const selectedDays =
       recurrence?.type === "weekly" ? recurrence.days : [0];
     return html`
-      <div class="weekday-grid" data-task=${taskId ?? ""}>
-        ${weekdayCheckboxes(selectedDays)}
+      <div class="inline-fields">
+        <label class="week-interval">
+          <span class="label-text">Every</span>
+          <div class="week-interval-input">
+            <input
+              class="week-interval-input-field"
+              type="number"
+              name="weekly_every"
+              min="1"
+              step="1"
+              required
+              .value=${every}
+            />
+            <span class="week-interval-suffix">week(s)</span>
+          </div>
+        </label>
+        <div class="weekday-field">
+          <span class="label-text">On</span>
+          <div class="weekday-grid" data-task=${taskId ?? ""}>
+            ${weekdayCheckboxes(selectedDays)}
+          </div>
+        </div>
       </div>
     `;
   }
@@ -126,8 +151,30 @@ export const renderEditRecurrenceFields = (
 
   if (form.recurrence_type === "weekly") {
     return html`
-      <div class="weekday-grid" @change=${onWeekdayChange}>
-        ${weekdayCheckboxes(form.weekly_days, busy)}
+      <div class="inline-fields">
+        <label class="week-interval">
+          <span class="label-text">Every</span>
+          <div class="week-interval-input">
+            <input
+              class="week-interval-input-field"
+              type="number"
+              name="weekly_every"
+              min="1"
+              step="1"
+              required
+              .value=${form.weekly_every}
+              ?disabled=${busy}
+              @input=${onFieldInput}
+            />
+            <span class="week-interval-suffix">week(s)</span>
+          </div>
+        </label>
+        <div class="weekday-field">
+          <span class="label-text">On</span>
+          <div class="weekday-grid" @change=${onWeekdayChange}>
+            ${weekdayCheckboxes(form.weekly_days, busy)}
+          </div>
+        </div>
       </div>
     `;
   }

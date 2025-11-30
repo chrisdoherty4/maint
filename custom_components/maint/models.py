@@ -91,6 +91,7 @@ class Recurrence:
         if self.type == "weekly":
             return {
                 "type": "weekly",
+                "every": self.every or 1,
                 "days": list(self.days_of_week),
             }
 
@@ -113,6 +114,10 @@ class Recurrence:
             return cls(type="interval", every=every, unit=unit)
 
         if recurrence_type == "weekly":
+            every_weeks = int(data.get("every", 1))
+            if every_weeks <= 0:
+                message = "every must be greater than 0"
+                raise ValueError(message)
             days_raw = data.get("days", [])
             if not isinstance(days_raw, list) or not days_raw:
                 message = "weekly recurrence requires at least one day"
@@ -122,7 +127,7 @@ class Recurrence:
                 day = _validate_weekday(int(raw))
                 days.append(day)
             unique_days = tuple(sorted(set(days)))
-            return cls(type="weekly", days_of_week=unique_days)
+            return cls(type="weekly", every=every_weeks, days_of_week=unique_days)
 
         message = f"Unknown recurrence type: {recurrence_type}"
         raise ValueError(message)
@@ -162,13 +167,36 @@ def _next_interval(last_completed: date, recurrence: Recurrence) -> date:
 
 def _next_weekly(last_completed: date, recurrence: Recurrence) -> date:
     """Calculate the next date for a weekly recurrence."""
-    current_weekday = last_completed.weekday()
-    for offset in range(1, 8):
-        next_weekday = (current_weekday + offset) % 7
-        if next_weekday in recurrence.days_of_week:
-            return last_completed + timedelta(days=offset)
+    if not recurrence.days_of_week:
+        message = "Weekly recurrence missing days"
+        raise ValueError(message)
 
-    return last_completed + timedelta(days=7)
+    weeks_between = recurrence.every or 1
+    if weeks_between <= 0:
+        message = "Weekly recurrence requires a positive week interval"
+        raise ValueError(message)
+
+    week_start = last_completed - timedelta(days=last_completed.weekday())
+    sorted_days = tuple(sorted(recurrence.days_of_week))
+
+    def _find_in_week(start: date) -> date | None:
+        for weekday in sorted_days:
+            candidate = start + timedelta(days=weekday)
+            if candidate > last_completed:
+                return candidate
+        return None
+
+    candidate = _find_in_week(week_start)
+    if candidate:
+        return candidate
+
+    weeks_ahead = weeks_between
+    while True:
+        candidate_week_start = week_start + timedelta(weeks=weeks_ahead)
+        candidate = _find_in_week(candidate_week_start)
+        if candidate:
+            return candidate
+        weeks_ahead += weeks_between
 
 
 @dataclass(slots=True)

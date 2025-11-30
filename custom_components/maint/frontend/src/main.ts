@@ -20,7 +20,8 @@ import {
   formatDate,
   formatDateInput,
   formatRecurrence,
-  nextScheduled
+  nextScheduled,
+  parseIsoDate
 } from "./formatting.js";
 import {
   renderEditRecurrenceFields,
@@ -256,14 +257,13 @@ export class MaintPanel extends LitElement {
       return false;
     }
 
-    const nextDate = new Date(next);
-    if (Number.isNaN(nextDate.getTime())) {
+    const nextDate = parseIsoDate(next);
+    if (!nextDate) {
       return false;
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    nextDate.setHours(0, 0, 0, 0);
 
     return nextDate <= today;
   }
@@ -486,6 +486,7 @@ export class MaintPanel extends LitElement {
       recurrence_type: formData.get("recurrence_type"),
       interval_every: formData.get("interval_every"),
       interval_unit: formData.get("interval_unit"),
+      weekly_every: formData.get("weekly_every"),
       weekly_days: formData.getAll("weekly_days"),
     });
 
@@ -539,6 +540,7 @@ export class MaintPanel extends LitElement {
       recurrence_type: task.recurrence.type,
       interval_every: "",
       interval_unit: "days",
+      weekly_every: "1",
       weekly_days: []
     };
 
@@ -546,6 +548,7 @@ export class MaintPanel extends LitElement {
       baseForm.interval_every = task.recurrence.every.toString();
       baseForm.interval_unit = task.recurrence.unit;
     } else if (task.recurrence.type === "weekly") {
+      baseForm.weekly_every = (task.recurrence.every ?? 1).toString();
       baseForm.weekly_days = task.recurrence.days.map((day) => day.toString());
     }
 
@@ -583,6 +586,9 @@ export class MaintPanel extends LitElement {
         break;
       case "interval_unit":
         nextForm.interval_unit = target.value as EditFormState["interval_unit"];
+        break;
+      case "weekly_every":
+        nextForm.weekly_every = target.value;
         break;
       default:
         break;
@@ -638,6 +644,7 @@ export class MaintPanel extends LitElement {
       recurrence_type: formData.get("recurrence_type"),
       interval_every: formData.get("interval_every"),
       interval_unit: formData.get("interval_unit"),
+      weekly_every: formData.get("weekly_every"),
       weekly_days: formData.getAll("weekly_days")
     });
 
@@ -755,7 +762,7 @@ export class MaintPanel extends LitElement {
   private recurrenceTypeOptions(selected: RecurrenceType) {
     const options: { value: RecurrenceType; label: string }[] = [
       { value: "interval", label: "Every N" },
-      { value: "weekly", label: "Weekly days" }
+      { value: "weekly", label: "Days of the week" }
     ];
     return options.map(
       (option) =>
@@ -808,6 +815,7 @@ export class MaintPanel extends LitElement {
 
     if (nextType === "weekly" && nextForm.weekly_days.length === 0) {
       nextForm.weekly_days = ["0"];
+      nextForm.weekly_every = "1";
     }
 
     this.editError = null;
