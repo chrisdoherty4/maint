@@ -101,6 +101,9 @@ const parseRecurrence = (
     if (!days) {
       return { ok: false, error: "Select at least one day of the week." };
     }
+    if (everyWeeks === 1 && days.length === 7) {
+      return { ok: true, value: { type: "interval", every: 1, unit: "days" } };
+    }
     return { ok: true, value: { type: "weekly", every: everyWeeks, days } };
   }
 

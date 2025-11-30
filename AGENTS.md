@@ -17,6 +17,8 @@ tasks.
 
 ## Development
 
+### General
+
 - Review and update `README.md` for user-facing changes and refresh `custom_components/maint/quality_scale.yaml` when requirements are met.
 - Lint and test changes - fix any issues.
 - Consult https://developers.home-assistant.io/ for information on developing Home Assistant integrations.
