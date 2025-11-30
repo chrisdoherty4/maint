@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.helpers import entity_registry as er
 from homeassistant.util import slugify
 
 from .domain import DOMAIN
@@ -75,7 +76,7 @@ async def async_setup_entry(
         entity = entities.pop(task.task_id, None)
         if entity is None:
             return
-        hass.async_create_task(entity.async_remove())
+        hass.async_create_task(entity.async_remove_from_hass(hass))
 
     entry.async_on_unload(
         async_dispatcher_connect(hass, SIGNAL_TASK_CREATED, handle_task_created)
@@ -140,6 +141,19 @@ class MaintTaskBinarySensor(BinarySensorEntity):
         self._task = task
         self._attr_name = task.description
         self.async_write_ha_state()
+
+    async def async_remove_from_hass(self, hass: HomeAssistant) -> None:
+        """Remove the entity and clean up the entity registry entry."""
+        registry = er.async_get(hass)
+        entity_id = self.entity_id
+        if entity_id is None and self.unique_id is not None:
+            entity_id = registry.async_get_entity_id(
+                "binary_sensor", DOMAIN, self.unique_id
+            )
+        if entity_id is not None:
+            registry.async_remove(entity_id)
+
+        await self.async_remove()
 
     def _fire_task_due_event(self) -> None:
         """Notify listeners when a task becomes due."""

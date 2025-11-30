@@ -5,12 +5,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 
 from custom_components.maint.binary_sensor import MaintTaskBinarySensor
+from custom_components.maint.domain import DOMAIN
 from custom_components.maint.models import MaintTask, Recurrence
 
 
@@ -73,3 +76,27 @@ def test_handle_task_update_refreshes_name_and_state() -> None:
     assert sensor._task is new_task
     assert sensor._attr_name == "Check smoke alarms"
     sensor.async_write_ha_state.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_handle_task_deleted_removes_registry_entry(
+    hass: HomeAssistant,
+) -> None:
+    """Deleting a task should drop the entity from the registry."""
+    entry = FakeEntry("entry-1")
+    task = _make_task()
+    sensor = MaintTaskBinarySensor(entry=entry, task=task)
+    sensor.hass = hass
+    registry = er.async_get(hass)
+    await registry.async_load()
+    entity_entry = registry.async_get_or_create(
+        "binary_sensor", DOMAIN, sensor.unique_id, suggested_object_id="maint_test_task"
+    )
+    sensor.entity_id = entity_entry.entity_id
+    sensor.async_remove = AsyncMock()
+
+    await sensor.async_remove_from_hass(hass)
+    await hass.async_block_till_done()
+
+    assert registry.async_get(entity_entry.entity_id) is None
+    sensor.async_remove.assert_awaited_once()
