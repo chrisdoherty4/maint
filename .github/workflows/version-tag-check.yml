@@ -55,7 +55,7 @@ jobs:
                   raise SystemExit(f"Release flavor mismatch: tag is {flavor_tag}, manifest is {flavor_manifest}")
 
               print(manifest_version)
-PY
+            PY
           )
           echo "tag_version=${TAG_VERSION#v}" >> "$GITHUB_OUTPUT"
           echo "manifest_version=${MANIFEST_VERSION}" >> "$GITHUB_OUTPUT"
