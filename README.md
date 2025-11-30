@@ -71,6 +71,125 @@ data:
   last_completed: "2024-07-15"
 ```
 
+## Dashboard card examples
+
+Use these Lovelace snippets to list Maint tasks and quickly mark them complete. Replace the entity
+IDs with your own (e.g., `binary_sensor.maint_hvac_filter`) and adjust card titles as needed.
+
+### Simple built-in cards
+
+- Entities card with quick actions:
+
+```yaml
+type: entities
+title: Maintenance tasks
+entities:
+  - entity: sensor.maint_tasks_due
+    name: Tasks due
+  - type: section
+    label: Kitchen filter
+  - entity: binary_sensor.maint_kitchen_filter
+    name: Kitchen filter due
+  - type: button
+    name: Mark kitchen filter complete
+    icon: mdi:check
+    action_name: Complete
+    tap_action:
+      action: call-service
+      service: maint.reset_last_completed
+      target:
+        entity_id: binary_sensor.maint_kitchen_filter
+```
+
+- Tile grid to quickly mark a couple of tasks complete:
+
+```yaml
+type: grid
+title: Quick completes
+columns: 2
+square: false
+cards:
+  - type: tile
+    entity: binary_sensor.maint_kitchen_filter
+    name: Kitchen filter
+    tap_action:
+      action: call-service
+      service: maint.reset_last_completed
+      target:
+        entity_id: binary_sensor.maint_kitchen_filter
+  - type: tile
+    entity: binary_sensor.maint_smoke_detectors
+    name: Smoke detectors
+    tap_action:
+      action: call-service
+      service: maint.reset_last_completed
+      target:
+        entity_id: binary_sensor.maint_smoke_detectors
+```
+
+### Advanced custom cards
+
+- Auto-generated list of due tasks using [`custom:auto-entities`](https://github.com/thomasloven/lovelace-auto-entities),
+  rendered as buttons with service calls:
+
+```yaml
+type: custom:auto-entities
+card:
+  type: grid
+  columns: 2
+  square: false
+card_param: cards
+filter:
+  include:
+    - domain: binary_sensor
+      entity_id: binary_sensor.maint_*
+      state: "on"
+      options:
+        type: button
+        entity: this.entity_id
+        icon: mdi:check-circle
+        show_state: true
+        tap_action:
+          action: call-service
+          service: maint.reset_last_completed
+          service_data:
+            entity_id: this.entity_id
+```
+
+- A styled tile list using [`custom:button-card`](https://github.com/custom-cards/button-card) to
+  show next due date and provide a completion tap:
+
+```yaml
+type: grid
+title: Maintenance tasks
+square: false
+columns: 1
+cards:
+  - type: custom:button-card
+    entity: binary_sensor.maint_water_heater_flush
+    name: Water heater flush
+    show_state: true
+    show_icon: true
+    state_display: >
+      [[[
+        const due = entity.attributes.next_scheduled || "Unknown";
+        return entity.state === "on" ? `Due • ${due}` : `Not due • ${due}`;
+      ]]]
+    tap_action:
+      action: call-service
+      service: maint.reset_last_completed
+      service_data:
+        entity_id: binary_sensor.maint_water_heater_flush
+    styles:
+      card:
+        - padding: 12px
+      state:
+        - font-size: 12px
+        - color: var(--secondary-text-color)
+      name:
+        - font-weight: bold
+```
+
 ## What's next
 
 - Publish Maint to the HACS default registry so it can be installed without adding a custom
