@@ -22,17 +22,40 @@ jobs:
 
       - name: Read tag and manifest versions
         id: versions
+        env:
+          TAG_VERSION: ${{ github.ref_name }}
         run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
           MANIFEST_VERSION=$(
-            python -c "import json; from pathlib import Path; print(json.loads(Path('custom_components/maint/manifest.json').read_text())['version'])"
-          )
-          echo "tag_version=${TAG_VERSION}" >> "$GITHUB_OUTPUT"
-          echo "manifest_version=${MANIFEST_VERSION}" >> "$GITHUB_OUTPUT"
+            python - <<'PY'
+              import json
+              import os
+              import re
+              from pathlib import Path
 
-      - name: Verify manifest version matches tag
-        run: |
-          if [ "${{ steps.versions.outputs.tag_version }}" != "${{ steps.versions.outputs.manifest_version }}" ]; then
-            echo "Version mismatch: tag 'v${{ steps.versions.outputs.tag_version }}' does not match manifest version '${{ steps.versions.outputs.manifest_version }}'." >&2
-            exit 1
-          fi
+              tag = os.environ["TAG_VERSION"].removeprefix("v")
+              manifest_version = json.loads(
+                  Path("custom_components/maint/manifest.json").read_text()
+              )["version"]
+
+              def parse(version: str) -> tuple[str, bool]:
+                  match = re.fullmatch(r"(?P<base>\d+\.\d+\.\d+)(?:-rc(?P<rc>\d+))?", version)
+                  if not match:
+                      raise SystemExit(f"Version '{version}' is not valid semver or rc")
+                  return match.group("base"), match.group("rc") is not None
+
+              tag_base, tag_is_rc = parse(tag)
+              manifest_base, manifest_is_rc = parse(manifest_version)
+
+              if tag_base != manifest_base:
+                  raise SystemExit(f"Base version mismatch: tag '{tag_base}', manifest '{manifest_base}'")
+
+              if tag_is_rc != manifest_is_rc:
+                  flavor_tag = "release candidate" if tag_is_rc else "final release"
+                  flavor_manifest = "release candidate" if manifest_is_rc else "final release"
+                  raise SystemExit(f"Release flavor mismatch: tag is {flavor_tag}, manifest is {flavor_manifest}")
+
+              print(manifest_version)
+PY
+          )
+          echo "tag_version=${TAG_VERSION#v}" >> "$GITHUB_OUTPUT"
+          echo "manifest_version=${MANIFEST_VERSION}" >> "$GITHUB_OUTPUT"
