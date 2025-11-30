@@ -1446,6 +1446,7 @@ var MaintPanel = class extends i4 {
     this.editingTaskId = null;
     this.confirmTaskId = null;
     this.formExpanded = true;
+    this.createLastCompleted = this.currentDateIso();
     this.createRecurrenceType = "interval";
     this.editForm = null;
     this.editError = null;
@@ -1529,8 +1530,11 @@ var MaintPanel = class extends i4 {
                       <input
                         type="date"
                         name="last_completed"
+                        placeholder="mm/dd/yyyy"
                         @focus=${this.openDatePicker}
                         @pointerdown=${this.openDatePicker}
+                        .value=${this.createLastCompleted}
+                        @input=${this.handleCreateLastCompletedInput}
                         ?disabled=${formDisabled}
                       />
                     </label>
@@ -1889,6 +1893,7 @@ var MaintPanel = class extends i4 {
       this.error = "Could not create task. Check the logs for details.";
     } finally {
       this.busy = false;
+      this.createLastCompleted = this.currentDateIso();
     }
   }
   handleEditTask(event) {
@@ -2149,6 +2154,20 @@ var MaintPanel = class extends i4 {
     this.editError = null;
     this.editForm = nextForm;
   }
+  handleCreateLastCompletedInput(event) {
+    const input = event.currentTarget;
+    if (!input) {
+      return;
+    }
+    this.createLastCompleted = input.value;
+  }
+  currentDateIso() {
+    const today = /* @__PURE__ */ new Date();
+    const year = today.getFullYear().toString().padStart(4, "0");
+    const month = (today.getMonth() + 1).toString().padStart(2, "0");
+    const day = today.getDate().toString().padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
 };
 MaintPanel.styles = styles;
 __decorateClass([
@@ -2178,6 +2197,9 @@ __decorateClass([
 __decorateClass([
   r5()
 ], MaintPanel.prototype, "formExpanded", 2);
+__decorateClass([
+  r5()
+], MaintPanel.prototype, "createLastCompleted", 2);
 __decorateClass([
   r5()
 ], MaintPanel.prototype, "createRecurrenceType", 2);

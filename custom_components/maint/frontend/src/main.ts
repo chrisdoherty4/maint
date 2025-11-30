@@ -47,6 +47,7 @@ export class MaintPanel extends LitElement {
   @state() private editingTaskId: string | null = null;
   @state() private confirmTaskId: string | null = null;
   @state() private formExpanded = true;
+  @state() private createLastCompleted: string = this.currentDateIso();
   @state() private createRecurrenceType: RecurrenceType = "interval";
   @state() private editForm: EditFormState | null = null;
   @state() private editError: string | null = null;
@@ -140,8 +141,11 @@ export class MaintPanel extends LitElement {
                       <input
                         type="date"
                         name="last_completed"
+                        placeholder="mm/dd/yyyy"
                         @focus=${this.openDatePicker}
                         @pointerdown=${this.openDatePicker}
+                        .value=${this.createLastCompleted}
+                        @input=${this.handleCreateLastCompletedInput}
                         ?disabled=${formDisabled}
                       />
                     </label>
@@ -547,6 +551,7 @@ export class MaintPanel extends LitElement {
       this.error = "Could not create task. Check the logs for details.";
     } finally {
       this.busy = false;
+      this.createLastCompleted = this.currentDateIso();
     }
   }
 
@@ -858,6 +863,22 @@ export class MaintPanel extends LitElement {
 
     this.editError = null;
     this.editForm = nextForm;
+  }
+
+  private handleCreateLastCompletedInput(event: Event): void {
+    const input = event.currentTarget as HTMLInputElement | null;
+    if (!input) {
+      return;
+    }
+    this.createLastCompleted = input.value;
+  }
+
+  private currentDateIso(): string {
+    const today = new Date();
+    const year = today.getFullYear().toString().padStart(4, "0");
+    const month = (today.getMonth() + 1).toString().padStart(2, "0");
+    const day = today.getDate().toString().padStart(2, "0");
+    return `${year}-${month}-${day}`;
   }
 
   static styles = styles;
