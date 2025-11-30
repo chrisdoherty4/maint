@@ -2,37 +2,37 @@ import { html, LitElement, nothing, type PropertyValueMap } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
 import {
-  createTask,
-  deleteTask,
-  fetchEntries,
-  fetchTasks,
-  updateTask,
   type HassConnection,
   type MaintEntry,
   type MaintTask,
   type Recurrence,
   type RecurrenceType
 } from "./api.js";
+import {
+  createMaintTask,
+  deleteMaintTask,
+  loadEntries,
+  loadTasks,
+  updateMaintTask
+} from "./data-service.js";
 import { validateTaskFields } from "./forms.js";
 import {
   formatDate,
   formatDateInput,
   formatRecurrence,
-  nextScheduled,
-  normalizeTask
+  nextScheduled
 } from "./formatting.js";
+import {
+  renderEditRecurrenceFields,
+  renderRecurrenceFields,
+  type RecurrenceFormState
+} from "./recurrence-fields.js";
 import { styles } from "./styles.js";
 
 type EditFormState = {
   description: string;
   last_completed: string;
-  recurrence_type: RecurrenceType;
-  interval_every: string;
-  interval_unit: "days" | "weeks" | "months";
-  weekly_days: string[];
-};
-
-const WEEKDAY_SHORT_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+} & RecurrenceFormState;
 
 @customElement("maint-panel")
 export class MaintPanel extends LitElement {
@@ -386,7 +386,7 @@ export class MaintPanel extends LitElement {
     }
 
     try {
-      const entries = await fetchEntries(this.hass);
+      const entries = await loadEntries(this.hass);
       this.entries = entries.map((entry) => ({
         entry_id: entry.entry_id,
         title: entry.title
@@ -417,9 +417,9 @@ export class MaintPanel extends LitElement {
 
     try {
       this.busy = true;
-      const tasks = await fetchTasks(this.hass, this.selectedEntryId);
+      const tasks = await loadTasks(this.hass, this.selectedEntryId);
 
-      this.tasks = tasks.map((task) => normalizeTask(task));
+      this.tasks = tasks;
       this.editingTaskId = null;
       this.editForm = null;
       this.editError = null;
@@ -453,7 +453,7 @@ export class MaintPanel extends LitElement {
 
     try {
       this.busy = true;
-      await updateTask(this.hass, this.selectedEntryId, taskId, {
+      await updateMaintTask(this.hass, this.selectedEntryId, taskId, {
         description: task.description,
         last_completed: lastCompleted,
         recurrence: task.recurrence
@@ -500,9 +500,9 @@ export class MaintPanel extends LitElement {
 
     try {
       this.busy = true;
-      const created = await createTask(this.hass, this.selectedEntryId, result.values);
+      const created = await createMaintTask(this.hass, this.selectedEntryId, result.values);
 
-      this.tasks = [...this.tasks, normalizeTask(created)];
+      this.tasks = [...this.tasks, created];
       form.reset();
       this.error = null;
     } catch (error) {
@@ -561,12 +561,12 @@ export class MaintPanel extends LitElement {
   }
 
   private handleEditFieldInput(event: Event): void {
-    if (!this.editForm) {
+    const target = event.currentTarget as HTMLInputElement | HTMLSelectElement | null;
+    if (!target || !target.name) {
       return;
     }
 
-    const target = event.currentTarget as HTMLInputElement | HTMLSelectElement | null;
-    if (!target || !target.name) {
+    if (!this.editForm) {
       return;
     }
 
@@ -620,23 +620,25 @@ export class MaintPanel extends LitElement {
 
   private handleEditSubmit(event: Event): void {
     event.preventDefault();
-    if (this.editingTaskId) {
-      void this.saveTaskEdits(this.editingTaskId);
+    const form = event.currentTarget as HTMLFormElement | null;
+    if (this.editingTaskId && form) {
+      void this.saveTaskEdits(this.editingTaskId, form);
     }
   }
 
-  private async saveTaskEdits(taskId: string): Promise<void> {
-    if (!this.selectedEntryId || !this.hass || !this.editForm) {
+  private async saveTaskEdits(taskId: string, form: HTMLFormElement): Promise<void> {
+    if (!this.selectedEntryId || !this.hass) {
       return;
     }
 
+    const formData = new FormData(form);
     const result = validateTaskFields({
-      description: this.editForm.description,
-      last_completed: this.editForm.last_completed,
-      recurrence_type: this.editForm.recurrence_type,
-      interval_every: this.editForm.interval_every,
-      interval_unit: this.editForm.interval_unit,
-      weekly_days: this.editForm.weekly_days
+      description: formData.get("description"),
+      last_completed: formData.get("last_completed"),
+      recurrence_type: formData.get("recurrence_type"),
+      interval_every: formData.get("interval_every"),
+      interval_unit: formData.get("interval_unit"),
+      weekly_days: formData.getAll("weekly_days")
     });
 
     if (result.error) {
@@ -651,7 +653,7 @@ export class MaintPanel extends LitElement {
     try {
       this.busy = true;
       this.editError = null;
-      const updated = await updateTask(
+      const updated = await updateMaintTask(
         this.hass,
         this.selectedEntryId,
         taskId,
@@ -659,7 +661,7 @@ export class MaintPanel extends LitElement {
       );
 
       this.tasks = this.tasks.map((task) =>
-        task.task_id === taskId ? normalizeTask(updated) : task
+        task.task_id === taskId ? updated : task
       );
       this.editingTaskId = null;
       this.editForm = null;
@@ -694,7 +696,7 @@ export class MaintPanel extends LitElement {
 
     try {
       this.busy = true;
-      await deleteTask(this.hass, this.selectedEntryId, taskId);
+      await deleteMaintTask(this.hass, this.selectedEntryId, taskId);
 
       this.tasks = this.tasks.filter((task) => task.task_id !== taskId);
       if (this.editingTaskId === taskId) {
@@ -768,71 +770,7 @@ export class MaintPanel extends LitElement {
     recurrence?: Recurrence,
     taskId?: string
   ) {
-    if (type === "interval") {
-      const every =
-        recurrence?.type === "interval"
-          ? recurrence.every
-          : "";
-      const unit =
-        recurrence?.type === "interval"
-          ? recurrence.unit
-          : "days";
-      return html`
-        <div class="inline-fields">
-          <label>
-            <span class="label-text">Every</span>
-            <input
-              type="number"
-              name="interval_every"
-              min="1"
-              step="1"
-              required
-              .value=${every}
-            />
-          </label>
-          <label>
-            <span class="label-text">Unit</span>
-            <select name="interval_unit">
-              <option value="days" ?selected=${unit === "days"}>Days</option>
-              <option value="weeks" ?selected=${unit === "weeks"}>Weeks</option>
-              <option value="months" ?selected=${unit === "months"}>Months</option>
-            </select>
-          </label>
-        </div>
-      `;
-    }
-
-    if (type === "weekly") {
-      const selectedDays =
-        recurrence?.type === "weekly" ? recurrence.days : [0];
-      return html`
-        <div class="weekday-grid" data-task=${taskId ?? ""}>
-          ${this.weekdayCheckboxes(selectedDays)}
-        </div>
-      `;
-    }
-
-    return nothing;
-  }
-
-  private weekdayCheckboxes(selectedDays: Array<number | string>, disabled = false) {
-    const selectedSet = new Set(selectedDays.map((day) => day.toString()));
-    return WEEKDAY_SHORT_LABELS.map((label, index) => {
-      const value = index.toString();
-      const checked = selectedSet.has(value);
-      return html`
-        <label class="weekday-chip">
-          <input
-            type="checkbox"
-            name="weekly_days"
-            value=${value}
-            ?checked=${checked}
-            ?disabled=${disabled}
-          />
-          <span>${label}</span>
-        </label>
-      `;
-    });
+    return renderRecurrenceFields(type, recurrence, taskId);
   }
 
   private handleRecurrenceTypeChange(event: Event): void {
@@ -848,48 +786,12 @@ export class MaintPanel extends LitElement {
       return nothing;
     }
 
-    if (this.editForm.recurrence_type === "interval") {
-      return html`
-        <div class="inline-fields">
-          <label>
-            <span class="label-text">Every</span>
-            <input
-              type="number"
-              name="interval_every"
-              min="1"
-              step="1"
-              required
-              .value=${this.editForm.interval_every}
-              ?disabled=${this.busy}
-              @input=${this.handleEditFieldInput}
-            />
-          </label>
-          <label>
-            <span class="label-text">Unit</span>
-            <select
-              name="interval_unit"
-              .value=${this.editForm.interval_unit}
-              ?disabled=${this.busy}
-              @change=${this.handleEditFieldInput}
-            >
-              <option value="days">Days</option>
-              <option value="weeks">Weeks</option>
-              <option value="months">Months</option>
-            </select>
-          </label>
-        </div>
-      `;
-    }
-
-    if (this.editForm.recurrence_type === "weekly") {
-      return html`
-        <div class="weekday-grid" @change=${this.handleEditWeeklyDayChange}>
-          ${this.weekdayCheckboxes(this.editForm.weekly_days, this.busy)}
-        </div>
-      `;
-    }
-
-    return nothing;
+    return renderEditRecurrenceFields(
+      this.editForm,
+      this.busy,
+      this.handleEditFieldInput.bind(this),
+      this.handleEditWeeklyDayChange.bind(this)
+    );
   }
 
   private handleEditRecurrenceTypeChange(event: Event): void {

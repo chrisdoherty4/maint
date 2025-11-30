@@ -736,6 +736,16 @@ var normalizeTask = (task) => ({
   recurrence: task.recurrence?.type === "weekly" ? { ...task.recurrence, days: normalizeWeekdays(task.recurrence.days) } : task.recurrence
 });
 
+// src/data-service.ts
+var loadEntries = (hass) => fetchEntries(hass);
+var loadTasks = async (hass, entryId) => {
+  const tasks = await fetchTasks(hass, entryId);
+  return tasks.map((task) => normalizeTask(task));
+};
+var createMaintTask = async (hass, entryId, payload) => normalizeTask(await createTask(hass, entryId, payload));
+var updateMaintTask = async (hass, entryId, taskId, payload) => normalizeTask(await updateTask(hass, entryId, taskId, payload));
+var deleteMaintTask = (hass, entryId, taskId) => deleteTask(hass, entryId, taskId);
+
 // src/forms.ts
 var validateTaskFields = (fields) => {
   const description = (fields.description ?? "").toString().trim();
@@ -799,6 +809,108 @@ var parseRecurrence = (fields) => {
     return { ok: true, value: { type: "weekly", days } };
   }
   return { ok: false, error: "Choose a schedule." };
+};
+
+// src/recurrence-fields.ts
+var WEEKDAY_SHORT_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+var weekdayCheckboxes = (selectedDays, disabled = false) => {
+  const selectedSet = new Set(selectedDays.map((day) => day.toString()));
+  return WEEKDAY_SHORT_LABELS.map((label, index) => {
+    const value = index.toString();
+    const checked = selectedSet.has(value);
+    return x`
+      <label class="weekday-chip">
+        <input
+          type="checkbox"
+          name="weekly_days"
+          value=${value}
+          ?checked=${checked}
+          ?disabled=${disabled}
+        />
+        <span>${label}</span>
+      </label>
+    `;
+  });
+};
+var renderRecurrenceFields = (type, recurrence, taskId) => {
+  if (type === "interval") {
+    const every = recurrence?.type === "interval" ? recurrence.every : "";
+    const unit = recurrence?.type === "interval" ? recurrence.unit : "days";
+    return x`
+      <div class="inline-fields">
+        <label>
+          <span class="label-text">Every</span>
+          <input
+            type="number"
+            name="interval_every"
+            min="1"
+            step="1"
+            required
+            .value=${every}
+          />
+        </label>
+        <label>
+          <span class="label-text">Unit</span>
+          <select name="interval_unit">
+            <option value="days" ?selected=${unit === "days"}>Days</option>
+            <option value="weeks" ?selected=${unit === "weeks"}>Weeks</option>
+            <option value="months" ?selected=${unit === "months"}>Months</option>
+          </select>
+        </label>
+      </div>
+    `;
+  }
+  if (type === "weekly") {
+    const selectedDays = recurrence?.type === "weekly" ? recurrence.days : [0];
+    return x`
+      <div class="weekday-grid" data-task=${taskId ?? ""}>
+        ${weekdayCheckboxes(selectedDays)}
+      </div>
+    `;
+  }
+  return E;
+};
+var renderEditRecurrenceFields = (form, busy, onFieldInput, onWeekdayChange) => {
+  if (form.recurrence_type === "interval") {
+    return x`
+      <div class="inline-fields">
+        <label>
+          <span class="label-text">Every</span>
+          <input
+            type="number"
+            name="interval_every"
+            min="1"
+            step="1"
+            required
+            .value=${form.interval_every}
+            ?disabled=${busy}
+            @input=${onFieldInput}
+          />
+        </label>
+        <label>
+          <span class="label-text">Unit</span>
+          <select
+            name="interval_unit"
+            .value=${form.interval_unit}
+            ?disabled=${busy}
+            @change=${onFieldInput}
+          >
+            <option value="days">Days</option>
+            <option value="weeks">Weeks</option>
+            <option value="months">Months</option>
+          </select>
+        </label>
+      </div>
+    `;
+  }
+  if (form.recurrence_type === "weekly") {
+    return x`
+      <div class="weekday-grid" @change=${onWeekdayChange}>
+        ${weekdayCheckboxes(form.weekly_days, busy)}
+      </div>
+    `;
+  }
+  return E;
 };
 
 // src/styles.ts
@@ -1544,7 +1656,7 @@ var MaintPanel = class extends i4 {
       return;
     }
     try {
-      const entries = await fetchEntries(this.hass);
+      const entries = await loadEntries(this.hass);
       this.entries = entries.map((entry) => ({
         entry_id: entry.entry_id,
         title: entry.title
@@ -1571,8 +1683,8 @@ var MaintPanel = class extends i4 {
     }
     try {
       this.busy = true;
-      const tasks = await fetchTasks(this.hass, this.selectedEntryId);
-      this.tasks = tasks.map((task) => normalizeTask(task));
+      const tasks = await loadTasks(this.hass, this.selectedEntryId);
+      this.tasks = tasks;
       this.editingTaskId = null;
       this.editForm = null;
       this.editError = null;
@@ -1599,7 +1711,7 @@ var MaintPanel = class extends i4 {
     const lastCompleted = `${today.getFullYear().toString().padStart(4, "0")}-${(today.getMonth() + 1).toString().padStart(2, "0")}-${today.getDate().toString().padStart(2, "0")}`;
     try {
       this.busy = true;
-      await updateTask(this.hass, this.selectedEntryId, taskId, {
+      await updateMaintTask(this.hass, this.selectedEntryId, taskId, {
         description: task.description,
         last_completed: lastCompleted,
         recurrence: task.recurrence
@@ -1639,8 +1751,8 @@ var MaintPanel = class extends i4 {
     }
     try {
       this.busy = true;
-      const created = await createTask(this.hass, this.selectedEntryId, result.values);
-      this.tasks = [...this.tasks, normalizeTask(created)];
+      const created = await createMaintTask(this.hass, this.selectedEntryId, result.values);
+      this.tasks = [...this.tasks, created];
       form.reset();
       this.error = null;
     } catch (error) {
@@ -1690,11 +1802,11 @@ var MaintPanel = class extends i4 {
     this.editError = null;
   }
   handleEditFieldInput(event) {
-    if (!this.editForm) {
-      return;
-    }
     const target = event.currentTarget;
     if (!target || !target.name) {
+      return;
+    }
+    if (!this.editForm) {
       return;
     }
     const nextForm = { ...this.editForm };
@@ -1741,21 +1853,23 @@ var MaintPanel = class extends i4 {
   }
   handleEditSubmit(event) {
     event.preventDefault();
-    if (this.editingTaskId) {
-      void this.saveTaskEdits(this.editingTaskId);
+    const form = event.currentTarget;
+    if (this.editingTaskId && form) {
+      void this.saveTaskEdits(this.editingTaskId, form);
     }
   }
-  async saveTaskEdits(taskId) {
-    if (!this.selectedEntryId || !this.hass || !this.editForm) {
+  async saveTaskEdits(taskId, form) {
+    if (!this.selectedEntryId || !this.hass) {
       return;
     }
+    const formData = new FormData(form);
     const result = validateTaskFields({
-      description: this.editForm.description,
-      last_completed: this.editForm.last_completed,
-      recurrence_type: this.editForm.recurrence_type,
-      interval_every: this.editForm.interval_every,
-      interval_unit: this.editForm.interval_unit,
-      weekly_days: this.editForm.weekly_days
+      description: formData.get("description"),
+      last_completed: formData.get("last_completed"),
+      recurrence_type: formData.get("recurrence_type"),
+      interval_every: formData.get("interval_every"),
+      interval_unit: formData.get("interval_unit"),
+      weekly_days: formData.getAll("weekly_days")
     });
     if (result.error) {
       this.editError = result.error;
@@ -1767,14 +1881,14 @@ var MaintPanel = class extends i4 {
     try {
       this.busy = true;
       this.editError = null;
-      const updated = await updateTask(
+      const updated = await updateMaintTask(
         this.hass,
         this.selectedEntryId,
         taskId,
         result.values
       );
       this.tasks = this.tasks.map(
-        (task) => task.task_id === taskId ? normalizeTask(updated) : task
+        (task) => task.task_id === taskId ? updated : task
       );
       this.editingTaskId = null;
       this.editForm = null;
@@ -1803,7 +1917,7 @@ var MaintPanel = class extends i4 {
     const taskId = this.confirmTaskId;
     try {
       this.busy = true;
-      await deleteTask(this.hass, this.selectedEntryId, taskId);
+      await deleteMaintTask(this.hass, this.selectedEntryId, taskId);
       this.tasks = this.tasks.filter((task) => task.task_id !== taskId);
       if (this.editingTaskId === taskId) {
         this.editingTaskId = null;
@@ -1861,61 +1975,7 @@ var MaintPanel = class extends i4 {
     );
   }
   renderRecurrenceFields(type, recurrence, taskId) {
-    if (type === "interval") {
-      const every = recurrence?.type === "interval" ? recurrence.every : "";
-      const unit = recurrence?.type === "interval" ? recurrence.unit : "days";
-      return x`
-        <div class="inline-fields">
-          <label>
-            <span class="label-text">Every</span>
-            <input
-              type="number"
-              name="interval_every"
-              min="1"
-              step="1"
-              required
-              .value=${every}
-            />
-          </label>
-          <label>
-            <span class="label-text">Unit</span>
-            <select name="interval_unit">
-              <option value="days" ?selected=${unit === "days"}>Days</option>
-              <option value="weeks" ?selected=${unit === "weeks"}>Weeks</option>
-              <option value="months" ?selected=${unit === "months"}>Months</option>
-            </select>
-          </label>
-        </div>
-      `;
-    }
-    if (type === "weekly") {
-      const selectedDays = recurrence?.type === "weekly" ? recurrence.days : [0];
-      return x`
-        <div class="weekday-grid" data-task=${taskId ?? ""}>
-          ${this.weekdayCheckboxes(selectedDays)}
-        </div>
-      `;
-    }
-    return E;
-  }
-  weekdayOptions(selected) {
-    const labels = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-    return labels.map((label, index) => {
-      const value = index.toString();
-      return x`<option value=${value} ?selected=${selected === index}>${label}</option>`;
-    });
-  }
-  weekdayCheckboxes(selectedDays) {
-    const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    return labels.map((label, index) => {
-      const checked = selectedDays.includes(index);
-      return x`
-        <label class="weekday-chip">
-          <input type="checkbox" name="weekly_days" value=${index} ?checked=${checked} />
-          <span>${label}</span>
-        </label>
-      `;
-    });
+    return renderRecurrenceFields(type, recurrence, taskId);
   }
   handleRecurrenceTypeChange(event) {
     const select = event.currentTarget;
@@ -1928,62 +1988,12 @@ var MaintPanel = class extends i4 {
     if (!this.editForm) {
       return E;
     }
-    if (this.editForm.recurrence_type === "interval") {
-      return x`
-        <div class="inline-fields">
-          <label>
-            <span class="label-text">Every</span>
-            <input
-              type="number"
-              name="interval_every"
-              min="1"
-              step="1"
-              required
-              .value=${this.editForm.interval_every}
-              ?disabled=${this.busy}
-              @input=${this.handleEditFieldInput}
-            />
-          </label>
-          <label>
-            <span class="label-text">Unit</span>
-            <select
-              name="interval_unit"
-              .value=${this.editForm.interval_unit}
-              ?disabled=${this.busy}
-              @change=${this.handleEditFieldInput}
-            >
-              <option value="days">Days</option>
-              <option value="weeks">Weeks</option>
-              <option value="months">Months</option>
-            </select>
-          </label>
-        </div>
-      `;
-    }
-    if (this.editForm.recurrence_type === "weekly") {
-      const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-      return x`
-        <div class="weekday-grid" @change=${this.handleEditWeeklyDayChange}>
-          ${labels.map((label, index) => {
-        const value = index.toString();
-        const checked = this.editForm?.weekly_days.includes(value);
-        return x`
-              <label class="weekday-chip">
-                <input
-                  type="checkbox"
-                  name="weekly_days"
-                  value=${value}
-                  ?checked=${checked}
-                  ?disabled=${this.busy}
-                />
-                <span>${label}</span>
-              </label>
-            `;
-      })}
-        </div>
-      `;
-    }
-    return E;
+    return renderEditRecurrenceFields(
+      this.editForm,
+      this.busy,
+      this.handleEditFieldInput.bind(this),
+      this.handleEditWeeklyDayChange.bind(this)
+    );
   }
   handleEditRecurrenceTypeChange(event) {
     const select = event.currentTarget;
