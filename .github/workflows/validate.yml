@@ -75,5 +75,15 @@ jobs:
       - name: Install dependencies
         run: python3 -m pip install -r requirements.txt
 
-      - name: Run unit tests
-        run: python3 -m pytest
+      - name: Run unit tests with coverage
+        run: |
+          python3 -m coverage run --source=custom_components/maint -m pytest
+          python3 -m coverage xml
+          python3 -m coverage report
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          fail_ci_if_error: true
