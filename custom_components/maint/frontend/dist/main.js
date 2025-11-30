@@ -1643,6 +1643,35 @@ var MaintPanel = class extends i4 {
     today.setHours(0, 0, 0, 0);
     return nextDate <= today;
   }
+  sortTasks(tasks) {
+    const nextTimestamp = (task) => {
+      const next = nextScheduled(task);
+      if (!next) {
+        return null;
+      }
+      const parsed = parseIsoDate(next);
+      return parsed ? parsed.getTime() : null;
+    };
+    return [...tasks].sort((a3, b3) => {
+      const aDue = this.isTaskDue(a3);
+      const bDue = this.isTaskDue(b3);
+      if (aDue !== bDue) {
+        return aDue ? -1 : 1;
+      }
+      const aNext = nextTimestamp(a3);
+      const bNext = nextTimestamp(b3);
+      if (aNext !== null && bNext !== null && aNext !== bNext) {
+        return aNext - bNext;
+      }
+      if (aNext === null && bNext !== null) {
+        return 1;
+      }
+      if (aNext !== null && bNext === null) {
+        return -1;
+      }
+      return a3.description.toLowerCase().localeCompare(b3.description.toLowerCase());
+    });
+  }
   renderDeleteModal() {
     if (!this.confirmTaskId) {
       return E;
@@ -1783,7 +1812,7 @@ var MaintPanel = class extends i4 {
     try {
       this.busy = true;
       const tasks = await loadTasks(this.hass, this.selectedEntryId);
-      this.tasks = tasks;
+      this.tasks = this.sortTasks(tasks);
       this.editingTaskId = null;
       this.editForm = null;
       this.editError = null;
@@ -1852,7 +1881,7 @@ var MaintPanel = class extends i4 {
     try {
       this.busy = true;
       const created = await createMaintTask(this.hass, this.selectedEntryId, result.values);
-      this.tasks = [...this.tasks, created];
+      this.tasks = this.sortTasks([...this.tasks, created]);
       form.reset();
       this.error = null;
     } catch (error) {
@@ -1993,8 +2022,8 @@ var MaintPanel = class extends i4 {
         taskId,
         result.values
       );
-      this.tasks = this.tasks.map(
-        (task) => task.task_id === taskId ? updated : task
+      this.tasks = this.sortTasks(
+        this.tasks.map((task) => task.task_id === taskId ? updated : task)
       );
       this.editingTaskId = null;
       this.editForm = null;
@@ -2024,7 +2053,9 @@ var MaintPanel = class extends i4 {
     try {
       this.busy = true;
       await deleteMaintTask(this.hass, this.selectedEntryId, taskId);
-      this.tasks = this.tasks.filter((task) => task.task_id !== taskId);
+      this.tasks = this.sortTasks(
+        this.tasks.filter((task) => task.task_id !== taskId)
+      );
       if (this.editingTaskId === taskId) {
         this.editingTaskId = null;
         this.editForm = null;

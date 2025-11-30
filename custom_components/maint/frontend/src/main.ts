@@ -268,6 +268,42 @@ export class MaintPanel extends LitElement {
     return nextDate <= today;
   }
 
+  private sortTasks(tasks: MaintTask[]): MaintTask[] {
+    const nextTimestamp = (task: MaintTask): number | null => {
+      const next = nextScheduled(task);
+      if (!next) {
+        return null;
+      }
+
+      const parsed = parseIsoDate(next);
+      return parsed ? parsed.getTime() : null;
+    };
+
+    return [...tasks].sort((a, b) => {
+      const aDue = this.isTaskDue(a);
+      const bDue = this.isTaskDue(b);
+      if (aDue !== bDue) {
+        return aDue ? -1 : 1;
+      }
+
+      const aNext = nextTimestamp(a);
+      const bNext = nextTimestamp(b);
+      if (aNext !== null && bNext !== null && aNext !== bNext) {
+        return aNext - bNext;
+      }
+
+      if (aNext === null && bNext !== null) {
+        return 1;
+      }
+
+      if (aNext !== null && bNext === null) {
+        return -1;
+      }
+
+      return a.description.toLowerCase().localeCompare(b.description.toLowerCase());
+    });
+  }
+
   private renderDeleteModal() {
     if (!this.confirmTaskId) {
       return nothing;
@@ -419,7 +455,7 @@ export class MaintPanel extends LitElement {
       this.busy = true;
       const tasks = await loadTasks(this.hass, this.selectedEntryId);
 
-      this.tasks = tasks;
+      this.tasks = this.sortTasks(tasks);
       this.editingTaskId = null;
       this.editForm = null;
       this.editError = null;
@@ -503,7 +539,7 @@ export class MaintPanel extends LitElement {
       this.busy = true;
       const created = await createMaintTask(this.hass, this.selectedEntryId, result.values);
 
-      this.tasks = [...this.tasks, created];
+      this.tasks = this.sortTasks([...this.tasks, created]);
       form.reset();
       this.error = null;
     } catch (error) {
@@ -667,8 +703,8 @@ export class MaintPanel extends LitElement {
         result.values
       );
 
-      this.tasks = this.tasks.map((task) =>
-        task.task_id === taskId ? updated : task
+      this.tasks = this.sortTasks(
+        this.tasks.map((task) => (task.task_id === taskId ? updated : task))
       );
       this.editingTaskId = null;
       this.editForm = null;
@@ -705,7 +741,9 @@ export class MaintPanel extends LitElement {
       this.busy = true;
       await deleteMaintTask(this.hass, this.selectedEntryId, taskId);
 
-      this.tasks = this.tasks.filter((task) => task.task_id !== taskId);
+      this.tasks = this.sortTasks(
+        this.tasks.filter((task) => task.task_id !== taskId)
+      );
       if (this.editingTaskId === taskId) {
         this.editingTaskId = null;
         this.editForm = null;
