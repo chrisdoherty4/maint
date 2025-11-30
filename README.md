@@ -51,6 +51,26 @@ Call the `maint.reset_last_completed` service to mark a task complete. Target a 
 entity or pass `entry_id` and `task_id`, and optionally include `last_completed` to backdate the
 completion (defaults to today).
 
+Example targeting the Maint binary sensor created for a task:
+
+```yaml
+service: maint.reset_last_completed
+target:
+  entity_id: binary_sensor.maint_kitchen_filter
+data:
+  last_completed: "2024-07-15"
+```
+
+Example targeting the task directly when you have its `entry_id` and `task_id` (no entity needed):
+
+```yaml
+service: maint.reset_last_completed
+data:
+  entry_id: f6e5d4c3b2a1
+  task_id: 1234567890ab
+  last_completed: "2024-07-15"
+```
+
 ## What's next
 
 - Publish Maint to the HACS default registry so it can be installed without adding a custom
