@@ -10,3 +10,4 @@ logger:
   default: info
   logs:
     custom_components.maint: debug
+    homeassistant.helpers.translation: debug

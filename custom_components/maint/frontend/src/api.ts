@@ -50,6 +50,8 @@ export interface TaskPayload {
 
 export interface HassConnection {
   callWS<T>(params: WsRequest): Promise<T>;
+  localize?(key: string, ...args: Array<string | number>): string;
+  language?: string;
 }
 
 const DOMAIN = "maint";

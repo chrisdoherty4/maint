@@ -628,7 +628,34 @@ var deleteTask = (hass, entryId, taskId) => hass.callWS({
 });
 
 // src/formatting.ts
-var WEEKDAY_LABELS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+var FALLBACK_WEEKDAY_FULL = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday"
+];
+var FALLBACK_WEEKDAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+var translateWithFallback = (localize, key, fallback, ...args) => {
+  const value = localize(key, ...args);
+  return value === key ? fallback : value;
+};
+var getWeekdayLabels = (localize) => FALLBACK_WEEKDAY_FULL.map(
+  (fallback, index) => translateWithFallback(
+    localize,
+    `component.maint.ui.recurrence.weekday_full.${index}`,
+    fallback
+  )
+);
+var getWeekdayShortLabels = (localize) => FALLBACK_WEEKDAY_SHORT.map(
+  (fallback, index) => translateWithFallback(
+    localize,
+    `component.maint.ui.recurrence.weekday_short.${index}`,
+    fallback
+  )
+);
 var toMondayIndex = (sundayIndex) => (sundayIndex + 6) % 7;
 var parseIsoDate = (value) => {
   const [year, month, day] = value.toString().split("T")[0].split("-").map(Number);
@@ -673,20 +700,58 @@ var formatDateInput = (value) => {
   return formatIsoDate(parsed);
 };
 var normalizeWeekdays = (days) => Array.from(new Set(days)).sort((a3, b3) => a3 - b3);
-var formatRecurrence = (recurrence) => {
+var getUnitLabel = (unit, count, localize) => {
+  const keyBase = unit === "days" ? count === 1 ? "component.maint.ui.recurrence.unit.day_one" : "component.maint.ui.recurrence.unit.day_other" : unit === "weeks" ? count === 1 ? "component.maint.ui.recurrence.unit.week_one" : "component.maint.ui.recurrence.unit.week_other" : count === 1 ? "component.maint.ui.recurrence.unit.month_one" : "component.maint.ui.recurrence.unit.month_other";
+  const fallback = unit === "days" ? count === 1 ? "day" : "days" : unit === "weeks" ? count === 1 ? "week" : "weeks" : count === 1 ? "month" : "months";
+  return translateWithFallback(localize, keyBase, fallback, "count", count);
+};
+var formatDayList = (days, localize) => {
+  const labels = getWeekdayLabels(localize);
+  return normalizeWeekdays(days).map((day) => labels[day] ?? day.toString()).join(", ");
+};
+var formatRecurrence = (recurrence, localize) => {
   switch (recurrence.type) {
     case "interval": {
-      const unitLabel = recurrence.unit === "days" ? recurrence.every === 1 ? "day" : "days" : recurrence.unit === "weeks" ? recurrence.every === 1 ? "week" : "weeks" : recurrence.every === 1 ? "month" : "months";
-      if (recurrence.unit === "days" && recurrence.every === 1) {
-        return "Every day";
+      const count = recurrence.every ?? 0;
+      const unitLabel = getUnitLabel(recurrence.unit, count, localize);
+      if (recurrence.unit === "days" && count === 1) {
+        return translateWithFallback(
+          localize,
+          "component.maint.ui.recurrence.every_day",
+          "Every day"
+        );
       }
-      return `Every ${recurrence.every} ${unitLabel}`;
+      return translateWithFallback(
+        localize,
+        "component.maint.ui.recurrence.every_interval",
+        `Every ${count} ${unitLabel}`,
+        "count",
+        count,
+        "unit",
+        unitLabel
+      );
     }
     case "weekly": {
       const every = Math.max(1, recurrence.every ?? 1);
-      const labels = normalizeWeekdays(recurrence.days).map((day) => WEEKDAY_LABELS[day]);
-      const prefix = every === 1 ? "Weekly" : `Every ${every} weeks`;
-      return `${prefix} on ${labels.join(", ")}`;
+      const labels = formatDayList(recurrence.days, localize);
+      if (every === 1) {
+        return translateWithFallback(
+          localize,
+          "component.maint.ui.recurrence.weekly_on",
+          `Weekly on ${labels}`,
+          "days",
+          labels
+        );
+      }
+      return translateWithFallback(
+        localize,
+        "component.maint.ui.recurrence.weekly_every_on",
+        `Every ${every} weeks on ${labels}`,
+        "count",
+        every,
+        "days",
+        labels
+      );
     }
     default:
       return "\u2014";
@@ -778,18 +843,18 @@ var updateMaintTask = async (hass, entryId, taskId, payload) => normalizeTask(aw
 var deleteMaintTask = (hass, entryId, taskId) => deleteTask(hass, entryId, taskId);
 
 // src/forms.ts
-var validateTaskFields = (fields) => {
+var validateTaskFields = (fields, localize) => {
   const description = (fields.description ?? "").toString().trim();
   if (!description) {
-    return { error: "Enter a description." };
+    return { error: localize("component.maint.ui.panel.validation.description_required") };
   }
   const lastCompleted = parseDate(fields.last_completed);
   if (lastCompleted === null) {
-    return { error: "Enter a valid date for last completed." };
+    return { error: localize("component.maint.ui.panel.validation.last_completed_invalid") };
   }
-  const recurrence = parseRecurrence(fields);
+  const recurrence = parseRecurrence(fields, localize);
   if (!recurrence.ok) {
-    return { error: recurrence.error ?? "Choose a schedule." };
+    return { error: recurrence.error ?? localize("component.maint.ui.panel.validation.schedule_required") };
   }
   return {
     values: {
@@ -819,41 +884,52 @@ var parseWeekdays = (value) => {
   const unique = Array.from(new Set(parsed)).sort((a3, b3) => a3 - b3);
   return unique.length ? unique : null;
 };
-var parseRecurrence = (fields) => {
+var parseRecurrence = (fields, localize) => {
   const type = toRecurrenceType(fields.recurrence_type);
   if (type === "interval") {
     const every = parsePositiveInt(fields.interval_every);
     const unit = (fields.interval_unit ?? "").toString();
     if (!every) {
-      return { ok: false, error: "Enter how often the task repeats." };
+      return {
+        ok: false,
+        error: localize("component.maint.ui.panel.validation.interval_every_required")
+      };
     }
     if (unit !== "days" && unit !== "weeks" && unit !== "months") {
-      return { ok: false, error: "Choose a frequency unit." };
+      return {
+        ok: false,
+        error: localize("component.maint.ui.panel.validation.interval_unit_required")
+      };
     }
     return { ok: true, value: { type: "interval", every, unit } };
   }
   if (type === "weekly") {
     const everyWeeks = parsePositiveInt(fields.weekly_every ?? "1");
     if (!everyWeeks) {
-      return { ok: false, error: "Enter how many weeks between repeats." };
+      return {
+        ok: false,
+        error: localize("component.maint.ui.panel.validation.weekly_every_required")
+      };
     }
     const days = parseWeekdays(fields.weekly_days);
     if (!days) {
-      return { ok: false, error: "Select at least one day of the week." };
+      return {
+        ok: false,
+        error: localize("component.maint.ui.panel.validation.weekly_days_required")
+      };
     }
     if (everyWeeks === 1 && days.length === 7) {
       return { ok: true, value: { type: "interval", every: 1, unit: "days" } };
     }
     return { ok: true, value: { type: "weekly", every: everyWeeks, days } };
   }
-  return { ok: false, error: "Choose a schedule." };
+  return { ok: false, error: localize("component.maint.ui.panel.validation.schedule_required") };
 };
 
 // src/recurrence-fields.ts
-var WEEKDAY_SHORT_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-var weekdayCheckboxes = (selectedDays, disabled = false) => {
+var weekdayCheckboxes = (selectedDays, labels, disabled = false) => {
   const selectedSet = new Set(selectedDays.map((day) => day.toString()));
-  return WEEKDAY_SHORT_LABELS.map((label, index) => {
+  return labels.map((label, index) => {
     const value = index.toString();
     const checked = selectedSet.has(value);
     return x`
@@ -870,14 +946,15 @@ var weekdayCheckboxes = (selectedDays, disabled = false) => {
     `;
   });
 };
-var renderRecurrenceFields = (type, recurrence, taskId) => {
+var renderRecurrenceFields = (type, recurrence, taskId, localize) => {
+  const weekdayLabels = getWeekdayShortLabels(localize);
   if (type === "interval") {
     const every = recurrence?.type === "interval" ? recurrence.every : "";
     const unit = recurrence?.type === "interval" ? recurrence.unit : "days";
     return x`
       <div class="inline-fields">
         <label>
-          <span class="label-text">Every</span>
+          <span class="label-text">${localize("component.maint.ui.panel.fields.every")}</span>
           <input
             type="number"
             name="interval_every"
@@ -888,11 +965,17 @@ var renderRecurrenceFields = (type, recurrence, taskId) => {
           />
         </label>
         <label>
-          <span class="label-text">Unit</span>
+          <span class="label-text">${localize("component.maint.ui.panel.fields.unit")}</span>
           <select name="interval_unit">
-            <option value="days" ?selected=${unit === "days"}>Days</option>
-            <option value="weeks" ?selected=${unit === "weeks"}>Weeks</option>
-            <option value="months" ?selected=${unit === "months"}>Months</option>
+            <option value="days" ?selected=${unit === "days"}>
+              ${localize("component.maint.ui.panel.recurrence_options.units.days")}
+            </option>
+            <option value="weeks" ?selected=${unit === "weeks"}>
+              ${localize("component.maint.ui.panel.recurrence_options.units.weeks")}
+            </option>
+            <option value="months" ?selected=${unit === "months"}>
+              ${localize("component.maint.ui.panel.recurrence_options.units.months")}
+            </option>
           </select>
         </label>
       </div>
@@ -904,7 +987,7 @@ var renderRecurrenceFields = (type, recurrence, taskId) => {
     return x`
       <div class="inline-fields">
         <label class="week-interval">
-          <span class="label-text">Every</span>
+          <span class="label-text">${localize("component.maint.ui.panel.fields.every")}</span>
           <div class="week-interval-input">
             <input
               class="week-interval-input-field"
@@ -915,13 +998,15 @@ var renderRecurrenceFields = (type, recurrence, taskId) => {
               required
               .value=${every}
             />
-            <span class="week-interval-suffix">week(s)</span>
+            <span class="week-interval-suffix">
+              ${localize("component.maint.ui.panel.fields.weeks_suffix")}
+            </span>
           </div>
         </label>
         <div class="weekday-field">
-          <span class="label-text">On</span>
+          <span class="label-text">${localize("component.maint.ui.panel.fields.on")}</span>
           <div class="weekday-grid" data-task=${taskId ?? ""}>
-            ${weekdayCheckboxes(selectedDays)}
+            ${weekdayCheckboxes(selectedDays, weekdayLabels)}
           </div>
         </div>
       </div>
@@ -929,12 +1014,13 @@ var renderRecurrenceFields = (type, recurrence, taskId) => {
   }
   return E;
 };
-var renderEditRecurrenceFields = (form, busy, onFieldInput, onWeekdayChange) => {
+var renderEditRecurrenceFields = (form, busy, onFieldInput, onWeekdayChange, localize) => {
+  const weekdayLabels = getWeekdayShortLabels(localize);
   if (form.recurrence_type === "interval") {
     return x`
       <div class="inline-fields">
         <label>
-          <span class="label-text">Every</span>
+          <span class="label-text">${localize("component.maint.ui.panel.fields.every")}</span>
           <input
             type="number"
             name="interval_every"
@@ -947,16 +1033,16 @@ var renderEditRecurrenceFields = (form, busy, onFieldInput, onWeekdayChange) => 
           />
         </label>
         <label>
-          <span class="label-text">Unit</span>
+          <span class="label-text">${localize("component.maint.ui.panel.fields.unit")}</span>
           <select
             name="interval_unit"
             .value=${form.interval_unit}
             ?disabled=${busy}
             @change=${onFieldInput}
           >
-            <option value="days">Days</option>
-            <option value="weeks">Weeks</option>
-            <option value="months">Months</option>
+            <option value="days">${localize("component.maint.ui.panel.recurrence_options.units.days")}</option>
+            <option value="weeks">${localize("component.maint.ui.panel.recurrence_options.units.weeks")}</option>
+            <option value="months">${localize("component.maint.ui.panel.recurrence_options.units.months")}</option>
           </select>
         </label>
       </div>
@@ -966,7 +1052,7 @@ var renderEditRecurrenceFields = (form, busy, onFieldInput, onWeekdayChange) => 
     return x`
       <div class="inline-fields">
         <label class="week-interval">
-          <span class="label-text">Every</span>
+          <span class="label-text">${localize("component.maint.ui.panel.fields.every")}</span>
           <div class="week-interval-input">
             <input
               class="week-interval-input-field"
@@ -979,13 +1065,15 @@ var renderEditRecurrenceFields = (form, busy, onFieldInput, onWeekdayChange) => 
               ?disabled=${busy}
               @input=${onFieldInput}
             />
-            <span class="week-interval-suffix">week(s)</span>
+            <span class="week-interval-suffix">
+              ${localize("component.maint.ui.panel.fields.weeks_suffix")}
+            </span>
           </div>
         </label>
         <div class="weekday-field">
-          <span class="label-text">On</span>
+          <span class="label-text">${localize("component.maint.ui.panel.fields.on")}</span>
           <div class="weekday-grid" @change=${onWeekdayChange}>
-            ${weekdayCheckboxes(form.weekly_days, busy)}
+            ${weekdayCheckboxes(form.weekly_days, weekdayLabels, busy)}
           </div>
         </div>
       </div>
@@ -1450,12 +1538,21 @@ var MaintPanel = class extends i4 {
     this.createRecurrenceType = "interval";
     this.editForm = null;
     this.editError = null;
+    this.translations = {};
+    this.translationsLanguage = null;
     this.initialized = false;
   }
   updated(changedProps) {
-    if (changedProps.has("hass") && this.hass && !this.initialized) {
-      this.initialized = true;
-      void this.loadEntries();
+    const hassChanged = changedProps.has("hass");
+    const languageChanged = hassChanged && this.hass?.language && this.hass.language !== this.translationsLanguage;
+    if (hassChanged && this.hass) {
+      void this.loadTranslations();
+      if (!this.initialized) {
+        this.initialized = true;
+        void this.loadEntries();
+      }
+    } else if (languageChanged && this.hass) {
+      void this.loadTranslations();
     }
   }
   render() {
@@ -1463,9 +1560,9 @@ var MaintPanel = class extends i4 {
     const formDisabled = !this.selectedEntryId;
     return x`
       <div class="container">
-        <h1>Maintenance</h1>
-        <p class="subtext">Manage recurring tasks and keep your home on track.</p>
-        ${hasEntries ? E : x`<p class="info">Add a Maint integration entry to start tracking tasks.</p>`}
+        <h1>${this.panelText("title")}</h1>
+        <p class="subtext">${this.panelText("subtitle")}</p>
+        ${hasEntries ? E : x`<p class="info">${this.panelText("info_add_entry")}</p>`}
         ${this.renderCreateForm(formDisabled, hasEntries)}
         ${this.renderTasksSection(formDisabled)}
         ${this.renderDeleteModal()}
@@ -1475,7 +1572,7 @@ var MaintPanel = class extends i4 {
   }
   renderCreateForm(formDisabled, hasEntries) {
     const toggleIcon = this.formExpanded ? "mdi:chevron-down" : "mdi:chevron-right";
-    const toggleLabel = this.formExpanded ? "Collapse form" : "Expand form";
+    const toggleLabel = this.formExpanded ? this.panelText("toggle_collapse") : this.panelText("toggle_expand");
     return x`
       <section>
         <div
@@ -1487,7 +1584,7 @@ var MaintPanel = class extends i4 {
           @keydown=${this.handleFormHeaderKeydown}
         >
           <div class="form-header-text">
-            <h2>Create task</h2>
+            <h2>${this.panelText("section_create")}</h2>
           </div>
           <button
             type="button"
@@ -1500,23 +1597,23 @@ var MaintPanel = class extends i4 {
           </button>
         </div>
         ${this.error ? x`<div class="error">${this.error}</div>` : E}
-        ${hasEntries ? E : x`<p class="info">Add a Maint integration entry to enable task tracking.</p>`}
+        ${hasEntries ? E : x`<p class="info">${this.panelText("info_enable_tracking")}</p>`}
         ${this.formExpanded ? x`
               <form id="task-form" @submit=${this.handleCreateTask}>
                 <div class="form-fields">
                   <label>
-                    <span class="label-text">Description</span>
+                    <span class="label-text">${this.panelText("fields.description")}</span>
                     <input
                       type="text"
                       name="description"
                       required
-                      placeholder="Smoke detector battery"
+                      placeholder=${this.panelText("placeholders.description_example")}
                       ?disabled=${formDisabled}
                     />
                   </label>
                   <div class="inline-fields">
                     <label>
-                      <span class="label-text">Schedule type</span>
+                      <span class="label-text">${this.panelText("fields.schedule_type")}</span>
                       <select
                         name="recurrence_type"
                         @change=${this.handleRecurrenceTypeChange}
@@ -1526,11 +1623,11 @@ var MaintPanel = class extends i4 {
                       </select>
                     </label>
                     <label>
-                      <span class="label-text">Starting from</span>
+                      <span class="label-text">${this.panelText("fields.starting_from")}</span>
                       <input
                         type="date"
                         name="last_completed"
-                        placeholder="mm/dd/yyyy"
+                        placeholder=${this.panelText("placeholders.date")}
                         @focus=${this.openDatePicker}
                         @pointerdown=${this.openDatePicker}
                         .value=${this.createLastCompleted}
@@ -1545,7 +1642,7 @@ var MaintPanel = class extends i4 {
                 </div>
                 <div class="form-actions">
                   <button type="submit" ?disabled=${this.busy || formDisabled}>
-                    ${this.busy ? "Saving\u2026" : "Create task"}
+                    ${this.busy ? this.panelText("buttons.saving") : this.panelText("buttons.create")}
                   </button>
                 </div>
               </form>
@@ -1557,8 +1654,8 @@ var MaintPanel = class extends i4 {
     const hasTasks = this.tasks.length > 0;
     return x`
       <section class="tasks-section">
-        <h2>Tasks</h2>
-        ${formDisabled ? x`<p class="info">Add the Maint integration to start tracking tasks.</p>` : !hasTasks ? x`<p class="info">No tasks yet. Use the form above to create one.</p>` : x`
+        <h2>${this.panelText("section_tasks")}</h2>
+        ${formDisabled ? x`<p class="info">${this.panelText("info_enable_tracking")}</p>` : !hasTasks ? x`<p class="info">${this.panelText("info_no_tasks")}</p>` : x`
                 <div class="task-list" role="list">
                   ${this.tasks.map((task) => this.renderTaskRow(task))}
                 </div>
@@ -1567,9 +1664,10 @@ var MaintPanel = class extends i4 {
     `;
   }
   renderTaskRow(task) {
-    const editLabel = "Edit";
+    const editLabel = this.panelText("buttons.edit");
     const editIcon = "mdi:pencil";
-    const completeLabel = "Mark complete";
+    const completeLabel = this.panelText("buttons.mark_complete");
+    const deleteLabel = this.panelText("buttons.delete");
     const actionsDisabled = this.busy || Boolean(this.editingTaskId);
     const isDue = this.isTaskDue(task);
     const rowClass = isDue ? "task-row due" : "task-row";
@@ -1578,16 +1676,18 @@ var MaintPanel = class extends i4 {
         <div class="task-details">
           <div class="task-description-line">
             <div class="task-description">${task.description}</div>
-            ${isDue ? x`<span class="pill pill-due">Due</span>` : E}
+            ${isDue ? x`<span class="pill pill-due">${this.panelText("labels.due")}</span>` : E}
           </div>
           <div class="task-meta">
             <div class="task-meta-column">
-              <div class="task-meta-title">Next scheduled</div>
+              <div class="task-meta-title">${this.panelText("labels.next_scheduled")}</div>
               <div class="task-meta-value">${formatDate(nextScheduled(task))}</div>
             </div>
             <div class="task-meta-column">
-              <div class="task-meta-title">Schedule</div>
-              <div class="task-meta-value">${formatRecurrence(task.recurrence)}</div>
+              <div class="task-meta-title">${this.panelText("labels.schedule")}</div>
+              <div class="task-meta-value">
+                ${formatRecurrence(task.recurrence, this.localizeText.bind(this))}
+              </div>
             </div>
           </div>
         </div>
@@ -1621,9 +1721,9 @@ var MaintPanel = class extends i4 {
               type="button"
               class="icon-button delete-task tooltipped"
               data-task=${task.task_id}
-              aria-label="Delete"
-              title="Delete"
-              data-label="Delete"
+              aria-label=${deleteLabel}
+              title=${deleteLabel}
+              data-label=${deleteLabel}
               ?disabled=${actionsDisabled}
               @click=${this.promptDelete}
             >
@@ -1687,8 +1787,10 @@ var MaintPanel = class extends i4 {
     return x`
       <div class="modal-backdrop">
         <div class="modal">
-          <h3>Delete task?</h3>
-          <p>Are you sure you want to delete "${task.description}"?</p>
+          <h3>${this.panelText("modals.delete_title")}</h3>
+          <p>
+            ${this.panelText("modals.delete_prompt", "task", task.description)}
+          </p>
           <div class="modal-actions">
             <button
               type="button"
@@ -1697,7 +1799,7 @@ var MaintPanel = class extends i4 {
               ?disabled=${this.busy}
               @click=${this.cancelDelete}
             >
-              Cancel
+              ${this.panelText("buttons.cancel")}
             </button>
             <button
               type="button"
@@ -1706,7 +1808,7 @@ var MaintPanel = class extends i4 {
               ?disabled=${this.busy}
               @click=${this.handleDelete}
             >
-              Delete
+              ${this.panelText("buttons.delete")}
             </button>
           </div>
         </div>
@@ -1720,12 +1822,12 @@ var MaintPanel = class extends i4 {
     return x`
       <div class="modal-backdrop">
         <div class="modal edit-modal">
-          <h3>Edit task</h3>
-          <p>Update the task details below.</p>
+          <h3>${this.panelText("modals.edit_title")}</h3>
+          <p>${this.panelText("modals.edit_prompt")}</p>
           ${this.editError ? x`<div class="error">${this.editError}</div>` : E}
           <form id="edit-task-form" @submit=${this.handleEditSubmit}>
             <label>
-              <span class="label-text">Description</span>
+              <span class="label-text">${this.panelText("fields.description")}</span>
               <input
                 type="text"
                 name="description"
@@ -1737,7 +1839,7 @@ var MaintPanel = class extends i4 {
             </label>
             <div class="inline-fields">
               <label>
-                <span class="label-text">Schedule type</span>
+                <span class="label-text">${this.panelText("fields.schedule_type")}</span>
                 <select
                   name="recurrence_type"
                   .value=${this.editForm.recurrence_type}
@@ -1748,7 +1850,7 @@ var MaintPanel = class extends i4 {
                 </select>
               </label>
               <label>
-                <span class="label-text">Last completed</span>
+                <span class="label-text">${this.panelText("fields.last_completed")}</span>
                 <input
                   type="date"
                   name="last_completed"
@@ -1772,10 +1874,10 @@ var MaintPanel = class extends i4 {
                 ?disabled=${this.busy}
                 @click=${this.cancelEdit}
               >
-                Cancel
+                ${this.panelText("buttons.cancel")}
               </button>
               <button type="submit" ?disabled=${this.busy}>
-                ${this.busy ? "Saving\u2026" : "Save changes"}
+                ${this.busy ? this.panelText("buttons.saving") : this.panelText("buttons.save_changes")}
               </button>
             </div>
           </form>
@@ -1801,7 +1903,7 @@ var MaintPanel = class extends i4 {
       }
     } catch (error) {
       console.error("Maint panel failed to load entries", error);
-      this.error = "Unable to load maint entries.";
+      this.error = this.panelText("errors.load_entries");
     }
   }
   async loadTasks() {
@@ -1824,7 +1926,7 @@ var MaintPanel = class extends i4 {
       this.formExpanded = this.tasks.length === 0;
     } catch (error) {
       console.error("Maint panel failed to load tasks", error);
-      this.error = "Unable to load tasks.";
+      this.error = this.panelText("errors.load_tasks");
     } finally {
       this.busy = false;
     }
@@ -1851,7 +1953,7 @@ var MaintPanel = class extends i4 {
       await this.loadTasks();
     } catch (error) {
       console.error("Failed to mark maint task complete", error);
-      this.error = "Unable to mark task complete.";
+      this.error = this.panelText("errors.mark_complete");
     } finally {
       this.busy = false;
     }
@@ -1874,7 +1976,7 @@ var MaintPanel = class extends i4 {
       interval_unit: formData.get("interval_unit"),
       weekly_every: formData.get("weekly_every"),
       weekly_days: formData.getAll("weekly_days")
-    });
+    }, this.localizeText.bind(this));
     if (result.error) {
       this.error = result.error;
       return;
@@ -1890,7 +1992,7 @@ var MaintPanel = class extends i4 {
       this.error = null;
     } catch (error) {
       console.error("Maint panel failed to create task", error);
-      this.error = "Could not create task. Check the logs for details.";
+      this.error = this.panelText("errors.create");
     } finally {
       this.busy = false;
       this.createLastCompleted = this.currentDateIso();
@@ -2010,7 +2112,7 @@ var MaintPanel = class extends i4 {
       interval_unit: formData.get("interval_unit"),
       weekly_every: formData.get("weekly_every"),
       weekly_days: formData.getAll("weekly_days")
-    });
+    }, this.localizeText.bind(this));
     if (result.error) {
       this.editError = result.error;
       return;
@@ -2035,7 +2137,7 @@ var MaintPanel = class extends i4 {
       this.editError = null;
     } catch (error) {
       console.error("Maint panel failed to update task", error);
-      this.editError = "Could not update the task.";
+      this.editError = this.panelText("errors.update");
     } finally {
       this.busy = false;
     }
@@ -2071,7 +2173,7 @@ var MaintPanel = class extends i4 {
       }
     } catch (error) {
       console.error("Maint panel failed to delete task", error);
-      this.error = "Could not delete the task.";
+      this.error = this.panelText("errors.delete");
     } finally {
       this.busy = false;
       this.confirmTaskId = null;
@@ -2107,8 +2209,8 @@ var MaintPanel = class extends i4 {
   }
   recurrenceTypeOptions(selected) {
     const options = [
-      { value: "interval", label: "Every N" },
-      { value: "weekly", label: "Days of the week" }
+      { value: "interval", label: this.panelText("recurrence_options.interval") },
+      { value: "weekly", label: this.panelText("recurrence_options.weekly") }
     ];
     return options.map(
       (option) => x`<option value=${option.value} ?selected=${option.value === selected}>
@@ -2117,7 +2219,12 @@ var MaintPanel = class extends i4 {
     );
   }
   renderRecurrenceFields(type, recurrence, taskId) {
-    return renderRecurrenceFields(type, recurrence, taskId);
+    return renderRecurrenceFields(
+      type,
+      recurrence,
+      taskId,
+      this.localizeText.bind(this)
+    );
   }
   handleRecurrenceTypeChange(event) {
     const select = event.currentTarget;
@@ -2134,7 +2241,8 @@ var MaintPanel = class extends i4 {
       this.editForm,
       this.busy,
       this.handleEditFieldInput.bind(this),
-      this.handleEditWeeklyDayChange.bind(this)
+      this.handleEditWeeklyDayChange.bind(this),
+      this.localizeText.bind(this)
     );
   }
   handleEditRecurrenceTypeChange(event) {
@@ -2167,6 +2275,53 @@ var MaintPanel = class extends i4 {
     const month = (today.getMonth() + 1).toString().padStart(2, "0");
     const day = today.getDate().toString().padStart(2, "0");
     return `${year}-${month}-${day}`;
+  }
+  localizeText(key, ...args) {
+    const translated = this.hass?.localize?.(key, ...args);
+    if (translated && translated !== key) {
+      return translated;
+    }
+    const template = this.translations[key];
+    if (template) {
+      return this.formatFromTemplate(template, args);
+    }
+    return translated ?? key;
+  }
+  panelText(key, ...args) {
+    return this.localizeText(`component.maint.ui.panel.${key}`, ...args);
+  }
+  formatFromTemplate(template, args) {
+    if (!args.length) {
+      return template;
+    }
+    const replacements = {};
+    for (let i5 = 0; i5 < args.length; i5 += 2) {
+      const name = String(args[i5]);
+      const value = i5 + 1 < args.length ? String(args[i5 + 1]) : "";
+      replacements[name] = value;
+    }
+    return template.replace(
+      /{([^}]+)}/g,
+      (match, key) => Object.prototype.hasOwnProperty.call(replacements, key) ? replacements[key] : match
+    );
+  }
+  async loadTranslations() {
+    if (!this.hass?.language) {
+      return;
+    }
+    const language = this.hass.language;
+    try {
+      const response = await this.hass.callWS({
+        type: "frontend/get_translations",
+        language,
+        category: "ui",
+        integration: "maint"
+      });
+      this.translations = response?.resources ?? {};
+      this.translationsLanguage = language;
+    } catch (error) {
+      console.error("Failed to load Maint translations", error);
+    }
   }
 };
 MaintPanel.styles = styles;
@@ -2209,6 +2364,12 @@ __decorateClass([
 __decorateClass([
   r5()
 ], MaintPanel.prototype, "editError", 2);
+__decorateClass([
+  r5()
+], MaintPanel.prototype, "translations", 2);
+__decorateClass([
+  r5()
+], MaintPanel.prototype, "translationsLanguage", 2);
 MaintPanel = __decorateClass([
   t3("maint-panel")
 ], MaintPanel);

@@ -1,6 +1,45 @@
-import type { MaintTask, Recurrence, Weekday } from "./api.js";
+import type { FrequencyUnit, MaintTask, Recurrence, Weekday } from "./api.js";
 
-const WEEKDAY_LABELS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+export type LocalizeFunc = (key: string, ...args: Array<string | number>) => string;
+
+const FALLBACK_WEEKDAY_FULL = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday"
+];
+const FALLBACK_WEEKDAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+const translateWithFallback = (
+  localize: LocalizeFunc,
+  key: string,
+  fallback: string,
+  ...args: Array<string | number>
+): string => {
+  const value = localize(key, ...args);
+  return value === key ? fallback : value;
+};
+
+export const getWeekdayLabels = (localize: LocalizeFunc): string[] =>
+  FALLBACK_WEEKDAY_FULL.map((fallback, index) =>
+    translateWithFallback(
+      localize,
+      `component.maint.ui.recurrence.weekday_full.${index}`,
+      fallback
+    )
+  );
+
+export const getWeekdayShortLabels = (localize: LocalizeFunc): string[] =>
+  FALLBACK_WEEKDAY_SHORT.map((fallback, index) =>
+    translateWithFallback(
+      localize,
+      `component.maint.ui.recurrence.weekday_short.${index}`,
+      fallback
+    )
+  );
 
 const toMondayIndex = (sundayIndex: number): Weekday =>
   (((sundayIndex + 6) % 7) as Weekday);
@@ -66,31 +105,84 @@ export const formatDateInput = (value: string | null | undefined): string => {
 const normalizeWeekdays = (days: Weekday[]): Weekday[] =>
   Array.from(new Set(days)).sort((a, b) => a - b) as Weekday[];
 
-export const formatRecurrence = (recurrence: Recurrence): string => {
+const getUnitLabel = (unit: FrequencyUnit, count: number, localize: LocalizeFunc): string => {
+  const keyBase =
+    unit === "days"
+      ? count === 1
+        ? "component.maint.ui.recurrence.unit.day_one"
+        : "component.maint.ui.recurrence.unit.day_other"
+      : unit === "weeks"
+        ? count === 1
+          ? "component.maint.ui.recurrence.unit.week_one"
+          : "component.maint.ui.recurrence.unit.week_other"
+        : count === 1
+          ? "component.maint.ui.recurrence.unit.month_one"
+          : "component.maint.ui.recurrence.unit.month_other";
+  const fallback =
+    unit === "days"
+      ? count === 1
+        ? "day"
+        : "days"
+      : unit === "weeks"
+        ? count === 1
+          ? "week"
+          : "weeks"
+        : count === 1
+          ? "month"
+          : "months";
+  return translateWithFallback(localize, keyBase, fallback, "count", count);
+};
+
+const formatDayList = (days: Weekday[], localize: LocalizeFunc): string => {
+  const labels = getWeekdayLabels(localize);
+  return normalizeWeekdays(days)
+    .map((day) => labels[day] ?? day.toString())
+    .join(", ");
+};
+
+export const formatRecurrence = (recurrence: Recurrence, localize: LocalizeFunc): string => {
   switch (recurrence.type) {
     case "interval": {
-      const unitLabel =
-        recurrence.unit === "days"
-          ? recurrence.every === 1
-            ? "day"
-            : "days"
-          : recurrence.unit === "weeks"
-            ? recurrence.every === 1
-              ? "week"
-              : "weeks"
-            : recurrence.every === 1
-              ? "month"
-              : "months";
-      if (recurrence.unit === "days" && recurrence.every === 1) {
-        return "Every day";
+      const count = recurrence.every ?? 0;
+      const unitLabel = getUnitLabel(recurrence.unit, count, localize);
+      if (recurrence.unit === "days" && count === 1) {
+        return translateWithFallback(
+          localize,
+          "component.maint.ui.recurrence.every_day",
+          "Every day"
+        );
       }
-      return `Every ${recurrence.every} ${unitLabel}`;
+      return translateWithFallback(
+        localize,
+        "component.maint.ui.recurrence.every_interval",
+        `Every ${count} ${unitLabel}`,
+        "count",
+        count,
+        "unit",
+        unitLabel
+      );
     }
     case "weekly": {
       const every = Math.max(1, recurrence.every ?? 1);
-      const labels = normalizeWeekdays(recurrence.days).map((day) => WEEKDAY_LABELS[day]);
-      const prefix = every === 1 ? "Weekly" : `Every ${every} weeks`;
-      return `${prefix} on ${labels.join(", ")}`;
+      const labels = formatDayList(recurrence.days, localize);
+      if (every === 1) {
+        return translateWithFallback(
+          localize,
+          "component.maint.ui.recurrence.weekly_on",
+          `Weekly on ${labels}`,
+          "days",
+          labels
+        );
+      }
+      return translateWithFallback(
+        localize,
+        "component.maint.ui.recurrence.weekly_every_on",
+        `Every ${every} weeks on ${labels}`,
+        "count",
+        every,
+        "days",
+        labels
+      );
     }
     default:
       return "—";

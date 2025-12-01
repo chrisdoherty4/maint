@@ -1,5 +1,5 @@
 import type { Recurrence, RecurrenceType, TaskPayload, Weekday } from "./api.js";
-import { parseDate } from "./formatting.js";
+import { parseDate, type LocalizeFunc } from "./formatting.js";
 
 export interface ValidationResult {
   values?: TaskPayload;
@@ -22,20 +22,23 @@ export interface TaskFields {
   weekly_every?: WeeklyEveryField;
 }
 
-export const validateTaskFields = (fields: TaskFields): ValidationResult => {
+export const validateTaskFields = (
+  fields: TaskFields,
+  localize: LocalizeFunc
+): ValidationResult => {
   const description = (fields.description ?? "").toString().trim();
   if (!description) {
-    return { error: "Enter a description." };
+    return { error: localize("component.maint.ui.panel.validation.description_required") };
   }
 
   const lastCompleted = parseDate(fields.last_completed);
   if (lastCompleted === null) {
-    return { error: "Enter a valid date for last completed." };
+    return { error: localize("component.maint.ui.panel.validation.last_completed_invalid") };
   }
 
-  const recurrence = parseRecurrence(fields);
+  const recurrence = parseRecurrence(fields, localize);
   if (!recurrence.ok) {
-    return { error: recurrence.error ?? "Choose a schedule." };
+    return { error: recurrence.error ?? localize("component.maint.ui.panel.validation.schedule_required") };
   }
 
   return {
@@ -76,7 +79,8 @@ const parseWeekdays = (value: WeeklyDaysField): Weekday[] | null => {
 };
 
 const parseRecurrence = (
-  fields: TaskFields
+  fields: TaskFields,
+  localize: LocalizeFunc
 ): { ok: true; value: Recurrence } | { ok: false; error?: string } => {
   const type = toRecurrenceType(fields.recurrence_type);
 
@@ -84,10 +88,16 @@ const parseRecurrence = (
     const every = parsePositiveInt(fields.interval_every);
     const unit = (fields.interval_unit ?? "").toString();
     if (!every) {
-      return { ok: false, error: "Enter how often the task repeats." };
+      return {
+        ok: false,
+        error: localize("component.maint.ui.panel.validation.interval_every_required")
+      };
     }
     if (unit !== "days" && unit !== "weeks" && unit !== "months") {
-      return { ok: false, error: "Choose a frequency unit." };
+      return {
+        ok: false,
+        error: localize("component.maint.ui.panel.validation.interval_unit_required")
+      };
     }
     return { ok: true, value: { type: "interval", every, unit } };
   }
@@ -95,11 +105,17 @@ const parseRecurrence = (
   if (type === "weekly") {
     const everyWeeks = parsePositiveInt(fields.weekly_every ?? "1");
     if (!everyWeeks) {
-      return { ok: false, error: "Enter how many weeks between repeats." };
+      return {
+        ok: false,
+        error: localize("component.maint.ui.panel.validation.weekly_every_required")
+      };
     }
     const days = parseWeekdays(fields.weekly_days);
     if (!days) {
-      return { ok: false, error: "Select at least one day of the week." };
+      return {
+        ok: false,
+        error: localize("component.maint.ui.panel.validation.weekly_days_required")
+      };
     }
     if (everyWeeks === 1 && days.length === 7) {
       return { ok: true, value: { type: "interval", every: 1, unit: "days" } };
@@ -107,5 +123,5 @@ const parseRecurrence = (
     return { ok: true, value: { type: "weekly", every: everyWeeks, days } };
   }
 
-  return { ok: false, error: "Choose a schedule." };
+  return { ok: false, error: localize("component.maint.ui.panel.validation.schedule_required") };
 };

@@ -51,13 +51,26 @@ export class MaintPanel extends LitElement {
   @state() private createRecurrenceType: RecurrenceType = "interval";
   @state() private editForm: EditFormState | null = null;
   @state() private editError: string | null = null;
+  @state() private translations: Record<string, string> = {};
+  @state() private translationsLanguage: string | null = null;
 
   private initialized = false;
 
   protected updated(changedProps: PropertyValueMap<this>): void {
-    if (changedProps.has("hass") && this.hass && !this.initialized) {
-      this.initialized = true;
-      void this.loadEntries();
+    const hassChanged = changedProps.has("hass");
+    const languageChanged =
+      hassChanged &&
+      this.hass?.language &&
+      this.hass.language !== this.translationsLanguage;
+
+    if (hassChanged && this.hass) {
+      void this.loadTranslations();
+      if (!this.initialized) {
+        this.initialized = true;
+        void this.loadEntries();
+      }
+    } else if (languageChanged && this.hass) {
+      void this.loadTranslations();
     }
   }
 
@@ -67,11 +80,11 @@ export class MaintPanel extends LitElement {
 
     return html`
       <div class="container">
-        <h1>Maintenance</h1>
-        <p class="subtext">Manage recurring tasks and keep your home on track.</p>
+        <h1>${this.panelText("title")}</h1>
+        <p class="subtext">${this.panelText("subtitle")}</p>
         ${hasEntries
         ? nothing
-        : html`<p class="info">Add a Maint integration entry to start tracking tasks.</p>`}
+        : html`<p class="info">${this.panelText("info_add_entry")}</p>`}
         ${this.renderCreateForm(formDisabled, hasEntries)}
         ${this.renderTasksSection(formDisabled)}
         ${this.renderDeleteModal()}
@@ -82,7 +95,9 @@ export class MaintPanel extends LitElement {
 
   private renderCreateForm(formDisabled: boolean, hasEntries: boolean) {
     const toggleIcon = this.formExpanded ? "mdi:chevron-down" : "mdi:chevron-right";
-    const toggleLabel = this.formExpanded ? "Collapse form" : "Expand form";
+    const toggleLabel = this.formExpanded
+      ? this.panelText("toggle_collapse")
+      : this.panelText("toggle_expand");
 
     return html`
       <section>
@@ -95,7 +110,7 @@ export class MaintPanel extends LitElement {
           @keydown=${this.handleFormHeaderKeydown}
         >
           <div class="form-header-text">
-            <h2>Create task</h2>
+            <h2>${this.panelText("section_create")}</h2>
           </div>
           <button
             type="button"
@@ -110,24 +125,24 @@ export class MaintPanel extends LitElement {
         ${this.error ? html`<div class="error">${this.error}</div>` : nothing}
         ${hasEntries
         ? nothing
-        : html`<p class="info">Add a Maint integration entry to enable task tracking.</p>`}
+        : html`<p class="info">${this.panelText("info_enable_tracking")}</p>`}
         ${this.formExpanded
         ? html`
               <form id="task-form" @submit=${this.handleCreateTask}>
                 <div class="form-fields">
                   <label>
-                    <span class="label-text">Description</span>
+                    <span class="label-text">${this.panelText("fields.description")}</span>
                     <input
                       type="text"
                       name="description"
                       required
-                      placeholder="Smoke detector battery"
+                      placeholder=${this.panelText("placeholders.description_example")}
                       ?disabled=${formDisabled}
                     />
                   </label>
                   <div class="inline-fields">
                     <label>
-                      <span class="label-text">Schedule type</span>
+                      <span class="label-text">${this.panelText("fields.schedule_type")}</span>
                       <select
                         name="recurrence_type"
                         @change=${this.handleRecurrenceTypeChange}
@@ -137,11 +152,11 @@ export class MaintPanel extends LitElement {
                       </select>
                     </label>
                     <label>
-                      <span class="label-text">Starting from</span>
+                      <span class="label-text">${this.panelText("fields.starting_from")}</span>
                       <input
                         type="date"
                         name="last_completed"
-                        placeholder="mm/dd/yyyy"
+                        placeholder=${this.panelText("placeholders.date")}
                         @focus=${this.openDatePicker}
                         @pointerdown=${this.openDatePicker}
                         .value=${this.createLastCompleted}
@@ -156,7 +171,9 @@ export class MaintPanel extends LitElement {
                 </div>
                 <div class="form-actions">
                   <button type="submit" ?disabled=${this.busy || formDisabled}>
-                    ${this.busy ? "Saving…" : "Create task"}
+                    ${this.busy
+            ? this.panelText("buttons.saving")
+            : this.panelText("buttons.create")}
                   </button>
                 </div>
               </form>
@@ -171,11 +188,11 @@ export class MaintPanel extends LitElement {
 
     return html`
       <section class="tasks-section">
-        <h2>Tasks</h2>
+        <h2>${this.panelText("section_tasks")}</h2>
         ${formDisabled
-        ? html`<p class="info">Add the Maint integration to start tracking tasks.</p>`
+        ? html`<p class="info">${this.panelText("info_enable_tracking")}</p>`
         : !hasTasks
-          ? html`<p class="info">No tasks yet. Use the form above to create one.</p>`
+          ? html`<p class="info">${this.panelText("info_no_tasks")}</p>`
           : html`
                 <div class="task-list" role="list">
                   ${this.tasks.map((task) => this.renderTaskRow(task))}
@@ -186,9 +203,10 @@ export class MaintPanel extends LitElement {
   }
 
   private renderTaskRow(task: MaintTask) {
-    const editLabel = "Edit";
+    const editLabel = this.panelText("buttons.edit");
     const editIcon = "mdi:pencil";
-    const completeLabel = "Mark complete";
+    const completeLabel = this.panelText("buttons.mark_complete");
+    const deleteLabel = this.panelText("buttons.delete");
     const actionsDisabled = this.busy || Boolean(this.editingTaskId);
     const isDue = this.isTaskDue(task);
     const rowClass = isDue ? "task-row due" : "task-row";
@@ -198,16 +216,18 @@ export class MaintPanel extends LitElement {
         <div class="task-details">
           <div class="task-description-line">
             <div class="task-description">${task.description}</div>
-            ${isDue ? html`<span class="pill pill-due">Due</span>` : nothing}
+            ${isDue ? html`<span class="pill pill-due">${this.panelText("labels.due")}</span>` : nothing}
           </div>
           <div class="task-meta">
             <div class="task-meta-column">
-              <div class="task-meta-title">Next scheduled</div>
+              <div class="task-meta-title">${this.panelText("labels.next_scheduled")}</div>
               <div class="task-meta-value">${formatDate(nextScheduled(task))}</div>
             </div>
             <div class="task-meta-column">
-              <div class="task-meta-title">Schedule</div>
-              <div class="task-meta-value">${formatRecurrence(task.recurrence)}</div>
+              <div class="task-meta-title">${this.panelText("labels.schedule")}</div>
+              <div class="task-meta-value">
+                ${formatRecurrence(task.recurrence, this.localizeText.bind(this))}
+              </div>
             </div>
           </div>
         </div>
@@ -241,9 +261,9 @@ export class MaintPanel extends LitElement {
               type="button"
               class="icon-button delete-task tooltipped"
               data-task=${task.task_id}
-              aria-label="Delete"
-              title="Delete"
-              data-label="Delete"
+              aria-label=${deleteLabel}
+              title=${deleteLabel}
+              data-label=${deleteLabel}
               ?disabled=${actionsDisabled}
               @click=${this.promptDelete}
             >
@@ -321,8 +341,10 @@ export class MaintPanel extends LitElement {
     return html`
       <div class="modal-backdrop">
         <div class="modal">
-          <h3>Delete task?</h3>
-          <p>Are you sure you want to delete "${task.description}"?</p>
+          <h3>${this.panelText("modals.delete_title")}</h3>
+          <p>
+            ${this.panelText("modals.delete_prompt", "task", task.description)}
+          </p>
           <div class="modal-actions">
             <button
               type="button"
@@ -331,7 +353,7 @@ export class MaintPanel extends LitElement {
               ?disabled=${this.busy}
               @click=${this.cancelDelete}
             >
-              Cancel
+              ${this.panelText("buttons.cancel")}
             </button>
             <button
               type="button"
@@ -340,7 +362,7 @@ export class MaintPanel extends LitElement {
               ?disabled=${this.busy}
               @click=${this.handleDelete}
             >
-              Delete
+              ${this.panelText("buttons.delete")}
             </button>
           </div>
         </div>
@@ -356,12 +378,12 @@ export class MaintPanel extends LitElement {
     return html`
       <div class="modal-backdrop">
         <div class="modal edit-modal">
-          <h3>Edit task</h3>
-          <p>Update the task details below.</p>
+          <h3>${this.panelText("modals.edit_title")}</h3>
+          <p>${this.panelText("modals.edit_prompt")}</p>
           ${this.editError ? html`<div class="error">${this.editError}</div>` : nothing}
           <form id="edit-task-form" @submit=${this.handleEditSubmit}>
             <label>
-              <span class="label-text">Description</span>
+              <span class="label-text">${this.panelText("fields.description")}</span>
               <input
                 type="text"
                 name="description"
@@ -373,7 +395,7 @@ export class MaintPanel extends LitElement {
             </label>
             <div class="inline-fields">
               <label>
-                <span class="label-text">Schedule type</span>
+                <span class="label-text">${this.panelText("fields.schedule_type")}</span>
                 <select
                   name="recurrence_type"
                   .value=${this.editForm.recurrence_type}
@@ -384,7 +406,7 @@ export class MaintPanel extends LitElement {
                 </select>
               </label>
               <label>
-                <span class="label-text">Last completed</span>
+                <span class="label-text">${this.panelText("fields.last_completed")}</span>
                 <input
                   type="date"
                   name="last_completed"
@@ -408,10 +430,12 @@ export class MaintPanel extends LitElement {
                 ?disabled=${this.busy}
                 @click=${this.cancelEdit}
               >
-                Cancel
+                ${this.panelText("buttons.cancel")}
               </button>
               <button type="submit" ?disabled=${this.busy}>
-                ${this.busy ? "Saving…" : "Save changes"}
+                ${this.busy
+        ? this.panelText("buttons.saving")
+        : this.panelText("buttons.save_changes")}
               </button>
             </div>
           </form>
@@ -441,7 +465,7 @@ export class MaintPanel extends LitElement {
       }
     } catch (error) {
       console.error("Maint panel failed to load entries", error);
-      this.error = "Unable to load maint entries.";
+      this.error = this.panelText("errors.load_entries");
     }
   }
 
@@ -467,7 +491,7 @@ export class MaintPanel extends LitElement {
       this.formExpanded = this.tasks.length === 0;
     } catch (error) {
       console.error("Maint panel failed to load tasks", error);
-      this.error = "Unable to load tasks.";
+      this.error = this.panelText("errors.load_tasks");
     } finally {
       this.busy = false;
     }
@@ -501,7 +525,7 @@ export class MaintPanel extends LitElement {
       await this.loadTasks();
     } catch (error) {
       console.error("Failed to mark maint task complete", error);
-      this.error = "Unable to mark task complete.";
+      this.error = this.panelText("errors.mark_complete");
     } finally {
       this.busy = false;
     }
@@ -527,8 +551,8 @@ export class MaintPanel extends LitElement {
       interval_every: formData.get("interval_every"),
       interval_unit: formData.get("interval_unit"),
       weekly_every: formData.get("weekly_every"),
-      weekly_days: formData.getAll("weekly_days"),
-    });
+      weekly_days: formData.getAll("weekly_days")
+    }, this.localizeText.bind(this));
 
     if (result.error) {
       this.error = result.error;
@@ -548,7 +572,7 @@ export class MaintPanel extends LitElement {
       this.error = null;
     } catch (error) {
       console.error("Maint panel failed to create task", error);
-      this.error = "Could not create task. Check the logs for details.";
+      this.error = this.panelText("errors.create");
     } finally {
       this.busy = false;
       this.createLastCompleted = this.currentDateIso();
@@ -687,7 +711,7 @@ export class MaintPanel extends LitElement {
       interval_unit: formData.get("interval_unit"),
       weekly_every: formData.get("weekly_every"),
       weekly_days: formData.getAll("weekly_days")
-    });
+    }, this.localizeText.bind(this));
 
     if (result.error) {
       this.editError = result.error;
@@ -716,7 +740,7 @@ export class MaintPanel extends LitElement {
       this.editError = null;
     } catch (error) {
       console.error("Maint panel failed to update task", error);
-      this.editError = "Could not update the task.";
+      this.editError = this.panelText("errors.update");
     } finally {
       this.busy = false;
     }
@@ -760,7 +784,7 @@ export class MaintPanel extends LitElement {
       }
     } catch (error) {
       console.error("Maint panel failed to delete task", error);
-      this.error = "Could not delete the task.";
+      this.error = this.panelText("errors.delete");
     } finally {
       this.busy = false;
       this.confirmTaskId = null;
@@ -804,8 +828,8 @@ export class MaintPanel extends LitElement {
 
   private recurrenceTypeOptions(selected: RecurrenceType) {
     const options: { value: RecurrenceType; label: string }[] = [
-      { value: "interval", label: "Every N" },
-      { value: "weekly", label: "Days of the week" }
+      { value: "interval", label: this.panelText("recurrence_options.interval") },
+      { value: "weekly", label: this.panelText("recurrence_options.weekly") }
     ];
     return options.map(
       (option) =>
@@ -820,7 +844,12 @@ export class MaintPanel extends LitElement {
     recurrence?: Recurrence,
     taskId?: string
   ) {
-    return renderRecurrenceFields(type, recurrence, taskId);
+    return renderRecurrenceFields(
+      type,
+      recurrence,
+      taskId,
+      this.localizeText.bind(this)
+    );
   }
 
   private handleRecurrenceTypeChange(event: Event): void {
@@ -840,7 +869,8 @@ export class MaintPanel extends LitElement {
       this.editForm,
       this.busy,
       this.handleEditFieldInput.bind(this),
-      this.handleEditWeeklyDayChange.bind(this)
+      this.handleEditWeeklyDayChange.bind(this),
+      this.localizeText.bind(this)
     );
   }
 
@@ -879,6 +909,60 @@ export class MaintPanel extends LitElement {
     const month = (today.getMonth() + 1).toString().padStart(2, "0");
     const day = today.getDate().toString().padStart(2, "0");
     return `${year}-${month}-${day}`;
+  }
+
+  private localizeText(key: string, ...args: Array<string | number>): string {
+    const translated = this.hass?.localize?.(key, ...args);
+    if (translated && translated !== key) {
+      return translated;
+    }
+
+    const template = this.translations[key];
+    if (template) {
+      return this.formatFromTemplate(template, args);
+    }
+
+    return translated ?? key;
+  }
+
+  private panelText(key: string, ...args: Array<string | number>): string {
+    return this.localizeText(`component.maint.ui.panel.${key}`, ...args);
+  }
+
+  private formatFromTemplate(template: string, args: Array<string | number>): string {
+    if (!args.length) {
+      return template;
+    }
+    const replacements: Record<string, string> = {};
+    for (let i = 0; i < args.length; i += 2) {
+      const name = String(args[i]);
+      const value = i + 1 < args.length ? String(args[i + 1]) : "";
+      replacements[name] = value;
+    }
+    return template.replace(/{([^}]+)}/g, (match, key) =>
+      Object.prototype.hasOwnProperty.call(replacements, key) ? replacements[key] : match
+    );
+  }
+
+  private async loadTranslations(): Promise<void> {
+    if (!this.hass?.language) {
+      return;
+    }
+    const language = this.hass.language;
+    try {
+      const response = await this.hass.callWS<{
+        resources: Record<string, string>;
+      }>({
+        type: "frontend/get_translations",
+        language,
+        category: "ui",
+        integration: "maint"
+      });
+      this.translations = response?.resources ?? {};
+      this.translationsLanguage = language;
+    } catch (error) {
+      console.error("Failed to load Maint translations", error);
+    }
   }
 
   static styles = styles;
