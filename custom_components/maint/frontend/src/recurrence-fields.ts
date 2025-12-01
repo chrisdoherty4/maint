@@ -53,7 +53,7 @@ export const renderRecurrenceFields = (
     return html`
       <div class="inline-fields">
         <label>
-          <span class="label-text">${localize("component.maint.ui.panel.fields.every")}</span>
+          <span class="label-text">${localize("component.maint.panel.fields.every")}</span>
           <input
             type="number"
             name="interval_every"
@@ -64,16 +64,16 @@ export const renderRecurrenceFields = (
           />
         </label>
         <label>
-          <span class="label-text">${localize("component.maint.ui.panel.fields.unit")}</span>
+          <span class="label-text">${localize("component.maint.panel.fields.unit")}</span>
           <select name="interval_unit">
             <option value="days" ?selected=${unit === "days"}>
-              ${localize("component.maint.ui.panel.recurrence_options.units.days")}
+              ${localize("component.maint.panel.recurrence_options.units.days")}
             </option>
             <option value="weeks" ?selected=${unit === "weeks"}>
-              ${localize("component.maint.ui.panel.recurrence_options.units.weeks")}
+              ${localize("component.maint.panel.recurrence_options.units.weeks")}
             </option>
             <option value="months" ?selected=${unit === "months"}>
-              ${localize("component.maint.ui.panel.recurrence_options.units.months")}
+              ${localize("component.maint.panel.recurrence_options.units.months")}
             </option>
           </select>
         </label>
@@ -91,7 +91,7 @@ export const renderRecurrenceFields = (
     return html`
       <div class="inline-fields">
         <label class="week-interval">
-          <span class="label-text">${localize("component.maint.ui.panel.fields.every")}</span>
+          <span class="label-text">${localize("component.maint.panel.fields.every")}</span>
           <div class="week-interval-input">
             <input
               class="week-interval-input-field"
@@ -103,12 +103,12 @@ export const renderRecurrenceFields = (
               .value=${every}
             />
             <span class="week-interval-suffix">
-              ${localize("component.maint.ui.panel.fields.weeks_suffix")}
+              ${localize("component.maint.panel.fields.weeks_suffix")}
             </span>
           </div>
         </label>
         <div class="weekday-field">
-          <span class="label-text">${localize("component.maint.ui.panel.fields.on")}</span>
+          <span class="label-text">${localize("component.maint.panel.fields.on")}</span>
           <div class="weekday-grid" data-task=${taskId ?? ""}>
             ${weekdayCheckboxes(selectedDays, weekdayLabels)}
           </div>
@@ -132,7 +132,7 @@ export const renderEditRecurrenceFields = (
     return html`
       <div class="inline-fields">
         <label>
-          <span class="label-text">${localize("component.maint.ui.panel.fields.every")}</span>
+          <span class="label-text">${localize("component.maint.panel.fields.every")}</span>
           <input
             type="number"
             name="interval_every"
@@ -145,16 +145,16 @@ export const renderEditRecurrenceFields = (
           />
         </label>
         <label>
-          <span class="label-text">${localize("component.maint.ui.panel.fields.unit")}</span>
+          <span class="label-text">${localize("component.maint.panel.fields.unit")}</span>
           <select
             name="interval_unit"
             .value=${form.interval_unit}
             ?disabled=${busy}
             @change=${onFieldInput}
           >
-            <option value="days">${localize("component.maint.ui.panel.recurrence_options.units.days")}</option>
-            <option value="weeks">${localize("component.maint.ui.panel.recurrence_options.units.weeks")}</option>
-            <option value="months">${localize("component.maint.ui.panel.recurrence_options.units.months")}</option>
+            <option value="days">${localize("component.maint.panel.recurrence_options.units.days")}</option>
+            <option value="weeks">${localize("component.maint.panel.recurrence_options.units.weeks")}</option>
+            <option value="months">${localize("component.maint.panel.recurrence_options.units.months")}</option>
           </select>
         </label>
       </div>
@@ -165,7 +165,7 @@ export const renderEditRecurrenceFields = (
     return html`
       <div class="inline-fields">
         <label class="week-interval">
-          <span class="label-text">${localize("component.maint.ui.panel.fields.every")}</span>
+          <span class="label-text">${localize("component.maint.panel.fields.every")}</span>
           <div class="week-interval-input">
             <input
               class="week-interval-input-field"
@@ -179,12 +179,12 @@ export const renderEditRecurrenceFields = (
               @input=${onFieldInput}
             />
             <span class="week-interval-suffix">
-              ${localize("component.maint.ui.panel.fields.weeks_suffix")}
+              ${localize("component.maint.panel.fields.weeks_suffix")}
             </span>
           </div>
         </label>
         <div class="weekday-field">
-          <span class="label-text">${localize("component.maint.ui.panel.fields.on")}</span>
+          <span class="label-text">${localize("component.maint.panel.fields.on")}</span>
           <div class="weekday-grid" @change=${onWeekdayChange}>
             ${weekdayCheckboxes(form.weekly_days, weekdayLabels, busy)}
           </div>

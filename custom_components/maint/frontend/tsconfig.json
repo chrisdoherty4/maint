@@ -11,7 +11,8 @@
     "noEmit": true,
     "useDefineForClassFields": false,
     "skipLibCheck": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true
   },
   "include": ["src/**/*.ts"]
 }

@@ -1,0 +1,46 @@
+{
+  "title": "Maint",
+  "config": {
+    "abort": {
+      "single_instance_allowed": "Nur ein Eintrag ist erlaubt."
+    },
+    "step": {
+      "user": {
+        "description": "Verfolge wiederkehrende Wartungsaufgaben im Haushalt."
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "sensor_prefix": "Sensorpräfix"
+        }
+      }
+    }
+  },
+  "services": {
+    "reset_last_completed": {
+      "name": "Letzte Ausführung zurücksetzen",
+      "description": "Setzt das Datum der letzten Ausführung einer Maint-Aufgabe auf heute oder ein angegebenes Datum.",
+      "fields": {
+        "entity_id": {
+          "name": "Aufgabenentität",
+          "description": "Binärsensor-Entität der Maint-Aufgabe, die zurückgesetzt werden soll. Verwende entry_id/task_id, wenn die Entität nicht verfügbar ist."
+        },
+        "entry_id": {
+          "name": "Eintrags-ID",
+          "description": "Maint-Konfigurationseintrags-ID. Erforderlich, wenn keine entity_id angegeben ist."
+        },
+        "task_id": {
+          "name": "Aufgaben-ID",
+          "description": "ID der Maint-Aufgabe. Erforderlich, wenn keine entity_id angegeben ist."
+        },
+        "last_completed": {
+          "name": "Letzte Ausführung",
+          "description": "Datum, das als letzte Ausführung gespeichert wird. Standardmäßig heute, wenn nicht angegeben."
+        }
+      }
+    }
+  }
+}

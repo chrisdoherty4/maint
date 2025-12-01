@@ -1,0 +1,46 @@
+{
+  "title": "Maint",
+  "config": {
+    "abort": {
+      "single_instance_allowed": "Solo se permite una entrada."
+    },
+    "step": {
+      "user": {
+        "description": "Sigue las tareas de mantenimiento del hogar recurrentes."
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "sensor_prefix": "Prefijo del sensor"
+        }
+      }
+    }
+  },
+  "services": {
+    "reset_last_completed": {
+      "name": "Restablecer última finalización",
+      "description": "Establece la fecha de última finalización de una tarea Maint a hoy o a la fecha indicada.",
+      "fields": {
+        "entity_id": {
+          "name": "Entidad de tarea",
+          "description": "Entidad de sensor binario de la tarea Maint que se va a restablecer. Usa entry_id/task_id si la entidad no está disponible."
+        },
+        "entry_id": {
+          "name": "ID de entrada",
+          "description": "ID de entrada de configuración de Maint. Obligatorio si no se proporciona entity_id."
+        },
+        "task_id": {
+          "name": "ID de tarea",
+          "description": "ID de la tarea Maint. Obligatorio si no se proporciona entity_id."
+        },
+        "last_completed": {
+          "name": "Última finalización",
+          "description": "Fecha que se guardará como última finalización. Por defecto, hoy si se omite."
+        }
+      }
+    }
+  }
+}

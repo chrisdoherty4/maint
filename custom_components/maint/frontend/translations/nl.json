@@ -1,0 +1,105 @@
+{
+  "panel": {
+    "title": "Onderhoud",
+    "subtitle": "Beheer terugkerende taken en houd je huis op schema.",
+    "info_add_entry": "Voeg een Maint-integratie-entry toe om taken te volgen.",
+    "info_enable_tracking": "Voeg een Maint-entry toe om taaktracking in te schakelen.",
+    "info_no_tasks": "Nog geen taken. Gebruik het formulier hierboven om er een te maken.",
+    "section_create": "Taak maken",
+    "section_tasks": "Taken",
+    "toggle_collapse": "Formulier inklappen",
+    "toggle_expand": "Formulier uitklappen",
+    "fields": {
+      "description": "Beschrijving",
+      "schedule_type": "Schema type",
+      "starting_from": "Vanaf",
+      "last_completed": "Laatst voltooid",
+      "every": "Elke",
+      "unit": "Eenheid",
+      "on": "Op",
+      "weeks_suffix": "week/weken"
+    },
+    "placeholders": {
+      "description_example": "Batterij rookmelder",
+      "date": "dd/mm/jjjj"
+    },
+    "recurrence_options": {
+      "interval": "Elke N",
+      "weekly": "Dagen van de week",
+      "units": {
+        "days": "Dagen",
+        "weeks": "Weken",
+        "months": "Maanden"
+      }
+    },
+    "buttons": {
+      "create": "Taak maken",
+      "saving": "Opslaan…",
+      "mark_complete": "Markeer als voltooid",
+      "edit": "Bewerken",
+      "delete": "Verwijderen",
+      "cancel": "Annuleren",
+      "save_changes": "Wijzigingen opslaan"
+    },
+    "labels": {
+      "due": "Verlopen",
+      "next_scheduled": "Volgende gepland",
+      "schedule": "Schema"
+    },
+    "modals": {
+      "delete_title": "Taak verwijderen?",
+      "delete_prompt": "Weet je zeker dat je \"{task}\" wilt verwijderen?",
+      "edit_title": "Taak bewerken",
+      "edit_prompt": "Werk de taakdetails hieronder bij."
+    },
+    "errors": {
+      "load_entries": "Kon Maint-entries niet laden.",
+      "load_tasks": "Kon taken niet laden.",
+      "mark_complete": "Taak kon niet als voltooid worden gemarkeerd.",
+      "create": "Taak kon niet worden gemaakt. Controleer de logboeken voor details.",
+      "update": "Taak kon niet worden bijgewerkt.",
+      "delete": "Taak kon niet worden verwijderd."
+    },
+    "validation": {
+      "description_required": "Voer een beschrijving in.",
+      "last_completed_invalid": "Voer een geldige datum in voor laatst voltooid.",
+      "schedule_required": "Kies een schema.",
+      "interval_every_required": "Geef aan hoe vaak de taak terugkeert.",
+      "interval_unit_required": "Kies een frequentie-eenheid.",
+      "weekly_every_required": "Geef aan hoeveel weken tussen herhalingen.",
+      "weekly_days_required": "Selecteer minstens één dag van de week."
+    }
+  },
+  "recurrence": {
+    "every_day": "Elke dag",
+    "every_interval": "Elke {count} {unit}",
+    "weekly_on": "Wekelijks op {days}",
+    "weekly_every_on": "Elke {count} weken op {days}",
+    "unit": {
+      "day_one": "dag",
+      "day_other": "dagen",
+      "week_one": "week",
+      "week_other": "weken",
+      "month_one": "maand",
+      "month_other": "maanden"
+    },
+    "weekday_full": {
+      "0": "Maandag",
+      "1": "Dinsdag",
+      "2": "Woensdag",
+      "3": "Donderdag",
+      "4": "Vrijdag",
+      "5": "Zaterdag",
+      "6": "Zondag"
+    },
+    "weekday_short": {
+      "0": "Ma",
+      "1": "Di",
+      "2": "Wo",
+      "3": "Do",
+      "4": "Vr",
+      "5": "Za",
+      "6": "Zo"
+    }
+  }
+}

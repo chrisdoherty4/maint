@@ -19,7 +19,6 @@ tasks.
 
 ### General
 
-- Review and update `README.md` for user-facing changes and refresh `custom_components/maint/quality_scale.yaml` when requirements are met.
 - Lint and test changes - fix any issues.
 - Consult https://developers.home-assistant.io/ for information on developing Home Assistant integrations.
 - Prioritize readable, maintainable code. Keep changes aligned with module layout.
@@ -29,7 +28,7 @@ tasks.
 
 - Provide type hints for all function parameters and returns.
 - Code is linted using ruff; run `scripts/lint` (it formats then checks/fixes) after Python changes.
-- Strings/translations: keep `custom_components/maint/strings.json` and `custom_components/maint/translations/en.json` in sync when copy changes.
+
 - Include adequete debug logging.
 - Testing: run `python -m pytest`; add/update tests in `/tests`, especially for new async HA flows.
 
@@ -38,6 +37,19 @@ tasks.
 - The frontend is written in TypeScript - always modify the TypeScript and compile down to JavaScript.
 - Compile using the `./scripts/frontend`.
 - Avoid using the `unknown` type whenever possible.
+
+## Translations
+
+- Backend Home Assistant standard keys for translations live in `custom_components/maint/translations/<lang>.json` (title/config/options/services).   Add/edit translations in both `*.json`. Use the same key shape across languages.
+- UI strings live in `custom_components/maint/frontend/translations/<lang>.json` and are flattened at build time via `src/translations.ts` into `component.maint.panel.*` and `component.maint.recurrence.*` keys. Add/edit translations in both `*.json`, then re-run `./scripts/frontend`. Use the same key shape across languages.
+- Use the English definition as the source of translation.
+
+## README.md
+
+- Review and update the README with new features.
+- Ensure the README reflects all supported languages.
+- Avoid terminology like "Maint currently"; the README always refers to the present tense.
+- When describing features and languages, avoid implementation details and focus on what the user sees and interacts with.
 
 ## Temporary Constraints
 

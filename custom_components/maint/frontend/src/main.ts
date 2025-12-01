@@ -29,6 +29,7 @@ import {
   type RecurrenceFormState
 } from "./recurrence-fields.js";
 import { styles } from "./styles.js";
+import { getUiTranslations } from "./translations.js";
 
 type EditFormState = {
   description: string;
@@ -912,21 +913,21 @@ export class MaintPanel extends LitElement {
   }
 
   private localizeText(key: string, ...args: Array<string | number>): string {
-    const translated = this.hass?.localize?.(key, ...args);
-    if (translated && translated !== key) {
-      return translated;
-    }
-
     const template = this.translations[key];
     if (template) {
       return this.formatFromTemplate(template, args);
+    }
+
+    const translated = this.hass?.localize?.(key, ...args);
+    if (translated && translated !== key) {
+      return translated;
     }
 
     return translated ?? key;
   }
 
   private panelText(key: string, ...args: Array<string | number>): string {
-    return this.localizeText(`component.maint.ui.panel.${key}`, ...args);
+    return this.localizeText(`component.maint.panel.${key}`, ...args);
   }
 
   private formatFromTemplate(template: string, args: Array<string | number>): string {
@@ -945,24 +946,9 @@ export class MaintPanel extends LitElement {
   }
 
   private async loadTranslations(): Promise<void> {
-    if (!this.hass?.language) {
-      return;
-    }
-    const language = this.hass.language;
-    try {
-      const response = await this.hass.callWS<{
-        resources: Record<string, string>;
-      }>({
-        type: "frontend/get_translations",
-        language,
-        category: "ui",
-        integration: "maint"
-      });
-      this.translations = response?.resources ?? {};
-      this.translationsLanguage = language;
-    } catch (error) {
-      console.error("Failed to load Maint translations", error);
-    }
+    const language = this.hass?.language;
+    this.translations = getUiTranslations(language);
+    this.translationsLanguage = language ?? "en";
   }
 
   static styles = styles;

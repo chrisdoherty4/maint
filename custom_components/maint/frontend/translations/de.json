@@ -1,0 +1,105 @@
+{
+  "panel": {
+    "title": "Wartung",
+    "subtitle": "Verwalte wiederkehrende Aufgaben und halte dein Zuhause auf Kurs.",
+    "info_add_entry": "Füge einen Maint-Integrations-Eintrag hinzu, um Aufgaben zu verfolgen.",
+    "info_enable_tracking": "Füge einen Maint-Integrations-Eintrag hinzu, um die Nachverfolgung zu aktivieren.",
+    "info_no_tasks": "Noch keine Aufgaben. Nutze das Formular oben, um eine zu erstellen.",
+    "section_create": "Aufgabe erstellen",
+    "section_tasks": "Aufgaben",
+    "toggle_collapse": "Formular einklappen",
+    "toggle_expand": "Formular ausklappen",
+    "fields": {
+      "description": "Beschreibung",
+      "schedule_type": "Intervalltyp",
+      "starting_from": "Startdatum",
+      "last_completed": "Zuletzt abgeschlossen",
+      "every": "Alle",
+      "unit": "Einheit",
+      "on": "Am",
+      "weeks_suffix": "Woche(n)"
+    },
+    "placeholders": {
+      "description_example": "Batterie Rauchmelder",
+      "date": "tt/mm/jjjj"
+    },
+    "recurrence_options": {
+      "interval": "Alle N",
+      "weekly": "Wochentage",
+      "units": {
+        "days": "Tage",
+        "weeks": "Wochen",
+        "months": "Monate"
+      }
+    },
+    "buttons": {
+      "create": "Aufgabe erstellen",
+      "saving": "Speichern…",
+      "mark_complete": "Als erledigt markieren",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "cancel": "Abbrechen",
+      "save_changes": "Änderungen speichern"
+    },
+    "labels": {
+      "due": "Fällig",
+      "next_scheduled": "Nächste Planung",
+      "schedule": "Plan"
+    },
+    "modals": {
+      "delete_title": "Aufgabe löschen?",
+      "delete_prompt": "Möchtest du „{task}“ wirklich löschen?",
+      "edit_title": "Aufgabe bearbeiten",
+      "edit_prompt": "Aktualisiere die Aufgabendetails unten."
+    },
+    "errors": {
+      "load_entries": "Maint-Einträge konnten nicht geladen werden.",
+      "load_tasks": "Aufgaben konnten nicht geladen werden.",
+      "mark_complete": "Aufgabe konnte nicht als erledigt markiert werden.",
+      "create": "Aufgabe konnte nicht erstellt werden. Siehe Logs für Details.",
+      "update": "Aufgabe konnte nicht aktualisiert werden.",
+      "delete": "Aufgabe konnte nicht gelöscht werden."
+    },
+    "validation": {
+      "description_required": "Gib eine Beschreibung ein.",
+      "last_completed_invalid": "Gib ein gültiges Datum für zuletzt abgeschlossen ein.",
+      "schedule_required": "Wähle einen Plan.",
+      "interval_every_required": "Gib an, wie oft die Aufgabe wiederholt wird.",
+      "interval_unit_required": "Wähle eine Häufigkeitseinheit.",
+      "weekly_every_required": "Gib an, nach wie vielen Wochen sich die Aufgabe wiederholt.",
+      "weekly_days_required": "Wähle mindestens einen Wochentag."
+    }
+  },
+  "recurrence": {
+    "every_day": "Jeden Tag",
+    "every_interval": "Alle {count} {unit}",
+    "weekly_on": "Wöchentlich am {days}",
+    "weekly_every_on": "Alle {count} Wochen am {days}",
+    "unit": {
+      "day_one": "Tag",
+      "day_other": "Tage",
+      "week_one": "Woche",
+      "week_other": "Wochen",
+      "month_one": "Monat",
+      "month_other": "Monate"
+    },
+    "weekday_full": {
+      "0": "Montag",
+      "1": "Dienstag",
+      "2": "Mittwoch",
+      "3": "Donnerstag",
+      "4": "Freitag",
+      "5": "Samstag",
+      "6": "Sonntag"
+    },
+    "weekday_short": {
+      "0": "Mo",
+      "1": "Di",
+      "2": "Mi",
+      "3": "Do",
+      "4": "Fr",
+      "5": "Sa",
+      "6": "So"
+    }
+  }
+}

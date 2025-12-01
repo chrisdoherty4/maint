@@ -28,17 +28,17 @@ export const validateTaskFields = (
 ): ValidationResult => {
   const description = (fields.description ?? "").toString().trim();
   if (!description) {
-    return { error: localize("component.maint.ui.panel.validation.description_required") };
+    return { error: localize("component.maint.panel.validation.description_required") };
   }
 
   const lastCompleted = parseDate(fields.last_completed);
   if (lastCompleted === null) {
-    return { error: localize("component.maint.ui.panel.validation.last_completed_invalid") };
+    return { error: localize("component.maint.panel.validation.last_completed_invalid") };
   }
 
   const recurrence = parseRecurrence(fields, localize);
   if (!recurrence.ok) {
-    return { error: recurrence.error ?? localize("component.maint.ui.panel.validation.schedule_required") };
+    return { error: recurrence.error ?? localize("component.maint.panel.validation.schedule_required") };
   }
 
   return {
@@ -90,13 +90,13 @@ const parseRecurrence = (
     if (!every) {
       return {
         ok: false,
-        error: localize("component.maint.ui.panel.validation.interval_every_required")
+        error: localize("component.maint.panel.validation.interval_every_required")
       };
     }
     if (unit !== "days" && unit !== "weeks" && unit !== "months") {
       return {
         ok: false,
-        error: localize("component.maint.ui.panel.validation.interval_unit_required")
+        error: localize("component.maint.panel.validation.interval_unit_required")
       };
     }
     return { ok: true, value: { type: "interval", every, unit } };
@@ -107,14 +107,14 @@ const parseRecurrence = (
     if (!everyWeeks) {
       return {
         ok: false,
-        error: localize("component.maint.ui.panel.validation.weekly_every_required")
+        error: localize("component.maint.panel.validation.weekly_every_required")
       };
     }
     const days = parseWeekdays(fields.weekly_days);
     if (!days) {
       return {
         ok: false,
-        error: localize("component.maint.ui.panel.validation.weekly_days_required")
+        error: localize("component.maint.panel.validation.weekly_days_required")
       };
     }
     if (everyWeeks === 1 && days.length === 7) {
@@ -123,5 +123,5 @@ const parseRecurrence = (
     return { ok: true, value: { type: "weekly", every: everyWeeks, days } };
   }
 
-  return { ok: false, error: localize("component.maint.ui.panel.validation.schedule_required") };
+  return { ok: false, error: localize("component.maint.panel.validation.schedule_required") };
 };

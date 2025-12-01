@@ -645,14 +645,14 @@ var translateWithFallback = (localize, key, fallback, ...args) => {
 var getWeekdayLabels = (localize) => FALLBACK_WEEKDAY_FULL.map(
   (fallback, index) => translateWithFallback(
     localize,
-    `component.maint.ui.recurrence.weekday_full.${index}`,
+    `component.maint.recurrence.weekday_full.${index}`,
     fallback
   )
 );
 var getWeekdayShortLabels = (localize) => FALLBACK_WEEKDAY_SHORT.map(
   (fallback, index) => translateWithFallback(
     localize,
-    `component.maint.ui.recurrence.weekday_short.${index}`,
+    `component.maint.recurrence.weekday_short.${index}`,
     fallback
   )
 );
@@ -701,7 +701,7 @@ var formatDateInput = (value) => {
 };
 var normalizeWeekdays = (days) => Array.from(new Set(days)).sort((a3, b3) => a3 - b3);
 var getUnitLabel = (unit, count, localize) => {
-  const keyBase = unit === "days" ? count === 1 ? "component.maint.ui.recurrence.unit.day_one" : "component.maint.ui.recurrence.unit.day_other" : unit === "weeks" ? count === 1 ? "component.maint.ui.recurrence.unit.week_one" : "component.maint.ui.recurrence.unit.week_other" : count === 1 ? "component.maint.ui.recurrence.unit.month_one" : "component.maint.ui.recurrence.unit.month_other";
+  const keyBase = unit === "days" ? count === 1 ? "component.maint.recurrence.unit.day_one" : "component.maint.recurrence.unit.day_other" : unit === "weeks" ? count === 1 ? "component.maint.recurrence.unit.week_one" : "component.maint.recurrence.unit.week_other" : count === 1 ? "component.maint.recurrence.unit.month_one" : "component.maint.recurrence.unit.month_other";
   const fallback = unit === "days" ? count === 1 ? "day" : "days" : unit === "weeks" ? count === 1 ? "week" : "weeks" : count === 1 ? "month" : "months";
   return translateWithFallback(localize, keyBase, fallback, "count", count);
 };
@@ -717,13 +717,13 @@ var formatRecurrence = (recurrence, localize) => {
       if (recurrence.unit === "days" && count === 1) {
         return translateWithFallback(
           localize,
-          "component.maint.ui.recurrence.every_day",
+          "component.maint.recurrence.every_day",
           "Every day"
         );
       }
       return translateWithFallback(
         localize,
-        "component.maint.ui.recurrence.every_interval",
+        "component.maint.recurrence.every_interval",
         `Every ${count} ${unitLabel}`,
         "count",
         count,
@@ -737,7 +737,7 @@ var formatRecurrence = (recurrence, localize) => {
       if (every === 1) {
         return translateWithFallback(
           localize,
-          "component.maint.ui.recurrence.weekly_on",
+          "component.maint.recurrence.weekly_on",
           `Weekly on ${labels}`,
           "days",
           labels
@@ -745,7 +745,7 @@ var formatRecurrence = (recurrence, localize) => {
       }
       return translateWithFallback(
         localize,
-        "component.maint.ui.recurrence.weekly_every_on",
+        "component.maint.recurrence.weekly_every_on",
         `Every ${every} weeks on ${labels}`,
         "count",
         every,
@@ -846,15 +846,15 @@ var deleteMaintTask = (hass, entryId, taskId) => deleteTask(hass, entryId, taskI
 var validateTaskFields = (fields, localize) => {
   const description = (fields.description ?? "").toString().trim();
   if (!description) {
-    return { error: localize("component.maint.ui.panel.validation.description_required") };
+    return { error: localize("component.maint.panel.validation.description_required") };
   }
   const lastCompleted = parseDate(fields.last_completed);
   if (lastCompleted === null) {
-    return { error: localize("component.maint.ui.panel.validation.last_completed_invalid") };
+    return { error: localize("component.maint.panel.validation.last_completed_invalid") };
   }
   const recurrence = parseRecurrence(fields, localize);
   if (!recurrence.ok) {
-    return { error: recurrence.error ?? localize("component.maint.ui.panel.validation.schedule_required") };
+    return { error: recurrence.error ?? localize("component.maint.panel.validation.schedule_required") };
   }
   return {
     values: {
@@ -892,13 +892,13 @@ var parseRecurrence = (fields, localize) => {
     if (!every) {
       return {
         ok: false,
-        error: localize("component.maint.ui.panel.validation.interval_every_required")
+        error: localize("component.maint.panel.validation.interval_every_required")
       };
     }
     if (unit !== "days" && unit !== "weeks" && unit !== "months") {
       return {
         ok: false,
-        error: localize("component.maint.ui.panel.validation.interval_unit_required")
+        error: localize("component.maint.panel.validation.interval_unit_required")
       };
     }
     return { ok: true, value: { type: "interval", every, unit } };
@@ -908,14 +908,14 @@ var parseRecurrence = (fields, localize) => {
     if (!everyWeeks) {
       return {
         ok: false,
-        error: localize("component.maint.ui.panel.validation.weekly_every_required")
+        error: localize("component.maint.panel.validation.weekly_every_required")
       };
     }
     const days = parseWeekdays(fields.weekly_days);
     if (!days) {
       return {
         ok: false,
-        error: localize("component.maint.ui.panel.validation.weekly_days_required")
+        error: localize("component.maint.panel.validation.weekly_days_required")
       };
     }
     if (everyWeeks === 1 && days.length === 7) {
@@ -923,7 +923,7 @@ var parseRecurrence = (fields, localize) => {
     }
     return { ok: true, value: { type: "weekly", every: everyWeeks, days } };
   }
-  return { ok: false, error: localize("component.maint.ui.panel.validation.schedule_required") };
+  return { ok: false, error: localize("component.maint.panel.validation.schedule_required") };
 };
 
 // src/recurrence-fields.ts
@@ -954,7 +954,7 @@ var renderRecurrenceFields = (type, recurrence, taskId, localize) => {
     return x`
       <div class="inline-fields">
         <label>
-          <span class="label-text">${localize("component.maint.ui.panel.fields.every")}</span>
+          <span class="label-text">${localize("component.maint.panel.fields.every")}</span>
           <input
             type="number"
             name="interval_every"
@@ -965,16 +965,16 @@ var renderRecurrenceFields = (type, recurrence, taskId, localize) => {
           />
         </label>
         <label>
-          <span class="label-text">${localize("component.maint.ui.panel.fields.unit")}</span>
+          <span class="label-text">${localize("component.maint.panel.fields.unit")}</span>
           <select name="interval_unit">
             <option value="days" ?selected=${unit === "days"}>
-              ${localize("component.maint.ui.panel.recurrence_options.units.days")}
+              ${localize("component.maint.panel.recurrence_options.units.days")}
             </option>
             <option value="weeks" ?selected=${unit === "weeks"}>
-              ${localize("component.maint.ui.panel.recurrence_options.units.weeks")}
+              ${localize("component.maint.panel.recurrence_options.units.weeks")}
             </option>
             <option value="months" ?selected=${unit === "months"}>
-              ${localize("component.maint.ui.panel.recurrence_options.units.months")}
+              ${localize("component.maint.panel.recurrence_options.units.months")}
             </option>
           </select>
         </label>
@@ -987,7 +987,7 @@ var renderRecurrenceFields = (type, recurrence, taskId, localize) => {
     return x`
       <div class="inline-fields">
         <label class="week-interval">
-          <span class="label-text">${localize("component.maint.ui.panel.fields.every")}</span>
+          <span class="label-text">${localize("component.maint.panel.fields.every")}</span>
           <div class="week-interval-input">
             <input
               class="week-interval-input-field"
@@ -999,12 +999,12 @@ var renderRecurrenceFields = (type, recurrence, taskId, localize) => {
               .value=${every}
             />
             <span class="week-interval-suffix">
-              ${localize("component.maint.ui.panel.fields.weeks_suffix")}
+              ${localize("component.maint.panel.fields.weeks_suffix")}
             </span>
           </div>
         </label>
         <div class="weekday-field">
-          <span class="label-text">${localize("component.maint.ui.panel.fields.on")}</span>
+          <span class="label-text">${localize("component.maint.panel.fields.on")}</span>
           <div class="weekday-grid" data-task=${taskId ?? ""}>
             ${weekdayCheckboxes(selectedDays, weekdayLabels)}
           </div>
@@ -1020,7 +1020,7 @@ var renderEditRecurrenceFields = (form, busy, onFieldInput, onWeekdayChange, loc
     return x`
       <div class="inline-fields">
         <label>
-          <span class="label-text">${localize("component.maint.ui.panel.fields.every")}</span>
+          <span class="label-text">${localize("component.maint.panel.fields.every")}</span>
           <input
             type="number"
             name="interval_every"
@@ -1033,16 +1033,16 @@ var renderEditRecurrenceFields = (form, busy, onFieldInput, onWeekdayChange, loc
           />
         </label>
         <label>
-          <span class="label-text">${localize("component.maint.ui.panel.fields.unit")}</span>
+          <span class="label-text">${localize("component.maint.panel.fields.unit")}</span>
           <select
             name="interval_unit"
             .value=${form.interval_unit}
             ?disabled=${busy}
             @change=${onFieldInput}
           >
-            <option value="days">${localize("component.maint.ui.panel.recurrence_options.units.days")}</option>
-            <option value="weeks">${localize("component.maint.ui.panel.recurrence_options.units.weeks")}</option>
-            <option value="months">${localize("component.maint.ui.panel.recurrence_options.units.months")}</option>
+            <option value="days">${localize("component.maint.panel.recurrence_options.units.days")}</option>
+            <option value="weeks">${localize("component.maint.panel.recurrence_options.units.weeks")}</option>
+            <option value="months">${localize("component.maint.panel.recurrence_options.units.months")}</option>
           </select>
         </label>
       </div>
@@ -1052,7 +1052,7 @@ var renderEditRecurrenceFields = (form, busy, onFieldInput, onWeekdayChange, loc
     return x`
       <div class="inline-fields">
         <label class="week-interval">
-          <span class="label-text">${localize("component.maint.ui.panel.fields.every")}</span>
+          <span class="label-text">${localize("component.maint.panel.fields.every")}</span>
           <div class="week-interval-input">
             <input
               class="week-interval-input-field"
@@ -1066,12 +1066,12 @@ var renderEditRecurrenceFields = (form, busy, onFieldInput, onWeekdayChange, loc
               @input=${onFieldInput}
             />
             <span class="week-interval-suffix">
-              ${localize("component.maint.ui.panel.fields.weeks_suffix")}
+              ${localize("component.maint.panel.fields.weeks_suffix")}
             </span>
           </div>
         </label>
         <div class="weekday-field">
-          <span class="label-text">${localize("component.maint.ui.panel.fields.on")}</span>
+          <span class="label-text">${localize("component.maint.panel.fields.on")}</span>
           <div class="weekday-grid" @change=${onWeekdayChange}>
             ${weekdayCheckboxes(form.weekly_days, weekdayLabels, busy)}
           </div>
@@ -1521,6 +1521,274 @@ var styles = i`
     }
   }
 `;
+
+// translations/en.json
+var en_default = {
+  panel: {
+    title: "Maintenance",
+    subtitle: "Manage recurring tasks and keep your home on track.",
+    info_add_entry: "Add a Maint integration entry to start tracking tasks.",
+    info_enable_tracking: "Add a Maint integration entry to enable task tracking.",
+    info_no_tasks: "No tasks yet. Use the form above to create one.",
+    section_create: "Create task",
+    section_tasks: "Tasks",
+    toggle_collapse: "Collapse form",
+    toggle_expand: "Expand form",
+    fields: {
+      description: "Description",
+      schedule_type: "Schedule type",
+      starting_from: "Starting from",
+      last_completed: "Last completed",
+      every: "Every",
+      unit: "Unit",
+      on: "On",
+      weeks_suffix: "week(s)"
+    },
+    placeholders: {
+      description_example: "Smoke detector battery",
+      date: "mm/dd/yyyy"
+    },
+    recurrence_options: {
+      interval: "Every N",
+      weekly: "Days of the week",
+      units: {
+        days: "Days",
+        weeks: "Weeks",
+        months: "Months"
+      }
+    },
+    buttons: {
+      create: "Create task",
+      saving: "Saving\u2026",
+      mark_complete: "Mark complete",
+      edit: "Edit",
+      delete: "Delete",
+      cancel: "Cancel",
+      save_changes: "Save changes"
+    },
+    labels: {
+      due: "Due",
+      next_scheduled: "Next scheduled",
+      schedule: "Schedule"
+    },
+    modals: {
+      delete_title: "Delete task?",
+      delete_prompt: 'Are you sure you want to delete "{task}"?',
+      edit_title: "Edit task",
+      edit_prompt: "Update the task details below."
+    },
+    errors: {
+      load_entries: "Unable to load maint entries.",
+      load_tasks: "Unable to load tasks.",
+      mark_complete: "Unable to mark task complete.",
+      create: "Could not create task. Check the logs for details.",
+      update: "Could not update the task.",
+      delete: "Could not delete the task."
+    },
+    validation: {
+      description_required: "Enter a description.",
+      last_completed_invalid: "Enter a valid date for last completed.",
+      schedule_required: "Choose a schedule.",
+      interval_every_required: "Enter how often the task repeats.",
+      interval_unit_required: "Choose a frequency unit.",
+      weekly_every_required: "Enter how many weeks between repeats.",
+      weekly_days_required: "Select at least one day of the week."
+    }
+  },
+  recurrence: {
+    every_day: "Every day",
+    every_interval: "Every {count} {unit}",
+    weekly_on: "Weekly on {days}",
+    weekly_every_on: "Every {count} weeks on {days}",
+    unit: {
+      day_one: "day",
+      day_other: "days",
+      week_one: "week",
+      week_other: "weeks",
+      month_one: "month",
+      month_other: "months"
+    },
+    weekday_full: {
+      "0": "Monday",
+      "1": "Tuesday",
+      "2": "Wednesday",
+      "3": "Thursday",
+      "4": "Friday",
+      "5": "Saturday",
+      "6": "Sunday"
+    },
+    weekday_short: {
+      "0": "Mon",
+      "1": "Tue",
+      "2": "Wed",
+      "3": "Thu",
+      "4": "Fri",
+      "5": "Sat",
+      "6": "Sun"
+    }
+  }
+};
+
+// translations/fr.json
+var fr_default = {
+  panel: {
+    title: "Maintenance",
+    subtitle: "G\xE9rez les t\xE2ches r\xE9currentes et gardez votre maison \xE0 jour.",
+    info_add_entry: "Ajoutez une entr\xE9e Maint pour commencer \xE0 suivre les t\xE2ches.",
+    info_enable_tracking: "Ajoutez une entr\xE9e de l'int\xE9gration Maint pour activer le suivi des t\xE2ches.",
+    info_no_tasks: "Aucune t\xE2che pour le moment. Utilisez le formulaire ci-dessus pour en cr\xE9er une.",
+    section_create: "Cr\xE9er une t\xE2che",
+    section_tasks: "T\xE2ches",
+    toggle_collapse: "Replier le formulaire",
+    toggle_expand: "D\xE9plier le formulaire",
+    fields: {
+      description: "Description",
+      schedule_type: "Type de planification",
+      starting_from: "\xC0 partir du",
+      last_completed: "Derni\xE8re r\xE9alisation",
+      every: "Tous les",
+      unit: "Unit\xE9",
+      on: "Le",
+      weeks_suffix: "semaine(s)"
+    },
+    placeholders: {
+      description_example: "Pile du d\xE9tecteur de fum\xE9e",
+      date: "jj/mm/aaaa"
+    },
+    recurrence_options: {
+      interval: "Chaque N",
+      weekly: "Jours de la semaine",
+      units: {
+        days: "Jours",
+        weeks: "Semaines",
+        months: "Mois"
+      }
+    },
+    buttons: {
+      create: "Cr\xE9er la t\xE2che",
+      saving: "Enregistrement\u2026",
+      mark_complete: "Marquer comme termin\xE9e",
+      edit: "Modifier",
+      delete: "Supprimer",
+      cancel: "Annuler",
+      save_changes: "Enregistrer les modifications"
+    },
+    labels: {
+      due: "\xC9chue",
+      next_scheduled: "Prochaine \xE9ch\xE9ance",
+      schedule: "R\xE9currence"
+    },
+    modals: {
+      delete_title: "Supprimer la t\xE2che ?",
+      delete_prompt: "Voulez-vous vraiment supprimer \xAB {task} \xBB ?",
+      edit_title: "Modifier la t\xE2che",
+      edit_prompt: "Mettez \xE0 jour les d\xE9tails de la t\xE2che ci-dessous."
+    },
+    errors: {
+      load_entries: "Impossible de charger les entr\xE9es Maint.",
+      load_tasks: "Impossible de charger les t\xE2ches.",
+      mark_complete: "Impossible de marquer la t\xE2che comme termin\xE9e.",
+      create: "Impossible de cr\xE9er la t\xE2che. Consultez les journaux pour plus de d\xE9tails.",
+      update: "Impossible de mettre \xE0 jour la t\xE2che.",
+      delete: "Impossible de supprimer la t\xE2che."
+    },
+    validation: {
+      description_required: "Saisissez une description.",
+      last_completed_invalid: "Saisissez une date valide pour la derni\xE8re r\xE9alisation.",
+      schedule_required: "Choisissez une planification.",
+      interval_every_required: "Indiquez la fr\xE9quence de r\xE9p\xE9tition.",
+      interval_unit_required: "Choisissez une unit\xE9 de fr\xE9quence.",
+      weekly_every_required: "Indiquez le nombre de semaines entre chaque r\xE9p\xE9tition.",
+      weekly_days_required: "S\xE9lectionnez au moins un jour de la semaine."
+    }
+  },
+  recurrence: {
+    every_day: "Chaque jour",
+    every_interval: "Tous les {count} {unit}",
+    weekly_on: "Chaque semaine le {days}",
+    weekly_every_on: "Toutes les {count} semaines le {days}",
+    unit: {
+      day_one: "jour",
+      day_other: "jours",
+      week_one: "semaine",
+      week_other: "semaines",
+      month_one: "mois",
+      month_other: "mois"
+    },
+    weekday_full: {
+      "0": "Lundi",
+      "1": "Mardi",
+      "2": "Mercredi",
+      "3": "Jeudi",
+      "4": "Vendredi",
+      "5": "Samedi",
+      "6": "Dimanche"
+    },
+    weekday_short: {
+      "0": "Lun",
+      "1": "Mar",
+      "2": "Mer",
+      "3": "Jeu",
+      "4": "Ven",
+      "5": "Sam",
+      "6": "Dim"
+    }
+  }
+};
+
+// src/translations.ts
+var INTEGRATION_PREFIX = "component.maint";
+var RAW_TRANSLATIONS = {
+  en: en_default,
+  fr: fr_default
+};
+var flattenTranslations = (tree, prefix, target = {}) => {
+  Object.entries(tree).forEach(([key, value]) => {
+    const nextPath = prefix ? `${prefix}.${key}` : key;
+    if (typeof value === "string") {
+      target[nextPath] = value;
+      return;
+    }
+    if (value && typeof value === "object") {
+      flattenTranslations(value, nextPath, target);
+    }
+  });
+  return target;
+};
+var FLAT_TRANSLATIONS = Object.fromEntries(
+  Object.entries(RAW_TRANSLATIONS).map(([language, tree]) => [
+    language,
+    flattenTranslations(tree, INTEGRATION_PREFIX)
+  ])
+);
+var resolveLanguageCandidates = (language) => {
+  if (!language) {
+    return ["en"];
+  }
+  const normalized = language.toLowerCase();
+  const candidates = [normalized];
+  if (normalized.includes("-")) {
+    const base = normalized.split("-")[0];
+    if (!candidates.includes(base)) {
+      candidates.push(base);
+    }
+  }
+  if (!candidates.includes("en")) {
+    candidates.push("en");
+  }
+  return candidates;
+};
+var getUiTranslations = (language) => {
+  const candidates = resolveLanguageCandidates(language);
+  const translations = {};
+  [...candidates].reverse().forEach((code) => {
+    const resources = FLAT_TRANSLATIONS[code];
+    if (resources) {
+      Object.assign(translations, resources);
+    }
+  });
+  return translations;
+};
 
 // src/main.ts
 var MaintPanel = class extends i4 {
@@ -2277,18 +2545,18 @@ var MaintPanel = class extends i4 {
     return `${year}-${month}-${day}`;
   }
   localizeText(key, ...args) {
-    const translated = this.hass?.localize?.(key, ...args);
-    if (translated && translated !== key) {
-      return translated;
-    }
     const template = this.translations[key];
     if (template) {
       return this.formatFromTemplate(template, args);
     }
+    const translated = this.hass?.localize?.(key, ...args);
+    if (translated && translated !== key) {
+      return translated;
+    }
     return translated ?? key;
   }
   panelText(key, ...args) {
-    return this.localizeText(`component.maint.ui.panel.${key}`, ...args);
+    return this.localizeText(`component.maint.panel.${key}`, ...args);
   }
   formatFromTemplate(template, args) {
     if (!args.length) {
@@ -2306,22 +2574,9 @@ var MaintPanel = class extends i4 {
     );
   }
   async loadTranslations() {
-    if (!this.hass?.language) {
-      return;
-    }
-    const language = this.hass.language;
-    try {
-      const response = await this.hass.callWS({
-        type: "frontend/get_translations",
-        language,
-        category: "ui",
-        integration: "maint"
-      });
-      this.translations = response?.resources ?? {};
-      this.translationsLanguage = language;
-    } catch (error) {
-      console.error("Failed to load Maint translations", error);
-    }
+    const language = this.hass?.language;
+    this.translations = getUiTranslations(language);
+    this.translationsLanguage = language ?? "en";
   }
 };
 MaintPanel.styles = styles;

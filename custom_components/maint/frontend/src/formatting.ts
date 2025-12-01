@@ -27,7 +27,7 @@ export const getWeekdayLabels = (localize: LocalizeFunc): string[] =>
   FALLBACK_WEEKDAY_FULL.map((fallback, index) =>
     translateWithFallback(
       localize,
-      `component.maint.ui.recurrence.weekday_full.${index}`,
+      `component.maint.recurrence.weekday_full.${index}`,
       fallback
     )
   );
@@ -36,7 +36,7 @@ export const getWeekdayShortLabels = (localize: LocalizeFunc): string[] =>
   FALLBACK_WEEKDAY_SHORT.map((fallback, index) =>
     translateWithFallback(
       localize,
-      `component.maint.ui.recurrence.weekday_short.${index}`,
+      `component.maint.recurrence.weekday_short.${index}`,
       fallback
     )
   );
@@ -58,7 +58,9 @@ const formatIsoDate = (value: Date): string =>
     .toString()
     .padStart(2, "0")}-${value.getDate().toString().padStart(2, "0")}`;
 
-export const parseDate = (value: string | FormDataEntryValue | null | undefined): string | null => {
+export const parseDate = (
+  value: string | number | boolean | FormDataEntryValue | null | undefined
+): string | null => {
   if (value === null || value === undefined) {
     return null;
   }
@@ -109,15 +111,15 @@ const getUnitLabel = (unit: FrequencyUnit, count: number, localize: LocalizeFunc
   const keyBase =
     unit === "days"
       ? count === 1
-        ? "component.maint.ui.recurrence.unit.day_one"
-        : "component.maint.ui.recurrence.unit.day_other"
+        ? "component.maint.recurrence.unit.day_one"
+        : "component.maint.recurrence.unit.day_other"
       : unit === "weeks"
         ? count === 1
-          ? "component.maint.ui.recurrence.unit.week_one"
-          : "component.maint.ui.recurrence.unit.week_other"
+          ? "component.maint.recurrence.unit.week_one"
+          : "component.maint.recurrence.unit.week_other"
         : count === 1
-          ? "component.maint.ui.recurrence.unit.month_one"
-          : "component.maint.ui.recurrence.unit.month_other";
+          ? "component.maint.recurrence.unit.month_one"
+          : "component.maint.recurrence.unit.month_other";
   const fallback =
     unit === "days"
       ? count === 1
@@ -148,13 +150,13 @@ export const formatRecurrence = (recurrence: Recurrence, localize: LocalizeFunc)
       if (recurrence.unit === "days" && count === 1) {
         return translateWithFallback(
           localize,
-          "component.maint.ui.recurrence.every_day",
+          "component.maint.recurrence.every_day",
           "Every day"
         );
       }
       return translateWithFallback(
         localize,
-        "component.maint.ui.recurrence.every_interval",
+        "component.maint.recurrence.every_interval",
         `Every ${count} ${unitLabel}`,
         "count",
         count,
@@ -168,7 +170,7 @@ export const formatRecurrence = (recurrence: Recurrence, localize: LocalizeFunc)
       if (every === 1) {
         return translateWithFallback(
           localize,
-          "component.maint.ui.recurrence.weekly_on",
+          "component.maint.recurrence.weekly_on",
           `Weekly on ${labels}`,
           "days",
           labels
@@ -176,7 +178,7 @@ export const formatRecurrence = (recurrence: Recurrence, localize: LocalizeFunc)
       }
       return translateWithFallback(
         localize,
-        "component.maint.ui.recurrence.weekly_every_on",
+        "component.maint.recurrence.weekly_every_on",
         `Every ${every} weeks on ${labels}`,
         "count",
         every,

@@ -1,0 +1,46 @@
+{
+  "title": "Maint",
+  "config": {
+    "abort": {
+      "single_instance_allowed": "Slechts één item is toegestaan."
+    },
+    "step": {
+      "user": {
+        "description": "Volg terugkerende onderhoudstaken in huis."
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "sensor_prefix": "Sensorprefix"
+        }
+      }
+    }
+  },
+  "services": {
+    "reset_last_completed": {
+      "name": "Laatste voltooiing resetten",
+      "description": "Stel de laatste voltooiingsdatum van een Maint-taak in op vandaag of op een opgegeven datum.",
+      "fields": {
+        "entity_id": {
+          "name": "Taakentiteit",
+          "description": "Binaire sensorentiteit van de Maint-taak om te resetten. Gebruik entry_id/task_id als de entiteit niet beschikbaar is."
+        },
+        "entry_id": {
+          "name": "Entry-ID",
+          "description": "Maint-configuratie-entry-ID. Vereist als entity_id niet is opgegeven."
+        },
+        "task_id": {
+          "name": "Taak-ID",
+          "description": "Maint-taak-ID. Vereist als entity_id niet is opgegeven."
+        },
+        "last_completed": {
+          "name": "Laatste voltooiing",
+          "description": "Datum die wordt opgeslagen als laatste voltooiing. Standaard vandaag als weggelaten."
+        }
+      }
+    }
+  }
+}
