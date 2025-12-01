@@ -8,12 +8,7 @@ events when tasks become due so you can automate reminders or actions.
 
 ## Languages
 
-Maint ships translations for English, French, Spanish, German, and Dutch. The backend uses the Home
-Assistant-standard translation files under `custom_components/maint/translations`, and the panel UI
-is translated via bundled files in `custom_components/maint/frontend/translations`. The panel picks
-the best available language based on your Home Assistant language, falling back to English.
-To add a new language, add matching files to both translation folders using the same key shape, and
-rerun `./scripts/frontend` to bundle the UI strings.
+Maint ships translations for English, French, Spanish, German, and Dutch.
 
 ## Features
 - Built-in Maintenance panel installs alongside the integration so you can create, edit, delete, and
