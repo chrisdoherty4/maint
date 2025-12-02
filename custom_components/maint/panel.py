@@ -108,6 +108,9 @@ def _load_sidebar_title(language: str) -> str | None:
         title = panel.get("title")
         if isinstance(title, str) and title:
             return title
-    except Exception:  # pragma: no cover - safest fallback to default
+    except (
+        OSError,
+        json.JSONDecodeError,
+    ):  # pragma: no cover - safest fallback to default
         return None
     return None
