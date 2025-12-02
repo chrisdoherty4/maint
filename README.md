@@ -8,7 +8,7 @@ events when tasks become due so you can automate reminders or actions.
 
 ## Languages
 
-Maint ships translations for English, French, Spanish, German, and Dutch.
+Maint ships translations for English, French, Spanish, German, and Dutch. If you see incorrect translations please raise a pull request.
 
 ## Features
 - Built-in Maintenance panel installs alongside the integration so you can create, edit, delete, and
