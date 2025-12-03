@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.const import Platform
 from homeassistant.helpers import config_validation as cv
 
+from .calendar_sync import CalendarSyncManager
 from .config_flow import DEFAULT_TITLE
 from .domain import DOMAIN
 from .models import MaintConfigEntry, MaintRuntimeData, MaintTaskStore
@@ -23,6 +24,9 @@ PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
 
 # Define a key for storing and retrieving the task store in hass.data
 DATA_KEY_TASK_STORE = "task_store"
+
+# Define a key for storing the calendar sync manager in hass.data
+DATA_KEY_CALENDAR_SYNC = "calendar_sync"
 
 # Define a key for indicating whether or not websockets have been registered.
 DATA_KEY_WS_REGISTERED = "ws_registered"
@@ -41,6 +45,7 @@ async def async_setup(hass: HomeAssistant, _config: ConfigType) -> bool:
     data: dict[str, Any] = hass.data.setdefault(DOMAIN, {})
     _LOGGER.info("Setting up Maint integration")
     await _async_get_task_store(hass)
+    await _async_get_calendar_sync_manager(hass)
     async_register_services(hass, _async_get_task_store)
     await async_register_panel(hass)
     if not data.get(DATA_KEY_WS_REGISTERED):
@@ -64,11 +69,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: MaintConfigEntry) -> boo
 
     await async_register_panel(hass)
     task_store = await _async_get_task_store(hass)
+    calendar_sync = await _async_get_calendar_sync_manager(hass)
     entry.runtime_data = MaintRuntimeData(task_store=task_store)
 
     entry.async_on_unload(entry.add_update_listener(config_entry_update_listener))
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    await calendar_sync.async_setup_entry(entry, task_store)
 
     return True
 
@@ -84,6 +91,8 @@ async def config_entry_update_listener(hass: HomeAssistant, entry: ConfigEntry) 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     _LOGGER.debug("Unloading Maint config entry %s", entry.entry_id)
+    calendar_sync = await _async_get_calendar_sync_manager(hass)
+    await calendar_sync.async_unload_entry(entry.entry_id)
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         loaded_entries = hass.config_entries.async_entries(DOMAIN)
@@ -97,6 +106,8 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     _LOGGER.debug("Removing Maint config entry %s; purging tasks", entry.entry_id)
     store = await _async_get_task_store(hass)
     await store.async_remove_entry(entry.entry_id)
+    calendar_sync = await _async_get_calendar_sync_manager(hass)
+    await calendar_sync.async_remove_entry(entry.entry_id)
 
 
 async def _async_get_task_store(hass: HomeAssistant) -> MaintTaskStore:
@@ -110,3 +121,14 @@ async def _async_get_task_store(hass: HomeAssistant) -> MaintTaskStore:
     else:
         _LOGGER.debug("Reusing existing Maint task store")
     return store
+
+
+async def _async_get_calendar_sync_manager(hass: HomeAssistant) -> CalendarSyncManager:
+    """Return the shared Maint calendar sync manager."""
+    data: dict[str, Any] = hass.data.setdefault(DOMAIN, {})
+    if (manager := data.get(DATA_KEY_CALENDAR_SYNC)) is None:
+        _LOGGER.debug("Creating Maint calendar sync manager")
+        manager = CalendarSyncManager(hass)
+        await manager.async_load()
+        data[DATA_KEY_CALENDAR_SYNC] = manager
+    return manager

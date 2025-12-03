@@ -14,7 +14,8 @@
     "step": {
       "init": {
         "data": {
-          "sensor_prefix": "Sensor prefix"
+          "sync_to_calendar": "Sync tasks to calendar",
+          "calendar_name": "Calendar name"
         }
       }
     }
