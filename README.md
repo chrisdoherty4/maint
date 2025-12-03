@@ -2,13 +2,9 @@
 
 # Maint
 
-Maint is a Home Assistant custom component for tracking household maintenance tasks. It creates a
+Maint is a Home Assistant integration for tracking household maintenance tasks. It creates a
 binary sensor for every task, keeps the schedule in sync through the UI and websocket API, and emits
 events when tasks become due so you can automate reminders or actions.
-
-## Languages
-
-Maint ships translations for English, French, Spanish, German, and Dutch. If you see incorrect translations please raise a pull request.
 
 ## Features
 - Built-in Maintenance panel installs alongside the integration so you can create, edit, delete, and
@@ -25,6 +21,7 @@ Maint ships translations for English, French, Spanish, German, and Dutch. If you
   panel).
 - Automation hooks: `maint_task_due` event fires when a task becomes due with task metadata, and the
   `maint.reset_last_completed` service marks tasks complete (optionally backdated, default today).
+- Translations for English, French, Spanish, German, and Dutch. If you see incorrect translations please raise a pull request.
 
 ## Install
 
@@ -81,7 +78,7 @@ data:
   last_completed: "2024-07-15"
 ```
 
-## Optional
+## Optional Configuration
 
 ### Calendar integration
 
