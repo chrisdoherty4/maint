@@ -26,6 +26,19 @@ Maint ships translations for English, French, Spanish, German, and Dutch. If you
 - Automation hooks: `maint_task_due` event fires when a task becomes due with task metadata, and the
   `maint.reset_last_completed` service marks tasks complete (optionally backdated, default today).
 
+## Calendar integration
+
+Calendar sync is optional and configured per Maint entry:
+
+1) Open *Settings → Devices & Services → Maint → Configure*.
+2) Enable **Sync tasks to calendar** and choose a **Calendar name**. Maint uses an existing calendar
+   with that name if found; otherwise it creates a Local Calendar for you.
+3) Save. Existing tasks become all-day events on their next scheduled date, and future task changes
+   keep the calendar updated.
+
+If you later turn sync off, Maint stops syncing and forgets the stored event links (events already on
+the calendar stay in place).
+
 ## Install
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Chris+Doherty&repository=https%3A%2F%2Fgithub.com%2Fchrisdoherty4%2Fmaint&category=integration)
