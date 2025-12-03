@@ -17,6 +17,8 @@ Maint ships translations for English, French, Spanish, German, and Dutch. If you
   `last_completed`, `next_scheduled`) for automations.
 - A summary sensor per entry that counts due tasks and lists their binary sensors in `due_tasks`
   attributes.
+- Optional calendar sync that mirrors each task to a chosen Home Assistant calendar (auto-creates a
+  local calendar when missing).
 - Recurring schedules: every N days/weeks/months or multi-day weekly patterns with every-N-week
   spacing.
 - Tasks persist locally per entry and can be managed through websocket CRUD commands (used by the

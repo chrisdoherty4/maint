@@ -14,7 +14,8 @@
     "step": {
       "init": {
         "data": {
-          "sensor_prefix": "Préfixe du capteur"
+          "sync_to_calendar": "Synchroniser les tâches avec le calendrier",
+          "calendar_name": "Nom du calendrier"
         }
       }
     }

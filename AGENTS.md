@@ -23,6 +23,8 @@ tasks.
 - Consult https://developers.home-assistant.io/ for information on developing Home Assistant integrations.
 - Prioritize readable, maintainable code. Keep changes aligned with module layout.
 - Avoid packages/modules named common, utils, const etc. Instead, prefer placing constants an interfaces near the consumer where possible.
+- Maintain a good separation of concerns by reviewing existing code and partitioning into modules as needed.
+- If a refactor of modules is identified, propose it before implementing.
 
 ### Backend
 

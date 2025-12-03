@@ -4,12 +4,21 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.core import callback
 
+from .calendar_sync import (
+    CONF_CALENDAR_NAME,
+    CONF_SYNC_TO_CALENDAR,
+    DEFAULT_CALENDAR_NAME,
+)
 from .domain import DOMAIN
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+
+    from homeassistant.config_entries import ConfigEntry
 
 DEFAULT_TITLE = "Maint"
 
@@ -32,4 +41,44 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_create_entry(
             title=DEFAULT_TITLE,
             data={},
+        )
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: ConfigEntry,
+    ) -> config_entries.OptionsFlow:
+        """Return the options flow handler."""
+        return MaintOptionsFlow(config_entry)
+
+
+class MaintOptionsFlow(config_entries.OptionsFlow):
+    """Handle Maint options."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        """Initialize options flow."""
+        self.config_entry = config_entry
+
+    async def async_step_init(
+        self, user_input: Mapping[str, Any] | None = None
+    ) -> config_entries.FlowResult:
+        """Manage the Maint options."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=dict(user_input))
+
+        options = self.config_entry.options
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_SYNC_TO_CALENDAR,
+                        default=options.get(CONF_SYNC_TO_CALENDAR, False),
+                    ): bool,
+                    vol.Required(
+                        CONF_CALENDAR_NAME,
+                        default=options.get(CONF_CALENDAR_NAME, DEFAULT_CALENDAR_NAME),
+                    ): str,
+                }
+            ),
         )

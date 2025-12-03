@@ -14,7 +14,8 @@
     "step": {
       "init": {
         "data": {
-          "sensor_prefix": "Prefijo del sensor"
+          "sync_to_calendar": "Sincronizar tareas con el calendario",
+          "calendar_name": "Nombre del calendario"
         }
       }
     }
