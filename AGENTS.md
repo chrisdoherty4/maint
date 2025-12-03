@@ -30,9 +30,14 @@ tasks.
 
 - Provide type hints for all function parameters and returns.
 - Code is linted using ruff; run `scripts/lint` (it formats then checks/fixes) after Python changes.
-
 - Include adequete debug logging.
-- Testing: run `python -m pytest`; add/update tests in `/tests`, especially for new async HA flows.
+- Testing
+    - Tests are defined in `/tests`
+    - Run tests with `python3 -m pytest --cov=custom_components/maint --cov-report=xml --junitxml=junit.xml`
+    - Focus on the public API of modules. For example functions prefixed with _ should be considered private.
+    - When new tests are working, use the coverage report to identify areas that could use improvement; 80% coverage is preferred but not required.
+    - If a redesign is needed for better testability/cleaner code, propose them before making the refactor
+
 
 ### Frontend
 
