@@ -211,12 +211,3 @@ cards:
       name:
         - font-weight: bold
 ```
-
-## What's next
-
-- Publish Maint to the HACS default registry so it can be installed without adding a custom
-  repository.
-- Integrate with Todo lists.
-- Integrate with Calendar.
-- Support multiple languages.
-- Use locale for date rendering.
