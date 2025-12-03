@@ -4,7 +4,7 @@
 
 Maint is a Home Assistant integration for tracking household maintenance tasks. It creates a
 binary sensor for every task, keeps the schedule in sync through the UI and websocket API, and emits
-events when tasks become due so you can automate reminders or actions.
+ events when tasks become due so you can automate reminders or actions.
 
 ## Features
 - Built-in Maintenance panel installs alongside the integration so you can create, edit, delete, and
@@ -12,7 +12,7 @@ events when tasks become due so you can automate reminders or actions.
 - Per-task binary sensors with stable object IDs and helpful attributes (`entry_id`, `task_id`,
   `last_completed`, `next_scheduled`) for automations.
 - A summary sensor per entry that counts due tasks and lists their binary sensors in `due_tasks`
-  attributes.
+ attributes.
 - Optional calendar sync that mirrors each task to a chosen Home Assistant calendar (auto-creates a
   local calendar when missing).
 - Recurring schedules: every N days/weeks/months or multi-day weekly patterns with every-N-week
@@ -28,10 +28,9 @@ events when tasks become due so you can automate reminders or actions.
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Chris+Doherty&repository=https%3A%2F%2Fgithub.com%2Fchrisdoherty4%2Fmaint&category=integration)
 
 1) Install or update [HACS](https://hacs.xyz/) in your Home Assistant instance.
-2) In HACS, open *Settings → Custom repositories* and add `https://github.com/chrisdoherty4/maint`
-   as a *Integration* repository.
-3) Find **Maint** under HACS Integrations and install it.
-4) Restart Home Assistant, then add the Maint integration from *Settings → Devices & Services*.
+2) In HACS, open *Integrations*, search for **Maint** (available in the default repository), and
+   install it.
+3) Restart Home Assistant, then add the Maint integration from *Settings → Devices & Services*.
 
 ## Usage
 
