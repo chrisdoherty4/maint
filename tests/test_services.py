@@ -7,6 +7,7 @@ from datetime import date, datetime
 from typing import TYPE_CHECKING
 
 import pytest
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.util import dt as dt_util
 
@@ -15,7 +16,9 @@ from custom_components.maint.binary_sensor import MaintTaskBinarySensor
 from custom_components.maint.domain import DOMAIN
 from custom_components.maint.models import SIGNAL_TASK_UPDATED, MaintTask, Recurrence
 from custom_components.maint.services import (
+    DATA_KEY_SERVICES_REGISTERED,
     SERVICE_RESET_LAST_COMPLETED,
+    _resolve_service_target,
     async_register_services,
 )
 
@@ -27,6 +30,30 @@ else:
     from unittest.mock import MagicMock
 
     from .test_binary_sensor import FakeEntry as _FakeEntry
+
+
+def test_resolve_service_target_requires_entity(hass: HomeAssistant) -> None:
+    """Entity-based targeting should raise when the entity is missing."""
+    with pytest.raises(HomeAssistantError, match=r"Entity binary_sensor\.missing"):
+        _resolve_service_target(
+            hass,
+            {
+                "entity_id": "binary_sensor.missing",
+            },
+        )
+
+
+def test_resolve_service_target_requires_task_metadata(hass: HomeAssistant) -> None:
+    """Entity-based targeting should validate Maint-specific attributes."""
+    hass.states.async_set("binary_sensor.unrelated", "on", {"wrong": "data"})
+
+    with pytest.raises(HomeAssistantError, match="not a Maint task sensor"):
+        _resolve_service_target(
+            hass,
+            {
+                "entity_id": "binary_sensor.unrelated",
+            },
+        )
 
 
 @pytest.mark.asyncio
@@ -159,3 +186,39 @@ async def test_reset_last_completed_updates_binary_sensor(
 
     assert sensor.extra_state_attributes["last_completed"] == "2024-07-04"
     sensor.async_write_ha_state.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_reset_last_completed_raises_for_unknown_task(
+    hass: HomeAssistant,
+) -> None:
+    """Service should surface errors when the task cannot be located."""
+    async_register_services(hass, _async_get_task_store)
+
+    with pytest.raises(HomeAssistantError, match="Task missing-task not found"):
+        await hass.services.async_call(
+            DOMAIN,
+            SERVICE_RESET_LAST_COMPLETED,
+            {
+                "entry_id": "entry-missing",
+                "task_id": "missing-task",
+            },
+            blocking=True,
+        )
+
+
+def test_register_services_skips_when_already_registered(
+    monkeypatch: pytest.MonkeyPatch, hass: HomeAssistant
+) -> None:
+    """async_register_services should not re-register after initial call."""
+    hass.data.setdefault(DOMAIN, {})[DATA_KEY_SERVICES_REGISTERED] = True
+    calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
+
+    async def _fake_register(*args: object, **kwargs: object) -> None:
+        calls.append((args, kwargs))
+
+    monkeypatch.setattr(type(hass.services), "async_register", _fake_register)
+
+    async_register_services(hass, _async_get_task_store)
+
+    assert calls == []

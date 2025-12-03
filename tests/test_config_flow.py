@@ -50,6 +50,19 @@ async def test_user_flow_creates_entry_with_default_title(hass: HomeAssistant) -
 
 
 @pytest.mark.asyncio
+async def test_user_flow_aborts_when_entry_exists(hass: HomeAssistant) -> None:
+    """Config flow should abort when a Maint entry is already configured."""
+    flow = ConfigFlow()
+    flow.hass = hass
+    flow._async_current_entries = MagicMock(return_value=[MagicMock()])
+
+    result = await flow.async_step_user()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "single_instance_allowed"
+
+
+@pytest.mark.asyncio
 async def test_options_flow_defaults(hass: HomeAssistant) -> None:
     """Options flow should expose calendar sync defaults."""
     entry = MagicMock(options={})
@@ -87,3 +100,10 @@ async def test_options_flow_saves_user_input(hass: HomeAssistant) -> None:
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"] == user_input
+
+
+def test_async_get_options_flow_returns_handler() -> None:
+    """Options flow factory should return a MaintOptionsFlow instance."""
+    options_flow = ConfigFlow.async_get_options_flow(MagicMock())
+
+    assert isinstance(options_flow, MaintOptionsFlow)

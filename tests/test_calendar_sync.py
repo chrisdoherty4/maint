@@ -101,6 +101,20 @@ async def test_calendar_link_store_round_trip(hass: HomeAssistant) -> None:
 
 
 @pytest.mark.asyncio
+async def test_calendar_link_store_missing_entries_return_none(
+    hass: HomeAssistant,
+) -> None:
+    """Calendar link lookups should gracefully handle missing entries."""
+    store = CalendarLinkStore(hass)
+
+    assert await store.async_get_event_id("missing-entry", "task") is None
+    assert await store.async_remove_event("missing-entry", "task") is None
+
+    # Removing an unknown entry should be a no-op
+    await store.async_remove_entry("missing-entry")
+
+
+@pytest.mark.asyncio
 async def test_calendar_sync_handles_task_lifecycle(hass: HomeAssistant) -> None:
     """Verify calendar sync creates, updates, and deletes events."""
     frame._hass.hass = hass
