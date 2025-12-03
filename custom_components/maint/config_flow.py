@@ -57,11 +57,16 @@ class MaintOptionsFlow(config_entries.OptionsFlow):
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
-        self.config_entry = config_entry
+        self._maint_config_entry = config_entry
+
+    @property
+    def config_entry(self) -> config_entries.ConfigEntry:
+        """Return the config entry linked to this options flow."""
+        return self._maint_config_entry
 
     async def async_step_init(
         self, user_input: Mapping[str, Any] | None = None
-    ) -> config_entries.FlowResult:
+    ) -> config_entries.ConfigFlowResult:
         """Manage the Maint options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=dict(user_input))

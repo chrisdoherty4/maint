@@ -5,9 +5,13 @@ from __future__ import annotations
 
 import pytest
 import voluptuous as vol
+from homeassistant.config_entries import ConfigEntryState
 
+from custom_components.maint.domain import DOMAIN
+from custom_components.maint.models import MaintRuntimeData
 from custom_components.maint.websocket import (
     _parse_recurrence,
+    _resolve_task_store,
     _validated_description,
 )
 
@@ -40,3 +44,115 @@ def test_parse_recurrence_keeps_week_interval() -> None:
     )
 
     assert recurrence.every == interval_weeks
+
+
+class _DummyConnection:
+    """Capture websocket errors for assertions."""
+
+    def __init__(self) -> None:
+        self.errors: list[tuple[int, str, str]] = []
+
+    def send_error(self, request_id: int, code: str, message: str) -> None:
+        self.errors.append((request_id, code, message))
+
+
+class _DummyConfigEntries:
+    """Provide async_get_entry for websocket helpers."""
+
+    def __init__(self, entry: object | None) -> None:
+        self._entry = entry
+
+    def async_get_entry(self, entry_id: str) -> object | None:
+        if self._entry and getattr(self._entry, "entry_id", None) == entry_id:
+            return self._entry
+        return None
+
+
+def test_resolve_task_store_handles_missing_entry() -> None:
+    """Requests for unknown entries should send an error and return None."""
+    hass = type(
+        "Hass",
+        (),
+        {"config_entries": _DummyConfigEntries(entry=None)},
+    )()
+    connection = _DummyConnection()
+    msg = {"id": 1, "entry_id": "missing", "type": "maint/task/list"}
+
+    assert _resolve_task_store(hass, connection, msg) is None
+    assert connection.errors[0][1] == "entry_not_found"
+
+
+def test_resolve_task_store_handles_not_loaded_entry() -> None:
+    """Unloaded entries should result in an error."""
+    entry = type(
+        "Entry",
+        (),
+        {
+            "entry_id": "entry-1",
+            "domain": DOMAIN,
+            "state": ConfigEntryState.NOT_LOADED,
+            "runtime_data": MaintRuntimeData(task_store=None),  # type: ignore[arg-type]
+        },
+    )()
+    hass = type(
+        "Hass",
+        (),
+        {"config_entries": _DummyConfigEntries(entry=entry)},
+    )()
+    connection = _DummyConnection()
+    msg = {"id": 2, "entry_id": "entry-1", "type": "maint/task/list"}
+
+    assert _resolve_task_store(hass, connection, msg) is None
+    assert connection.errors[0][1] == "entry_not_loaded"
+
+
+def test_resolve_task_store_requires_runtime_data() -> None:
+    """Entries missing Maint runtime data should send an error."""
+    entry = type(
+        "Entry",
+        (),
+        {
+            "entry_id": "entry-1",
+            "domain": DOMAIN,
+            "state": ConfigEntryState.LOADED,
+            "runtime_data": None,
+        },
+    )()
+    hass = type(
+        "Hass",
+        (),
+        {"config_entries": _DummyConfigEntries(entry=entry)},
+    )()
+    connection = _DummyConnection()
+    msg = {"id": 3, "entry_id": "entry-1", "type": "maint/task/list"}
+
+    assert _resolve_task_store(hass, connection, msg) is None
+    assert connection.errors[0][1] == "runtime_data_missing"
+
+
+def test_resolve_task_store_returns_store_when_loaded() -> None:
+    """A valid entry should return the task store and entry."""
+    runtime = MaintRuntimeData(task_store="store")  # type: ignore[arg-type]
+    entry = type(
+        "Entry",
+        (),
+        {
+            "entry_id": "entry-1",
+            "domain": DOMAIN,
+            "state": ConfigEntryState.LOADED,
+            "runtime_data": runtime,
+        },
+    )()
+    hass = type(
+        "Hass",
+        (),
+        {"config_entries": _DummyConfigEntries(entry=entry)},
+    )()
+    connection = _DummyConnection()
+    msg = {"id": 4, "entry_id": "entry-1", "type": "maint/task/list"}
+
+    store, resolved_entry = _resolve_task_store(hass, connection, msg)  # type: ignore[misc]
+
+    assert store == "store"
+    assert resolved_entry is entry
+    assert connection.errors == []

@@ -1,5 +1,5 @@
 colorlog>=6.10
-homeassistant>=2025.11
+homeassistant>=2025.12
 pip>=21.3
 coverage>=7.6
 pytest>=9.0
