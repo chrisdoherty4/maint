@@ -2,29 +2,24 @@
 
 ## Overview
 
-This is a home assistant integration built as a custom component. It is installed using [HACS](https://www.hacs.xyz/).
+This repository is a Home Assistant integration built as a custom component. It is installed using [HACS](https://www.hacs.xyz/).
 The integration is composed of a backend and frontend. It is used for managing home maintenance
 tasks.
 
 ## Development Environment
 
 - You run inside a devcontainer that should already have tools setup.
-- If you find a tool you need isn't available, install it and notify the user.
-
-## Setup
-
-- Use `scripts/develop` to start Home Assistant locally; it creates `config/`, sets `PYTHONPATH` so `custom_components/maint` is found, and boots HA for manual testing.
+- If a tool you need isn't available, stop and ask what to do suggesting alternatives if you have any.
 
 ## Development
 
 ### General
 
-- Lint and test changes - fix any issues.
-- Consult https://developers.home-assistant.io/ for information on developing Home Assistant integrations.
+- When you look to make changes, propose the changes first. Provide an summary followed by details including rationale.
 - Prioritize readable, maintainable code. Keep changes aligned with module layout.
 - Avoid packages/modules named common, utils, const etc. Instead, prefer placing constants an interfaces near the consumer where possible.
-- Maintain a good separation of concerns by reviewing existing code and partitioning into modules as needed.
-- If a refactor of modules is identified, propose it before implementing.
+- Maintain separation of concerns between modules.
+- Lint and test changes and fix issues.
 
 ### Backend
 
@@ -47,16 +42,16 @@ tasks.
 
 ## Translations
 
-- Backend Home Assistant standard keys for translations live in `custom_components/maint/translations/<lang>.json` (title/config/options/services).   Add/edit translations in both `*.json`. Use the same key shape across languages.
-- UI strings live in `custom_components/maint/frontend/translations/<lang>.json` and are flattened at build time via `src/translations.ts` into `component.maint.panel.*` and `component.maint.recurrence.*` keys. Add/edit translations in both `*.json`, then re-run `./scripts/frontend`. Use the same key shape across languages.
-- Use the English definition as the source of translation.
+- Backend Home Assistant standard keys for translations live in `custom_components/maint/translations/<lang>.json`.
+- Frontend translations live in `custom_components/maint/frontend/translations/<lang>.json`. The frontend must be compiled for them to be usable.
+- Use the English definition as the source of translations
+- When adding new translation strings, ensure all translation files are updated.
+- Ensure the README.md is updated to reflect the supported languages.
 
 ## README.md
 
-- Review and update the README with new features.
-- Ensure the README reflects all supported languages.
-- Avoid terminology like "Maint currently"; the README always refers to the present tense.
-- When describing features and languages, avoid implementation details and focus on what the user sees and interacts with.
+- Add new features to the READMEs feature section. Feature details should be concerned with what the user interacts with only.
+- The README always refers to the present tense so you should avoid phrasing such as "Maint currently".
 
 ## Temporary Constraints
 
