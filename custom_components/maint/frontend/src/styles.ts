@@ -297,6 +297,101 @@ export const styles = css`
     margin-bottom: 12px;
   }
 
+  .date-input-wrapper {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+    position: relative;
+  }
+
+  .date-picker-toggle {
+    min-width: 42px;
+    height: 42px;
+    padding: 8px;
+  }
+
+  .date-picker-popup {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 6px;
+    padding: 12px;
+    background: var(--card-background-color);
+    border: 1px solid var(--divider-color);
+    border-radius: 10px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+    width: 260px;
+    z-index: 5;
+  }
+
+  .date-picker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .date-picker-month {
+    font-weight: 600;
+    flex: 1;
+    text-align: center;
+  }
+
+  .date-picker-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-size: 12px;
+    color: var(--secondary-text-color);
+    margin-bottom: 6px;
+  }
+
+  .date-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    width: 100%;
+  }
+
+  .date-picker-day {
+    height: 36px;
+    width: 100%;
+    padding: 6px 0;
+    box-sizing: border-box;
+    min-width: 0;
+    border-radius: 8px;
+    border: 1px solid var(--divider-color);
+    background: var(--card-background-color);
+    color: var(--primary-text-color);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .date-picker-day.muted {
+    color: var(--secondary-text-color);
+    opacity: 0.7;
+  }
+
+  .date-picker-day.today {
+    border-color: var(--primary-color);
+  }
+
+  .date-picker-day.selected {
+    background: var(--primary-color);
+    color: var(--text-primary-color);
+    border-color: var(--primary-color);
+  }
+
+  .date-picker-day .ha-icon {
+    display: none;
+  }
+
+  .date-picker-day:focus-visible {
+    outline: 2px solid var(--primary-color);
+  }
+
   .frequency-editor {
     display: grid;
     grid-template-columns: 1fr;

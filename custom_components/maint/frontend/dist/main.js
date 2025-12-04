@@ -665,7 +665,96 @@ var parseIsoDate = (value) => {
   return new Date(year, month - 1, day);
 };
 var formatIsoDate = (value) => `${value.getFullYear().toString().padStart(4, "0")}-${(value.getMonth() + 1).toString().padStart(2, "0")}-${value.getDate().toString().padStart(2, "0")}`;
-var parseDate = (value) => {
+var getLocaleCode = (hass) => hass?.locale?.language ?? hass?.language;
+var formatNumber = (value, minimumIntegerDigits, locale) => {
+  try {
+    return new Intl.NumberFormat(locale, {
+      minimumIntegerDigits,
+      useGrouping: false
+    }).format(value);
+  } catch {
+    return value.toString().padStart(minimumIntegerDigits, "0");
+  }
+};
+var formatOrderedDate = (value, locale, order, separator) => {
+  const parts = {
+    day: formatNumber(value.getDate(), 2, locale),
+    month: formatNumber(value.getMonth() + 1, 2, locale),
+    year: formatNumber(value.getFullYear(), 4, locale)
+  };
+  return order.map((part) => parts[part]).join(separator);
+};
+var formatWithUserDateFormat = (value, hass) => {
+  const locale = getLocaleCode(hass);
+  const format = hass?.locale?.date_format?.toLowerCase();
+  switch (format) {
+    case "dmy":
+      return formatOrderedDate(value, locale, ["day", "month", "year"], "/");
+    case "mdy":
+      return formatOrderedDate(value, locale, ["month", "day", "year"], "/");
+    case "ymd":
+    case "iso":
+      return formatOrderedDate(value, locale, ["year", "month", "day"], "-");
+    default:
+      try {
+        return new Intl.DateTimeFormat(locale, {
+          year: "numeric",
+          month: "numeric",
+          day: "numeric"
+        }).format(value);
+      } catch {
+        return value.toLocaleDateString();
+      }
+  }
+};
+var formatDatePlaceholder = (hass) => {
+  const sample = new Date(2024, 0, 31);
+  return formatWithUserDateFormat(sample, hass);
+};
+var toOrder = (format) => {
+  switch (format?.toLowerCase()) {
+    case "dmy":
+      return ["day", "month", "year"];
+    case "mdy":
+      return ["month", "day", "year"];
+    case "ymd":
+    case "iso":
+      return ["year", "month", "day"];
+    default:
+      return null;
+  }
+};
+var parseUserDate = (value, hass) => {
+  const order = toOrder(hass?.locale?.date_format);
+  if (!order) {
+    return null;
+  }
+  const parts = value.split(/[^0-9]/).filter(Boolean);
+  if (parts.length !== 3) {
+    return null;
+  }
+  const [first, second, third] = parts.map(Number);
+  if ([first, second, third].some((part) => Number.isNaN(part))) {
+    return null;
+  }
+  const mapping = {
+    [order[0]]: first,
+    [order[1]]: second,
+    [order[2]]: third
+  };
+  const year = mapping.year;
+  const month = mapping.month;
+  const day = mapping.day;
+  if (!year || !month || !day) {
+    return null;
+  }
+  const parsed = new Date(year, month - 1, day);
+  if (Number.isNaN(parsed.getTime()) || parsed.getFullYear() !== year || parsed.getMonth() + 1 !== month || parsed.getDate() !== day) {
+    return null;
+  }
+  return formatIsoDate(parsed);
+};
+var parseDate = (value, hass) => {
   if (value === null || value === void 0) {
     return null;
   }
@@ -673,31 +762,44 @@ var parseDate = (value) => {
   if (!trimmed) {
     return null;
   }
+  const userFormatted = parseUserDate(trimmed, hass);
+  if (userFormatted) {
+    return userFormatted;
+  }
+  const isoParsed = parseIsoDate(trimmed);
+  if (isoParsed) {
+    return formatIsoDate(isoParsed);
+  }
   const parsed = new Date(trimmed);
   if (Number.isNaN(parsed.getTime())) {
     return null;
   }
-  return trimmed;
-};
-var formatDate = (value) => {
-  if (!value) {
-    return "\u2014";
-  }
-  const parsed = parseIsoDate(value);
-  if (!parsed) {
-    return "\u2014";
-  }
-  return parsed.toLocaleDateString();
-};
-var formatDateInput = (value) => {
-  if (!value) {
-    return "";
-  }
-  const parsed = parseIsoDate(value);
-  if (!parsed) {
-    return "";
-  }
   return formatIsoDate(parsed);
+};
+var formatDate = (value, hass) => {
+  if (!value) {
+    return "\u2014";
+  }
+  const parsed = parseIsoDate(value);
+  if (!parsed) {
+    return "\u2014";
+  }
+  return formatWithUserDateFormat(parsed, hass);
+};
+var formatDateInput = (value, hass) => {
+  if (!value) {
+    return "";
+  }
+  const parsed = parseIsoDate(value);
+  if (!parsed) {
+    return "";
+  }
+  const order = toOrder(hass?.locale?.date_format);
+  if (!order) {
+    return formatIsoDate(parsed);
+  }
+  const separator = order[0] === "year" ? "-" : "/";
+  return formatOrderedDate(parsed, getLocaleCode(hass), order, separator);
 };
 var normalizeWeekdays = (days) => Array.from(new Set(days)).sort((a3, b3) => a3 - b3);
 var getUnitLabel = (unit, count, localize) => {
@@ -843,12 +945,12 @@ var updateMaintTask = async (hass, entryId, taskId, payload) => normalizeTask(aw
 var deleteMaintTask = (hass, entryId, taskId) => deleteTask(hass, entryId, taskId);
 
 // src/forms.ts
-var validateTaskFields = (fields, localize) => {
+var validateTaskFields = (fields, localize, hass) => {
   const description = (fields.description ?? "").toString().trim();
   if (!description) {
     return { error: localize("component.maint.panel.validation.description_required") };
   }
-  const lastCompleted = parseDate(fields.last_completed);
+  const lastCompleted = parseDate(fields.last_completed, hass);
   if (lastCompleted === null) {
     return { error: localize("component.maint.panel.validation.last_completed_invalid") };
   }
@@ -1380,6 +1482,101 @@ var styles = i`
     gap: 16px;
     margin-top: 10px;
     margin-bottom: 12px;
+  }
+
+  .date-input-wrapper {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+    position: relative;
+  }
+
+  .date-picker-toggle {
+    min-width: 42px;
+    height: 42px;
+    padding: 8px;
+  }
+
+  .date-picker-popup {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 6px;
+    padding: 12px;
+    background: var(--card-background-color);
+    border: 1px solid var(--divider-color);
+    border-radius: 10px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+    width: 260px;
+    z-index: 5;
+  }
+
+  .date-picker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .date-picker-month {
+    font-weight: 600;
+    flex: 1;
+    text-align: center;
+  }
+
+  .date-picker-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-size: 12px;
+    color: var(--secondary-text-color);
+    margin-bottom: 6px;
+  }
+
+  .date-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    width: 100%;
+  }
+
+  .date-picker-day {
+    height: 36px;
+    width: 100%;
+    padding: 6px 0;
+    box-sizing: border-box;
+    min-width: 0;
+    border-radius: 8px;
+    border: 1px solid var(--divider-color);
+    background: var(--card-background-color);
+    color: var(--primary-text-color);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .date-picker-day.muted {
+    color: var(--secondary-text-color);
+    opacity: 0.7;
+  }
+
+  .date-picker-day.today {
+    border-color: var(--primary-color);
+  }
+
+  .date-picker-day.selected {
+    background: var(--primary-color);
+    color: var(--text-primary-color);
+    border-color: var(--primary-color);
+  }
+
+  .date-picker-day .ha-icon {
+    display: none;
+  }
+
+  .date-picker-day:focus-visible {
+    outline: 2px solid var(--primary-color);
   }
 
   .frequency-editor {
@@ -2253,17 +2450,50 @@ var MaintPanel = class extends i4 {
     this.confirmTaskId = null;
     this.createModalOpen = false;
     this.createError = null;
-    this.createLastCompleted = this.currentDateIso();
+    this.createLastCompleted = this.currentDateInputValue();
     this.createRecurrenceType = "interval";
     this.editForm = null;
     this.editError = null;
     this.translations = {};
     this.translationsLanguage = null;
+    this.datePickerTarget = null;
+    this.datePickerMonth = /* @__PURE__ */ new Date();
     this.initialized = false;
+    this.lastDateLocaleKey = null;
+    this.handleDatePickerOutside = (event) => {
+      const path = event.composedPath();
+      const insidePicker = path.some(
+        (node) => node instanceof HTMLElement && node.classList.contains("date-picker-surface")
+      );
+      if (!insidePicker) {
+        this.closeDatePicker();
+      }
+    };
+    this.handleDatePickerKeydown = (event) => {
+      if (event.key === "Escape") {
+        this.closeDatePicker();
+      }
+    };
+  }
+  hasDateLocaleChanged(previous, current) {
+    const previousKey = this.localeKey(previous);
+    const currentKey = this.localeKey(current);
+    const changed = previousKey !== null && currentKey !== null && previousKey !== currentKey;
+    this.lastDateLocaleKey = currentKey;
+    return changed;
+  }
+  localeKey(hass) {
+    if (!hass) {
+      return this.lastDateLocaleKey;
+    }
+    const lang = hass.language ?? hass.locale?.language ?? "";
+    const format = hass.locale?.date_format ?? "";
+    return `${lang}|${format}`;
   }
   updated(changedProps) {
     const hassChanged = changedProps.has("hass");
     const languageChanged = hassChanged && this.hass?.language && this.hass.language !== this.translationsLanguage;
+    const localeChanged = this.hasDateLocaleChanged(changedProps.get("hass"), this.hass);
     if (hassChanged && this.hass) {
       void this.loadTranslations();
       if (!this.initialized) {
@@ -2273,6 +2503,23 @@ var MaintPanel = class extends i4 {
     } else if (languageChanged && this.hass) {
       void this.loadTranslations();
     }
+    if (changedProps.has("datePickerTarget")) {
+      if (this.datePickerTarget) {
+        document.addEventListener("pointerdown", this.handleDatePickerOutside);
+        document.addEventListener("keydown", this.handleDatePickerKeydown);
+      } else {
+        document.removeEventListener("pointerdown", this.handleDatePickerOutside);
+        document.removeEventListener("keydown", this.handleDatePickerKeydown);
+      }
+    }
+    if (localeChanged) {
+      this.reformatDateInputs(changedProps.get("hass"));
+    }
+  }
+  disconnectedCallback() {
+    document.removeEventListener("pointerdown", this.handleDatePickerOutside);
+    document.removeEventListener("keydown", this.handleDatePickerKeydown);
+    super.disconnectedCallback();
   }
   render() {
     const hasEntries = this.entries.length > 0;
@@ -2331,11 +2578,11 @@ var MaintPanel = class extends i4 {
             <div class="task-description">${task.description}</div>
             ${isDue ? x`<span class="pill pill-due">${this.panelText("labels.due")}</span>` : E}
           </div>
-          <div class="task-meta">
-            <div class="task-meta-column">
-              <div class="task-meta-title">${this.panelText("labels.next_scheduled")}</div>
-              <div class="task-meta-value">${formatDate(nextScheduled(task))}</div>
-            </div>
+            <div class="task-meta">
+              <div class="task-meta-column">
+                <div class="task-meta-title">${this.panelText("labels.next_scheduled")}</div>
+                <div class="task-meta-value">${formatDate(nextScheduled(task), this.hass)}</div>
+              </div>
             <div class="task-meta-column">
               <div class="task-meta-title">${this.panelText("labels.schedule")}</div>
               <div class="task-meta-value">
@@ -2502,16 +2749,32 @@ var MaintPanel = class extends i4 {
               </label>
               <label>
                 <span class="label-text">${this.panelText("fields.starting_from")}</span>
-                <input
-                  type="date"
-                  name="last_completed"
-                  placeholder=${this.panelText("placeholders.date")}
-                  @focus=${this.openDatePicker}
-                  @pointerdown=${this.openDatePicker}
-                  .value=${this.createLastCompleted}
-                  @input=${this.handleCreateLastCompletedInput}
-                  ?disabled=${this.busy || formDisabled}
-                />
+                <div class="date-input-wrapper date-picker-surface">
+                  <input
+                    type="text"
+                    inputmode="numeric"
+                    lang=${this.localeCode() ?? ""}
+                    name="last_completed"
+                    autocomplete="off"
+                    placeholder=${this.datePlaceholder()}
+                    .value=${this.createLastCompleted}
+                    @input=${this.handleCreateLastCompletedInput}
+                    @focus=${() => this.openDatePicker("create")}
+                    @click=${() => this.openDatePicker("create")}
+                    ?disabled=${this.busy || formDisabled}
+                  />
+                  <button
+                    type="button"
+                    class="icon-button date-picker-toggle date-picker-surface"
+                    aria-label=${this.panelText("placeholders.date")}
+                    title=${this.panelText("placeholders.date")}
+                    ?disabled=${this.busy || formDisabled}
+                    @click=${() => this.toggleDatePicker("create")}
+                  >
+                    <ha-icon icon="mdi:calendar-blank" aria-hidden="true"></ha-icon>
+                  </button>
+                  ${this.renderDatePicker("create", this.createLastCompleted)}
+                </div>
               </label>
             </div>
             <div class="recurrence-fields">
@@ -2577,16 +2840,33 @@ var MaintPanel = class extends i4 {
               </label>
               <label>
                 <span class="label-text">${this.panelText("fields.last_completed")}</span>
-                <input
-                  type="date"
-                  name="last_completed"
-                  required
-                  .value=${this.editForm.last_completed}
-                  ?disabled=${this.busy}
-                  @focus=${this.openDatePicker}
-                  @pointerdown=${this.openDatePicker}
-                  @input=${this.handleEditFieldInput}
-                />
+                <div class="date-input-wrapper date-picker-surface">
+                  <input
+                    type="text"
+                    inputmode="numeric"
+                    lang=${this.localeCode() ?? ""}
+                    name="last_completed"
+                    required
+                    autocomplete="off"
+                    placeholder=${this.datePlaceholder()}
+                    .value=${this.editForm.last_completed}
+                    ?disabled=${this.busy}
+                    @input=${this.handleEditFieldInput}
+                    @focus=${() => this.openDatePicker("edit")}
+                    @click=${() => this.openDatePicker("edit")}
+                  />
+                  <button
+                    type="button"
+                    class="icon-button date-picker-toggle date-picker-surface"
+                    aria-label=${this.panelText("placeholders.date")}
+                    title=${this.panelText("placeholders.date")}
+                    ?disabled=${this.busy}
+                    @click=${() => this.toggleDatePicker("edit")}
+                  >
+                    <ha-icon icon="mdi:calendar-blank" aria-hidden="true"></ha-icon>
+                  </button>
+                  ${this.renderDatePicker("edit", this.editForm.last_completed)}
+                </div>
               </label>
             </div>
             <div class="recurrence-fields">
@@ -2607,6 +2887,71 @@ var MaintPanel = class extends i4 {
               </button>
             </div>
           </form>
+        </div>
+      </div>
+    `;
+  }
+  renderDatePicker(target, value) {
+    if (this.datePickerTarget !== target) {
+      return E;
+    }
+    const locale = this.localeCode();
+    const today = this.todayDate();
+    const selected = this.parseInputToDate(value) ?? today;
+    const visibleMonth = this.startOfMonth(this.datePickerMonth);
+    const monthLabel = this.formatMonthLabel(visibleMonth, locale);
+    const weekStart = this.firstWeekday();
+    const weekdayLabels = this.weekdayLabels(locale, weekStart);
+    const startOffset = (visibleMonth.getDay() - weekStart + 7) % 7;
+    const start = new Date(visibleMonth);
+    start.setDate(1 - startOffset);
+    const days = Array.from({ length: 42 }, (_2, index) => {
+      const date = new Date(start);
+      date.setDate(start.getDate() + index);
+      return {
+        date,
+        inMonth: date.getMonth() === visibleMonth.getMonth(),
+        isToday: this.isSameDay(date, today),
+        isSelected: this.isSameDay(date, selected)
+      };
+    });
+    return x`
+      <div class="date-picker-popup date-picker-surface">
+        <div class="date-picker-header">
+          <button
+            type="button"
+            class="icon-button"
+            aria-label="Previous month"
+            @click=${() => this.changeDatePickerMonth(-1)}
+          >
+            <ha-icon icon="mdi:chevron-left" aria-hidden="true"></ha-icon>
+          </button>
+          <div class="date-picker-month">${monthLabel}</div>
+          <button
+            type="button"
+            class="icon-button"
+            aria-label="Next month"
+            @click=${() => this.changeDatePickerMonth(1)}
+          >
+            <ha-icon icon="mdi:chevron-right" aria-hidden="true"></ha-icon>
+          </button>
+        </div>
+        <div class="date-picker-weekdays">
+          ${weekdayLabels.map((label) => x`<span>${label}</span>`)}
+        </div>
+        <div class="date-picker-grid">
+          ${days.map(
+      (day) => x`
+              <button
+                type="button"
+                class=${this.datePickerDayClass(day)}
+                aria-label=${this.formatDayAria(day.date, locale)}
+                @click=${() => this.selectDateFromPicker(target, day.date)}
+              >
+                ${day.date.getDate()}
+              </button>
+            `
+    )}
         </div>
       </div>
     `;
@@ -2690,6 +3035,7 @@ var MaintPanel = class extends i4 {
   }
   async handleCreateTask(event) {
     event.preventDefault();
+    this.closeDatePicker();
     if (!this.selectedEntryId || !this.hass) {
       return;
     }
@@ -2706,7 +3052,7 @@ var MaintPanel = class extends i4 {
       interval_unit: formData.get("interval_unit"),
       weekly_every: formData.get("weekly_every"),
       weekly_days: formData.getAll("weekly_days")
-    }, this.localizeText.bind(this));
+    }, this.localizeText.bind(this), this.hass);
     if (result.error) {
       this.createError = result.error;
       return;
@@ -2752,7 +3098,7 @@ var MaintPanel = class extends i4 {
   openEditModal(task) {
     const baseForm = {
       description: task.description ?? "",
-      last_completed: formatDateInput(task.last_completed),
+      last_completed: formatDateInput(task.last_completed, this.hass),
       recurrence_type: task.recurrence.type,
       interval_every: "",
       interval_unit: "days",
@@ -2774,6 +3120,7 @@ var MaintPanel = class extends i4 {
     this.editingTaskId = null;
     this.editForm = null;
     this.editError = null;
+    this.closeDatePicker();
   }
   handleEditFieldInput(event) {
     const target = event.currentTarget;
@@ -2830,6 +3177,7 @@ var MaintPanel = class extends i4 {
   }
   handleEditSubmit(event) {
     event.preventDefault();
+    this.closeDatePicker();
     const form = event.currentTarget;
     if (this.editingTaskId && form) {
       void this.saveTaskEdits(this.editingTaskId, form);
@@ -2848,7 +3196,7 @@ var MaintPanel = class extends i4 {
       interval_unit: formData.get("interval_unit"),
       weekly_every: formData.get("weekly_every"),
       weekly_days: formData.getAll("weekly_days")
-    }, this.localizeText.bind(this));
+    }, this.localizeText.bind(this), this.hass);
     if (result.error) {
       this.editError = result.error;
       return;
@@ -2923,7 +3271,14 @@ var MaintPanel = class extends i4 {
     this.createModalOpen = true;
     this.createError = null;
     this.createRecurrenceType = "interval";
-    this.createLastCompleted = this.currentDateIso();
+    this.createLastCompleted = this.currentDateInputValue();
+  }
+  localeCode() {
+    return getLocaleCode(this.hass);
+  }
+  datePlaceholder() {
+    const formatted = formatDatePlaceholder(this.hass);
+    return formatted || this.panelText("placeholders.date");
   }
   closeCreateModal() {
     if (this.busy) {
@@ -2931,22 +3286,7 @@ var MaintPanel = class extends i4 {
     }
     this.createModalOpen = false;
     this.createError = null;
-  }
-  openDatePicker(event) {
-    const input = event.currentTarget;
-    if (!input || input.type !== "date") {
-      return;
-    }
-    if (event.type === "pointerdown") {
-      event.preventDefault();
-      input.focus();
-    }
-    if (typeof input.showPicker === "function") {
-      try {
-        input.showPicker();
-      } catch {
-      }
-    }
+    this.closeDatePicker();
   }
   recurrenceTypeOptions(selected) {
     const options = [
@@ -3005,6 +3345,141 @@ var MaintPanel = class extends i4 {
     this.editError = null;
     this.editForm = nextForm;
   }
+  toggleDatePicker(target) {
+    if (this.datePickerTarget === target) {
+      this.closeDatePicker();
+    } else {
+      this.openDatePicker(target);
+    }
+  }
+  openDatePicker(target) {
+    if (target === "edit" && !this.editForm) {
+      return;
+    }
+    const value = target === "create" ? this.createLastCompleted : this.editForm?.last_completed;
+    const base = this.parseInputToDate(value) ?? this.todayDate();
+    this.datePickerMonth = this.startOfMonth(base);
+    this.datePickerTarget = target;
+  }
+  closeDatePicker() {
+    this.datePickerTarget = null;
+  }
+  changeDatePickerMonth(delta) {
+    const next = new Date(this.datePickerMonth);
+    next.setMonth(next.getMonth() + delta);
+    this.datePickerMonth = this.startOfMonth(next);
+  }
+  selectDateFromPicker(target, date) {
+    const formatted = formatDateInput(formatIsoDate(date), this.hass);
+    if (target === "create") {
+      this.createLastCompleted = formatted;
+      this.createError = null;
+    } else if (this.editForm) {
+      this.editForm = {
+        ...this.editForm,
+        last_completed: formatted
+      };
+      this.editError = null;
+    }
+    this.closeDatePicker();
+  }
+  parseInputToDate(value) {
+    const iso = parseDate(value, this.hass);
+    if (!iso) {
+      return null;
+    }
+    return parseIsoDate(iso);
+  }
+  todayDate() {
+    const now = /* @__PURE__ */ new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }
+  startOfMonth(value) {
+    return new Date(value.getFullYear(), value.getMonth(), 1);
+  }
+  isSameDay(a3, b3) {
+    return a3.getFullYear() === b3.getFullYear() && a3.getMonth() === b3.getMonth() && a3.getDate() === b3.getDate();
+  }
+  formatMonthLabel(value, locale) {
+    try {
+      return new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(value);
+    } catch {
+      return `${value.toLocaleString(void 0, { month: "long" })} ${value.getFullYear()}`;
+    }
+  }
+  firstWeekday() {
+    const locale = this.localeCode();
+    const intlLocale = Intl.Locale;
+    if (intlLocale) {
+      try {
+        const info = new intlLocale(locale ?? "en");
+        const first = info.weekInfo?.firstDay;
+        if (typeof first === "number") {
+          return first;
+        }
+      } catch {
+      }
+    }
+    const code = (locale ?? "").toLowerCase();
+    if (code.startsWith("en-us")) {
+      return 0;
+    }
+    return 1;
+  }
+  reformatDateInputs(previousHass) {
+    const reformatValue = (value) => {
+      const iso = parseDate(value, previousHass ?? this.hass) ?? parseDate(value, this.hass) ?? null;
+      if (!iso) {
+        return null;
+      }
+      return formatDateInput(iso, this.hass);
+    };
+    const updatedCreate = reformatValue(this.createLastCompleted);
+    if (updatedCreate !== null && !this.createModalOpen) {
+      this.createLastCompleted = updatedCreate;
+    }
+    if (this.editForm) {
+      const updatedEdit = reformatValue(this.editForm.last_completed);
+      if (updatedEdit !== null) {
+        this.editForm = { ...this.editForm, last_completed: updatedEdit };
+      }
+    }
+    this.datePickerMonth = this.startOfMonth(this.todayDate());
+  }
+  weekdayLabels(locale, weekStart) {
+    const base = new Date(2024, 0, 1);
+    const labels = Array.from({ length: 7 }, (_2, index) => {
+      const day = new Date(base);
+      day.setDate(base.getDate() + index);
+      try {
+        return new Intl.DateTimeFormat(locale, { weekday: "short" }).format(day);
+      } catch {
+        return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][index];
+      }
+    });
+    const rotated = labels.slice(weekStart).concat(labels.slice(0, weekStart));
+    return rotated;
+  }
+  datePickerDayClass(day) {
+    let className = "date-picker-day";
+    if (!day.inMonth) {
+      className += " muted";
+    }
+    if (day.isToday) {
+      className += " today";
+    }
+    if (day.isSelected) {
+      className += " selected";
+    }
+    return className;
+  }
+  formatDayAria(date, locale) {
+    try {
+      return new Intl.DateTimeFormat(locale, { dateStyle: "long" }).format(date);
+    } catch {
+      return formatIsoDate(date);
+    }
+  }
   handleCreateLastCompletedInput(event) {
     const input = event.currentTarget;
     if (!input) {
@@ -3019,6 +3494,9 @@ var MaintPanel = class extends i4 {
     const month = (today.getMonth() + 1).toString().padStart(2, "0");
     const day = today.getDate().toString().padStart(2, "0");
     return `${year}-${month}-${day}`;
+  }
+  currentDateInputValue() {
+    return formatDateInput(this.currentDateIso(), this.hass);
   }
   localizeText(key, ...args) {
     const template = this.translations[key];
@@ -3104,6 +3582,12 @@ __decorateClass([
 __decorateClass([
   r5()
 ], MaintPanel.prototype, "translationsLanguage", 2);
+__decorateClass([
+  r5()
+], MaintPanel.prototype, "datePickerTarget", 2);
+__decorateClass([
+  r5()
+], MaintPanel.prototype, "datePickerMonth", 2);
 MaintPanel = __decorateClass([
   t3("maint-panel")
 ], MaintPanel);

@@ -1,4 +1,4 @@
-import type { Recurrence, RecurrenceType, TaskPayload, Weekday } from "./api.js";
+import type { HassConnection, Recurrence, RecurrenceType, TaskPayload, Weekday } from "./api.js";
 import { parseDate, type LocalizeFunc } from "./formatting.js";
 
 export interface ValidationResult {
@@ -24,14 +24,15 @@ export interface TaskFields {
 
 export const validateTaskFields = (
   fields: TaskFields,
-  localize: LocalizeFunc
+  localize: LocalizeFunc,
+  hass?: HassConnection
 ): ValidationResult => {
   const description = (fields.description ?? "").toString().trim();
   if (!description) {
     return { error: localize("component.maint.panel.validation.description_required") };
   }
 
-  const lastCompleted = parseDate(fields.last_completed);
+  const lastCompleted = parseDate(fields.last_completed, hass);
   if (lastCompleted === null) {
     return { error: localize("component.maint.panel.validation.last_completed_invalid") };
   }
