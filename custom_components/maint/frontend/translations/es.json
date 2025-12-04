@@ -4,11 +4,9 @@
     "subtitle": "Gestiona tareas recurrentes y mantén tu hogar al día.",
     "info_add_entry": "Añade una entrada de la integración Maint para empezar a registrar tareas.",
     "info_enable_tracking": "Añade una entrada de Maint para habilitar el seguimiento de tareas.",
-    "info_no_tasks": "Aún no hay tareas. Usa el formulario de arriba para crear una.",
+    "info_no_tasks": "Aún no hay tareas. Usa el botón Crear tarea para añadir una.",
     "section_create": "Crear tarea",
     "section_tasks": "Tareas",
-    "toggle_collapse": "Contraer formulario",
-    "toggle_expand": "Expandir formulario",
     "fields": {
       "description": "Descripción",
       "schedule_type": "Tipo de programación",
@@ -50,7 +48,9 @@
       "delete_title": "¿Eliminar tarea?",
       "delete_prompt": "¿Seguro que quieres eliminar \"{task}\"?",
       "edit_title": "Editar tarea",
-      "edit_prompt": "Actualiza los detalles de la tarea abajo."
+      "edit_prompt": "Actualiza los detalles de la tarea abajo.",
+      "create_title": "Crear tarea",
+      "create_prompt": "Añade los detalles de la tarea abajo."
     },
     "errors": {
       "load_entries": "No se pudieron cargar las entradas de Maint.",

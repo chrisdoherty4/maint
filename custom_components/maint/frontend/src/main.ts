@@ -47,7 +47,8 @@ export class MaintPanel extends LitElement {
   @state() private error: string | null = null;
   @state() private editingTaskId: string | null = null;
   @state() private confirmTaskId: string | null = null;
-  @state() private formExpanded = true;
+  @state() private createModalOpen = false;
+  @state() private createError: string | null = null;
   @state() private createLastCompleted: string = this.currentDateIso();
   @state() private createRecurrenceType: RecurrenceType = "interval";
   @state() private editForm: EditFormState | null = null;
@@ -78,109 +79,33 @@ export class MaintPanel extends LitElement {
   protected render() {
     const hasEntries = this.entries.length > 0;
     const formDisabled = !this.selectedEntryId;
+    const createDisabled = formDisabled || this.busy;
 
     return html`
       <div class="container">
-        <h1>${this.panelText("title")}</h1>
-        <p class="subtext">${this.panelText("subtitle")}</p>
-        ${hasEntries
-        ? nothing
-        : html`<p class="info">${this.panelText("info_add_entry")}</p>`}
-        ${this.renderCreateForm(formDisabled, hasEntries)}
-        ${this.renderTasksSection(formDisabled)}
-        ${this.renderDeleteModal()}
-        ${this.renderEditModal()}
-      </div>
-    `;
-  }
-
-  private renderCreateForm(formDisabled: boolean, hasEntries: boolean) {
-    const toggleIcon = this.formExpanded ? "mdi:chevron-down" : "mdi:chevron-right";
-    const toggleLabel = this.formExpanded
-      ? this.panelText("toggle_collapse")
-      : this.panelText("toggle_expand");
-
-    return html`
-      <section>
-        <div
-          class="form-header"
-          tabindex="0"
-          role="button"
-          aria-expanded=${this.formExpanded}
-          @click=${this.toggleForm}
-          @keydown=${this.handleFormHeaderKeydown}
-        >
-          <div class="form-header-text">
-            <h2>${this.panelText("section_create")}</h2>
+        <div class="page-header">
+          <div class="title-block">
+            <h1>${this.panelText("title")}</h1>
+            <p class="subtext">${this.panelText("subtitle")}</p>
           </div>
           <button
             type="button"
-            id="form-toggle"
-            class="icon-button form-toggle"
-            aria-label=${toggleLabel}
-            title=${toggleLabel}
+            class="button-primary"
+            ?disabled=${createDisabled}
+            @click=${this.openCreateModal}
           >
-            <ha-icon icon=${toggleIcon} aria-hidden="true"></ha-icon>
+            ${this.panelText("buttons.create")}
           </button>
         </div>
-        ${this.error ? html`<div class="error">${this.error}</div>` : nothing}
+        ${this.error ? html`<div class="error global-error">${this.error}</div>` : nothing}
         ${hasEntries
         ? nothing
-        : html`<p class="info">${this.panelText("info_enable_tracking")}</p>`}
-        ${this.formExpanded
-        ? html`
-              <form id="task-form" @submit=${this.handleCreateTask}>
-                <div class="form-fields">
-                  <label>
-                    <span class="label-text">${this.panelText("fields.description")}</span>
-                    <input
-                      type="text"
-                      name="description"
-                      required
-                      placeholder=${this.panelText("placeholders.description_example")}
-                      ?disabled=${formDisabled}
-                    />
-                  </label>
-                  <div class="inline-fields">
-                    <label>
-                      <span class="label-text">${this.panelText("fields.schedule_type")}</span>
-                      <select
-                        name="recurrence_type"
-                        @change=${this.handleRecurrenceTypeChange}
-                        ?disabled=${formDisabled}
-                      >
-                        ${this.recurrenceTypeOptions(this.createRecurrenceType)}
-                      </select>
-                    </label>
-                    <label>
-                      <span class="label-text">${this.panelText("fields.starting_from")}</span>
-                      <input
-                        type="date"
-                        name="last_completed"
-                        placeholder=${this.panelText("placeholders.date")}
-                        @focus=${this.openDatePicker}
-                        @pointerdown=${this.openDatePicker}
-                        .value=${this.createLastCompleted}
-                        @input=${this.handleCreateLastCompletedInput}
-                        ?disabled=${formDisabled}
-                      />
-                    </label>
-                  </div>
-                  <div class="recurrence-fields">
-                    ${this.renderRecurrenceFields(this.createRecurrenceType)}
-                  </div>
-                </div>
-                <div class="form-actions">
-                  <button type="submit" ?disabled=${this.busy || formDisabled}>
-                    ${this.busy
-            ? this.panelText("buttons.saving")
-            : this.panelText("buttons.create")}
-                  </button>
-                </div>
-              </form>
-            `
-        : nothing}
-      </section>
+        : html`<p class="info">${this.panelText("info_add_entry")}</p>`}
+        ${this.renderTasksSection(formDisabled)}
+        ${this.renderCreateModal(formDisabled)}
+        ${this.renderDeleteModal()}
+        ${this.renderEditModal()}
+      </div>
     `;
   }
 
@@ -371,6 +296,83 @@ export class MaintPanel extends LitElement {
     `;
   }
 
+  private renderCreateModal(formDisabled: boolean) {
+    if (!this.createModalOpen) {
+      return nothing;
+    }
+
+    return html`
+      <div class="modal-backdrop">
+        <div class="modal edit-modal">
+          <h3>${this.panelText("modals.create_title")}</h3>
+          <p>${this.panelText("modals.create_prompt")}</p>
+          ${this.createError ? html`<div class="error">${this.createError}</div>` : nothing}
+          <form id="create-task-form" @submit=${this.handleCreateTask}>
+            <label>
+              <span class="label-text">${this.panelText("fields.description")}</span>
+              <input
+                type="text"
+                name="description"
+                required
+                placeholder=${this.panelText("placeholders.description_example")}
+                ?disabled=${this.busy || formDisabled}
+              />
+            </label>
+            <div class="inline-fields">
+              <label>
+                <span class="label-text">${this.panelText("fields.schedule_type")}</span>
+                <select
+                  name="recurrence_type"
+                  @change=${this.handleRecurrenceTypeChange}
+                  ?disabled=${this.busy || formDisabled}
+                >
+                  ${this.recurrenceTypeOptions(this.createRecurrenceType)}
+                </select>
+              </label>
+              <label>
+                <span class="label-text">${this.panelText("fields.starting_from")}</span>
+                <input
+                  type="date"
+                  name="last_completed"
+                  placeholder=${this.panelText("placeholders.date")}
+                  @focus=${this.openDatePicker}
+                  @pointerdown=${this.openDatePicker}
+                  .value=${this.createLastCompleted}
+                  @input=${this.handleCreateLastCompletedInput}
+                  ?disabled=${this.busy || formDisabled}
+                />
+              </label>
+            </div>
+            <div class="recurrence-fields">
+              ${this.renderRecurrenceFields(
+        this.createRecurrenceType,
+        undefined,
+        undefined,
+        this.busy || formDisabled
+      )}
+            </div>
+            <div class="modal-actions">
+              <button
+                type="button"
+                class="button-secondary"
+                id="cancel-create"
+                ?disabled=${this.busy}
+                @click=${this.closeCreateModal}
+              >
+                ${this.panelText("buttons.cancel")}
+              </button>
+              <button type="submit" ?disabled=${this.busy || formDisabled}>
+                ${this.busy
+        ? this.panelText("buttons.saving")
+        : this.panelText("buttons.create")}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+  }
+
   private renderEditModal() {
     if (!this.editingTaskId || !this.editForm) {
       return nothing;
@@ -451,6 +453,7 @@ export class MaintPanel extends LitElement {
     }
 
     try {
+      this.error = null;
       const entries = await loadEntries(this.hass);
       this.entries = entries.map((entry) => ({
         entry_id: entry.entry_id,
@@ -477,10 +480,13 @@ export class MaintPanel extends LitElement {
       this.editForm = null;
       this.editError = null;
       this.confirmTaskId = null;
+      this.createModalOpen = false;
+      this.createError = null;
       return;
     }
 
     try {
+      this.error = null;
       this.busy = true;
       const tasks = await loadTasks(this.hass, this.selectedEntryId);
 
@@ -489,7 +495,6 @@ export class MaintPanel extends LitElement {
       this.editForm = null;
       this.editError = null;
       this.confirmTaskId = null;
-      this.formExpanded = this.tasks.length === 0;
     } catch (error) {
       console.error("Maint panel failed to load tasks", error);
       this.error = this.panelText("errors.load_tasks");
@@ -517,6 +522,7 @@ export class MaintPanel extends LitElement {
       .padStart(2, "0")}-${today.getDate().toString().padStart(2, "0")}`;
 
     try {
+      this.error = null;
       this.busy = true;
       await updateMaintTask(this.hass, this.selectedEntryId, taskId, {
         description: task.description,
@@ -556,7 +562,7 @@ export class MaintPanel extends LitElement {
     }, this.localizeText.bind(this));
 
     if (result.error) {
-      this.error = result.error;
+      this.createError = result.error;
       return;
     }
 
@@ -564,19 +570,25 @@ export class MaintPanel extends LitElement {
       return;
     }
 
+    let createdTask = false;
     try {
       this.busy = true;
+      this.createError = null;
       const created = await createMaintTask(this.hass, this.selectedEntryId, result.values);
 
       this.tasks = this.sortTasks([...this.tasks, created]);
-      form.reset();
       this.error = null;
+      form.reset();
+      createdTask = true;
     } catch (error) {
       console.error("Maint panel failed to create task", error);
-      this.error = this.panelText("errors.create");
+      this.createError = this.panelText("errors.create");
     } finally {
       this.busy = false;
       this.createLastCompleted = this.currentDateIso();
+      if (createdTask) {
+        this.closeCreateModal();
+      }
     }
   }
 
@@ -768,6 +780,7 @@ export class MaintPanel extends LitElement {
     const taskId = this.confirmTaskId;
 
     try {
+      this.error = null;
       this.busy = true;
       await deleteMaintTask(this.hass, this.selectedEntryId, taskId);
 
@@ -778,10 +791,6 @@ export class MaintPanel extends LitElement {
         this.editingTaskId = null;
         this.editForm = null;
         this.editError = null;
-      }
-
-      if (this.tasks.length === 0) {
-        this.formExpanded = true;
       }
     } catch (error) {
       console.error("Maint panel failed to delete task", error);
@@ -796,15 +805,23 @@ export class MaintPanel extends LitElement {
     this.confirmTaskId = null;
   }
 
-  private toggleForm(): void {
-    this.formExpanded = !this.formExpanded;
+  private openCreateModal(): void {
+    if (!this.selectedEntryId || this.busy) {
+      return;
+    }
+
+    this.createModalOpen = true;
+    this.createError = null;
+    this.createRecurrenceType = "interval";
+    this.createLastCompleted = this.currentDateIso();
   }
 
-  private handleFormHeaderKeydown(event: KeyboardEvent): void {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      this.toggleForm();
+  private closeCreateModal(): void {
+    if (this.busy) {
+      return;
     }
+    this.createModalOpen = false;
+    this.createError = null;
   }
 
   private openDatePicker(event: Event): void {
@@ -843,13 +860,15 @@ export class MaintPanel extends LitElement {
   private renderRecurrenceFields(
     type: RecurrenceType,
     recurrence?: Recurrence,
-    taskId?: string
+    taskId?: string,
+    disabled = false
   ) {
     return renderRecurrenceFields(
       type,
       recurrence,
       taskId,
-      this.localizeText.bind(this)
+      this.localizeText.bind(this),
+      disabled
     );
   }
 
@@ -859,6 +878,7 @@ export class MaintPanel extends LitElement {
       return;
     }
     this.createRecurrenceType = select.value as RecurrenceType;
+    this.createError = null;
   }
 
   private renderEditRecurrenceFields() {
@@ -902,6 +922,7 @@ export class MaintPanel extends LitElement {
       return;
     }
     this.createLastCompleted = input.value;
+    this.createError = null;
   }
 
   private currentDateIso(): string {

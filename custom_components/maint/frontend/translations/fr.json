@@ -4,11 +4,9 @@
     "subtitle": "Gérez les tâches récurrentes et gardez votre maison à jour.",
     "info_add_entry": "Ajoutez une entrée Maint pour commencer à suivre les tâches.",
     "info_enable_tracking": "Ajoutez une entrée de l'intégration Maint pour activer le suivi des tâches.",
-    "info_no_tasks": "Aucune tâche pour le moment. Utilisez le formulaire ci-dessus pour en créer une.",
+    "info_no_tasks": "Aucune tâche pour le moment. Utilisez le bouton Créer une tâche pour en ajouter une.",
     "section_create": "Créer une tâche",
     "section_tasks": "Tâches",
-    "toggle_collapse": "Replier le formulaire",
-    "toggle_expand": "Déplier le formulaire",
     "fields": {
       "description": "Description",
       "schedule_type": "Type de planification",
@@ -50,7 +48,9 @@
       "delete_title": "Supprimer la tâche ?",
       "delete_prompt": "Voulez-vous vraiment supprimer « {task} » ?",
       "edit_title": "Modifier la tâche",
-      "edit_prompt": "Mettez à jour les détails de la tâche ci-dessous."
+      "edit_prompt": "Mettez à jour les détails de la tâche ci-dessous.",
+      "create_title": "Créer une tâche",
+      "create_prompt": "Ajoutez les détails de la tâche ci-dessous."
     },
     "errors": {
       "load_entries": "Impossible de charger les entrées Maint.",

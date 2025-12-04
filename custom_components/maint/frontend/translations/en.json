@@ -4,11 +4,9 @@
     "subtitle": "Manage recurring tasks and keep your home on track.",
     "info_add_entry": "Add a Maint integration entry to start tracking tasks.",
     "info_enable_tracking": "Add a Maint integration entry to enable task tracking.",
-    "info_no_tasks": "No tasks yet. Use the form above to create one.",
+    "info_no_tasks": "No tasks yet. Use the Create task button to add one.",
     "section_create": "Create task",
     "section_tasks": "Tasks",
-    "toggle_collapse": "Collapse form",
-    "toggle_expand": "Expand form",
     "fields": {
       "description": "Description",
       "schedule_type": "Schedule type",
@@ -50,7 +48,9 @@
       "delete_title": "Delete task?",
       "delete_prompt": "Are you sure you want to delete \"{task}\"?",
       "edit_title": "Edit task",
-      "edit_prompt": "Update the task details below."
+      "edit_prompt": "Update the task details below.",
+      "create_title": "Create task",
+      "create_prompt": "Add the task details below."
     },
     "errors": {
       "load_entries": "Unable to load maint entries.",

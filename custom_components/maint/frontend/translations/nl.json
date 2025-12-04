@@ -4,11 +4,9 @@
     "subtitle": "Beheer terugkerende taken en houd je huis op schema.",
     "info_add_entry": "Voeg een Maint-integratie-entry toe om taken te volgen.",
     "info_enable_tracking": "Voeg een Maint-entry toe om taaktracking in te schakelen.",
-    "info_no_tasks": "Nog geen taken. Gebruik het formulier hierboven om er een te maken.",
+    "info_no_tasks": "Nog geen taken. Gebruik de knop Taak maken om er een toe te voegen.",
     "section_create": "Taak maken",
     "section_tasks": "Taken",
-    "toggle_collapse": "Formulier inklappen",
-    "toggle_expand": "Formulier uitklappen",
     "fields": {
       "description": "Beschrijving",
       "schedule_type": "Schema type",
@@ -50,7 +48,9 @@
       "delete_title": "Taak verwijderen?",
       "delete_prompt": "Weet je zeker dat je \"{task}\" wilt verwijderen?",
       "edit_title": "Taak bewerken",
-      "edit_prompt": "Werk de taakdetails hieronder bij."
+      "edit_prompt": "Werk de taakdetails hieronder bij.",
+      "create_title": "Taak maken",
+      "create_prompt": "Voeg hieronder de taakdetails toe."
     },
     "errors": {
       "load_entries": "Kon Maint-entries niet laden.",
