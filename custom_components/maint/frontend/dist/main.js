@@ -1522,6 +1522,113 @@ var styles = i`
   }
 `;
 
+// translations/de.json
+var de_default = {
+  panel: {
+    title: "Wartung",
+    subtitle: "Verwalte wiederkehrende Aufgaben und halte dein Zuhause auf Kurs.",
+    info_add_entry: "F\xFCge einen Maint-Integrations-Eintrag hinzu, um Aufgaben zu verfolgen.",
+    info_enable_tracking: "F\xFCge einen Maint-Integrations-Eintrag hinzu, um die Nachverfolgung zu aktivieren.",
+    info_no_tasks: "Noch keine Aufgaben. Nutze das Formular oben, um eine zu erstellen.",
+    section_create: "Aufgabe erstellen",
+    section_tasks: "Aufgaben",
+    toggle_collapse: "Formular einklappen",
+    toggle_expand: "Formular ausklappen",
+    fields: {
+      description: "Beschreibung",
+      schedule_type: "Intervalltyp",
+      starting_from: "Startdatum",
+      last_completed: "Zuletzt abgeschlossen",
+      every: "Alle",
+      unit: "Einheit",
+      on: "Am",
+      weeks_suffix: "Woche(n)"
+    },
+    placeholders: {
+      description_example: "Batterie Rauchmelder",
+      date: "tt/mm/jjjj"
+    },
+    recurrence_options: {
+      interval: "Alle N",
+      weekly: "Wochentage",
+      units: {
+        days: "Tage",
+        weeks: "Wochen",
+        months: "Monate"
+      }
+    },
+    buttons: {
+      create: "Aufgabe erstellen",
+      saving: "Speichern\u2026",
+      mark_complete: "Als erledigt markieren",
+      edit: "Bearbeiten",
+      delete: "L\xF6schen",
+      cancel: "Abbrechen",
+      save_changes: "\xC4nderungen speichern"
+    },
+    labels: {
+      due: "F\xE4llig",
+      next_scheduled: "N\xE4chste Planung",
+      schedule: "Plan"
+    },
+    modals: {
+      delete_title: "Aufgabe l\xF6schen?",
+      delete_prompt: "M\xF6chtest du \u201E{task}\u201C wirklich l\xF6schen?",
+      edit_title: "Aufgabe bearbeiten",
+      edit_prompt: "Aktualisiere die Aufgabendetails unten."
+    },
+    errors: {
+      load_entries: "Maint-Eintr\xE4ge konnten nicht geladen werden.",
+      load_tasks: "Aufgaben konnten nicht geladen werden.",
+      mark_complete: "Aufgabe konnte nicht als erledigt markiert werden.",
+      create: "Aufgabe konnte nicht erstellt werden. Siehe Logs f\xFCr Details.",
+      update: "Aufgabe konnte nicht aktualisiert werden.",
+      delete: "Aufgabe konnte nicht gel\xF6scht werden."
+    },
+    validation: {
+      description_required: "Gib eine Beschreibung ein.",
+      last_completed_invalid: "Gib ein g\xFCltiges Datum f\xFCr zuletzt abgeschlossen ein.",
+      schedule_required: "W\xE4hle einen Plan.",
+      interval_every_required: "Gib an, wie oft die Aufgabe wiederholt wird.",
+      interval_unit_required: "W\xE4hle eine H\xE4ufigkeitseinheit.",
+      weekly_every_required: "Gib an, nach wie vielen Wochen sich die Aufgabe wiederholt.",
+      weekly_days_required: "W\xE4hle mindestens einen Wochentag."
+    }
+  },
+  recurrence: {
+    every_day: "Jeden Tag",
+    every_interval: "Alle {count} {unit}",
+    weekly_on: "W\xF6chentlich am {days}",
+    weekly_every_on: "Alle {count} Wochen am {days}",
+    unit: {
+      day_one: "Tag",
+      day_other: "Tage",
+      week_one: "Woche",
+      week_other: "Wochen",
+      month_one: "Monat",
+      month_other: "Monate"
+    },
+    weekday_full: {
+      "0": "Montag",
+      "1": "Dienstag",
+      "2": "Mittwoch",
+      "3": "Donnerstag",
+      "4": "Freitag",
+      "5": "Samstag",
+      "6": "Sonntag"
+    },
+    weekday_short: {
+      "0": "Mo",
+      "1": "Di",
+      "2": "Mi",
+      "3": "Do",
+      "4": "Fr",
+      "5": "Sa",
+      "6": "So"
+    }
+  }
+};
+
 // translations/en.json
 var en_default = {
   panel: {
@@ -1625,6 +1732,113 @@ var en_default = {
       "4": "Fri",
       "5": "Sat",
       "6": "Sun"
+    }
+  }
+};
+
+// translations/es.json
+var es_default = {
+  panel: {
+    title: "Mantenimiento",
+    subtitle: "Gestiona tareas recurrentes y mant\xE9n tu hogar al d\xEDa.",
+    info_add_entry: "A\xF1ade una entrada de la integraci\xF3n Maint para empezar a registrar tareas.",
+    info_enable_tracking: "A\xF1ade una entrada de Maint para habilitar el seguimiento de tareas.",
+    info_no_tasks: "A\xFAn no hay tareas. Usa el formulario de arriba para crear una.",
+    section_create: "Crear tarea",
+    section_tasks: "Tareas",
+    toggle_collapse: "Contraer formulario",
+    toggle_expand: "Expandir formulario",
+    fields: {
+      description: "Descripci\xF3n",
+      schedule_type: "Tipo de programaci\xF3n",
+      starting_from: "A partir de",
+      last_completed: "\xDAltima finalizaci\xF3n",
+      every: "Cada",
+      unit: "Unidad",
+      on: "En",
+      weeks_suffix: "semana(s)"
+    },
+    placeholders: {
+      description_example: "Bater\xEDa del detector de humo",
+      date: "dd/mm/aaaa"
+    },
+    recurrence_options: {
+      interval: "Cada N",
+      weekly: "D\xEDas de la semana",
+      units: {
+        days: "D\xEDas",
+        weeks: "Semanas",
+        months: "Meses"
+      }
+    },
+    buttons: {
+      create: "Crear tarea",
+      saving: "Guardando\u2026",
+      mark_complete: "Marcar como completada",
+      edit: "Editar",
+      delete: "Eliminar",
+      cancel: "Cancelar",
+      save_changes: "Guardar cambios"
+    },
+    labels: {
+      due: "Pendiente",
+      next_scheduled: "Pr\xF3xima programaci\xF3n",
+      schedule: "Programa"
+    },
+    modals: {
+      delete_title: "\xBFEliminar tarea?",
+      delete_prompt: '\xBFSeguro que quieres eliminar "{task}"?',
+      edit_title: "Editar tarea",
+      edit_prompt: "Actualiza los detalles de la tarea abajo."
+    },
+    errors: {
+      load_entries: "No se pudieron cargar las entradas de Maint.",
+      load_tasks: "No se pudieron cargar las tareas.",
+      mark_complete: "No se pudo marcar la tarea como completada.",
+      create: "No se pudo crear la tarea. Revisa los registros para m\xE1s detalles.",
+      update: "No se pudo actualizar la tarea.",
+      delete: "No se pudo eliminar la tarea."
+    },
+    validation: {
+      description_required: "Introduce una descripci\xF3n.",
+      last_completed_invalid: "Introduce una fecha v\xE1lida para la \xFAltima finalizaci\xF3n.",
+      schedule_required: "Elige un programa.",
+      interval_every_required: "Indica la frecuencia de repetici\xF3n.",
+      interval_unit_required: "Elige una unidad de frecuencia.",
+      weekly_every_required: "Indica cu\xE1ntas semanas entre repeticiones.",
+      weekly_days_required: "Selecciona al menos un d\xEDa de la semana."
+    }
+  },
+  recurrence: {
+    every_day: "Cada d\xEDa",
+    every_interval: "Cada {count} {unit}",
+    weekly_on: "Semanal en {days}",
+    weekly_every_on: "Cada {count} semanas en {days}",
+    unit: {
+      day_one: "d\xEDa",
+      day_other: "d\xEDas",
+      week_one: "semana",
+      week_other: "semanas",
+      month_one: "mes",
+      month_other: "meses"
+    },
+    weekday_full: {
+      "0": "Lunes",
+      "1": "Martes",
+      "2": "Mi\xE9rcoles",
+      "3": "Jueves",
+      "4": "Viernes",
+      "5": "S\xE1bado",
+      "6": "Domingo"
+    },
+    weekday_short: {
+      "0": "Lun",
+      "1": "Mar",
+      "2": "Mi\xE9",
+      "3": "Jue",
+      "4": "Vie",
+      "5": "S\xE1b",
+      "6": "Dom"
     }
   }
 };
@@ -1736,11 +1950,229 @@ var fr_default = {
   }
 };
 
+// translations/nl.json
+var nl_default = {
+  panel: {
+    title: "Onderhoud",
+    subtitle: "Beheer terugkerende taken en houd je huis op schema.",
+    info_add_entry: "Voeg een Maint-integratie-entry toe om taken te volgen.",
+    info_enable_tracking: "Voeg een Maint-entry toe om taaktracking in te schakelen.",
+    info_no_tasks: "Nog geen taken. Gebruik het formulier hierboven om er een te maken.",
+    section_create: "Taak maken",
+    section_tasks: "Taken",
+    toggle_collapse: "Formulier inklappen",
+    toggle_expand: "Formulier uitklappen",
+    fields: {
+      description: "Beschrijving",
+      schedule_type: "Schema type",
+      starting_from: "Vanaf",
+      last_completed: "Laatst voltooid",
+      every: "Elke",
+      unit: "Eenheid",
+      on: "Op",
+      weeks_suffix: "week/weken"
+    },
+    placeholders: {
+      description_example: "Batterij rookmelder",
+      date: "dd/mm/jjjj"
+    },
+    recurrence_options: {
+      interval: "Elke N",
+      weekly: "Dagen van de week",
+      units: {
+        days: "Dagen",
+        weeks: "Weken",
+        months: "Maanden"
+      }
+    },
+    buttons: {
+      create: "Taak maken",
+      saving: "Opslaan\u2026",
+      mark_complete: "Markeer als voltooid",
+      edit: "Bewerken",
+      delete: "Verwijderen",
+      cancel: "Annuleren",
+      save_changes: "Wijzigingen opslaan"
+    },
+    labels: {
+      due: "Verlopen",
+      next_scheduled: "Volgende gepland",
+      schedule: "Schema"
+    },
+    modals: {
+      delete_title: "Taak verwijderen?",
+      delete_prompt: 'Weet je zeker dat je "{task}" wilt verwijderen?',
+      edit_title: "Taak bewerken",
+      edit_prompt: "Werk de taakdetails hieronder bij."
+    },
+    errors: {
+      load_entries: "Kon Maint-entries niet laden.",
+      load_tasks: "Kon taken niet laden.",
+      mark_complete: "Taak kon niet als voltooid worden gemarkeerd.",
+      create: "Taak kon niet worden gemaakt. Controleer de logboeken voor details.",
+      update: "Taak kon niet worden bijgewerkt.",
+      delete: "Taak kon niet worden verwijderd."
+    },
+    validation: {
+      description_required: "Voer een beschrijving in.",
+      last_completed_invalid: "Voer een geldige datum in voor laatst voltooid.",
+      schedule_required: "Kies een schema.",
+      interval_every_required: "Geef aan hoe vaak de taak terugkeert.",
+      interval_unit_required: "Kies een frequentie-eenheid.",
+      weekly_every_required: "Geef aan hoeveel weken tussen herhalingen.",
+      weekly_days_required: "Selecteer minstens \xE9\xE9n dag van de week."
+    }
+  },
+  recurrence: {
+    every_day: "Elke dag",
+    every_interval: "Elke {count} {unit}",
+    weekly_on: "Wekelijks op {days}",
+    weekly_every_on: "Elke {count} weken op {days}",
+    unit: {
+      day_one: "dag",
+      day_other: "dagen",
+      week_one: "week",
+      week_other: "weken",
+      month_one: "maand",
+      month_other: "maanden"
+    },
+    weekday_full: {
+      "0": "Maandag",
+      "1": "Dinsdag",
+      "2": "Woensdag",
+      "3": "Donderdag",
+      "4": "Vrijdag",
+      "5": "Zaterdag",
+      "6": "Zondag"
+    },
+    weekday_short: {
+      "0": "Ma",
+      "1": "Di",
+      "2": "Wo",
+      "3": "Do",
+      "4": "Vr",
+      "5": "Za",
+      "6": "Zo"
+    }
+  }
+};
+
+// translations/pt.json
+var pt_default = {
+  panel: {
+    title: "Manuten\xE7\xE3o",
+    subtitle: "Gerencie tarefas recorrentes e mantenha sua casa em dia.",
+    info_add_entry: "Adicione uma entrada da integra\xE7\xE3o Maint para come\xE7ar a acompanhar tarefas.",
+    info_enable_tracking: "Adicione uma entrada do Maint para habilitar o acompanhamento de tarefas.",
+    info_no_tasks: "Ainda n\xE3o h\xE1 tarefas. Use o formul\xE1rio acima para criar uma.",
+    section_create: "Criar tarefa",
+    section_tasks: "Tarefas",
+    toggle_collapse: "Recolher formul\xE1rio",
+    toggle_expand: "Expandir formul\xE1rio",
+    fields: {
+      description: "Descri\xE7\xE3o",
+      schedule_type: "Tipo de programa\xE7\xE3o",
+      starting_from: "A partir de",
+      last_completed: "\xDAltima conclus\xE3o",
+      every: "A cada",
+      unit: "Unidade",
+      on: "Em",
+      weeks_suffix: "semana(s)"
+    },
+    placeholders: {
+      description_example: "Bateria do detector de fuma\xE7a",
+      date: "dd/mm/aaaa"
+    },
+    recurrence_options: {
+      interval: "A cada N",
+      weekly: "Dias da semana",
+      units: {
+        days: "Dias",
+        weeks: "Semanas",
+        months: "Meses"
+      }
+    },
+    buttons: {
+      create: "Criar tarefa",
+      saving: "Salvando\u2026",
+      mark_complete: "Marcar como conclu\xEDda",
+      edit: "Editar",
+      delete: "Excluir",
+      cancel: "Cancelar",
+      save_changes: "Salvar altera\xE7\xF5es"
+    },
+    labels: {
+      due: "Pendente",
+      next_scheduled: "Pr\xF3ximo agendamento",
+      schedule: "Programa\xE7\xE3o"
+    },
+    modals: {
+      delete_title: "Excluir tarefa?",
+      delete_prompt: 'Tem certeza de que deseja excluir "{task}"?',
+      edit_title: "Editar tarefa",
+      edit_prompt: "Atualize os detalhes da tarefa abaixo."
+    },
+    errors: {
+      load_entries: "N\xE3o foi poss\xEDvel carregar as entradas do Maint.",
+      load_tasks: "N\xE3o foi poss\xEDvel carregar as tarefas.",
+      mark_complete: "N\xE3o foi poss\xEDvel marcar a tarefa como conclu\xEDda.",
+      create: "N\xE3o foi poss\xEDvel criar a tarefa. Verifique os registros para mais detalhes.",
+      update: "N\xE3o foi poss\xEDvel atualizar a tarefa.",
+      delete: "N\xE3o foi poss\xEDvel excluir a tarefa."
+    },
+    validation: {
+      description_required: "Informe uma descri\xE7\xE3o.",
+      last_completed_invalid: "Informe uma data v\xE1lida para a \xFAltima conclus\xE3o.",
+      schedule_required: "Escolha uma programa\xE7\xE3o.",
+      interval_every_required: "Informe com que frequ\xEAncia a tarefa se repete.",
+      interval_unit_required: "Escolha uma unidade de frequ\xEAncia.",
+      weekly_every_required: "Informe quantas semanas entre repeti\xE7\xF5es.",
+      weekly_days_required: "Selecione ao menos um dia da semana."
+    }
+  },
+  recurrence: {
+    every_day: "Todos os dias",
+    every_interval: "A cada {count} {unit}",
+    weekly_on: "Semanalmente em {days}",
+    weekly_every_on: "A cada {count} semanas em {days}",
+    unit: {
+      day_one: "dia",
+      day_other: "dias",
+      week_one: "semana",
+      week_other: "semanas",
+      month_one: "m\xEAs",
+      month_other: "meses"
+    },
+    weekday_full: {
+      "0": "Segunda-feira",
+      "1": "Ter\xE7a-feira",
+      "2": "Quarta-feira",
+      "3": "Quinta-feira",
+      "4": "Sexta-feira",
+      "5": "S\xE1bado",
+      "6": "Domingo"
+    },
+    weekday_short: {
+      "0": "Seg",
+      "1": "Ter",
+      "2": "Qua",
+      "3": "Qui",
+      "4": "Sex",
+      "5": "S\xE1b",
+      "6": "Dom"
+    }
+  }
+};
+
 // src/translations.ts
 var INTEGRATION_PREFIX = "component.maint";
 var RAW_TRANSLATIONS = {
+  de: de_default,
   en: en_default,
-  fr: fr_default
+  es: es_default,
+  fr: fr_default,
+  nl: nl_default,
+  pt: pt_default
 };
 var flattenTranslations = (tree, prefix, target = {}) => {
   Object.entries(tree).forEach(([key, value]) => {

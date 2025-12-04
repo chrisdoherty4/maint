@@ -21,7 +21,7 @@ binary sensor for every task, keeps the schedule in sync through the UI and webs
   panel).
 - Automation hooks: `maint_task_due` event fires when a task becomes due with task metadata, and the
   `maint.reset_last_completed` service marks tasks complete (optionally backdated, default today).
-- Translations for English, French, Spanish, German, and Dutch. If you see incorrect translations please raise a pull request.
+- Translations for English, French, Spanish, German, Dutch, and Portuguese. If you see incorrect translations please raise a pull request.
 
 ## Install
 
