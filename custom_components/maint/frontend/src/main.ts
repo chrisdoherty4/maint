@@ -18,10 +18,14 @@ import {
 import { validateTaskFields } from "./forms.js";
 import {
   formatDate,
+  formatDatePlaceholder,
   formatDateInput,
+  getLocaleCode,
   formatRecurrence,
   nextScheduled,
-  parseIsoDate
+  parseDate,
+  parseIsoDate,
+  formatIsoDate
 } from "./formatting.js";
 import {
   renderEditRecurrenceFields,
@@ -49,14 +53,49 @@ export class MaintPanel extends LitElement {
   @state() private confirmTaskId: string | null = null;
   @state() private createModalOpen = false;
   @state() private createError: string | null = null;
-  @state() private createLastCompleted: string = this.currentDateIso();
+  @state() private createLastCompleted: string = this.currentDateInputValue();
   @state() private createRecurrenceType: RecurrenceType = "interval";
   @state() private editForm: EditFormState | null = null;
   @state() private editError: string | null = null;
   @state() private translations: Record<string, string> = {};
   @state() private translationsLanguage: string | null = null;
+  @state() private datePickerTarget: "create" | "edit" | null = null;
+  @state() private datePickerMonth: Date = new Date();
 
   private initialized = false;
+  private lastDateLocaleKey: string | null = null;
+  private readonly handleDatePickerOutside = (event: Event): void => {
+    const path = event.composedPath();
+    const insidePicker = path.some(
+      (node) => node instanceof HTMLElement && node.classList.contains("date-picker-surface")
+    );
+    if (!insidePicker) {
+      this.closeDatePicker();
+    }
+  };
+
+  private readonly handleDatePickerKeydown = (event: KeyboardEvent): void => {
+    if (event.key === "Escape") {
+      this.closeDatePicker();
+    }
+  };
+
+  private hasDateLocaleChanged(previous: HassConnection | undefined, current: HassConnection | undefined): boolean {
+    const previousKey = this.localeKey(previous);
+    const currentKey = this.localeKey(current);
+    const changed = previousKey !== null && currentKey !== null && previousKey !== currentKey;
+    this.lastDateLocaleKey = currentKey;
+    return changed;
+  }
+
+  private localeKey(hass: HassConnection | undefined): string | null {
+    if (!hass) {
+      return this.lastDateLocaleKey;
+    }
+    const lang = hass.language ?? hass.locale?.language ?? "";
+    const format = hass.locale?.date_format ?? "";
+    return `${lang}|${format}`;
+  }
 
   protected updated(changedProps: PropertyValueMap<this>): void {
     const hassChanged = changedProps.has("hass");
@@ -64,6 +103,7 @@ export class MaintPanel extends LitElement {
       hassChanged &&
       this.hass?.language &&
       this.hass.language !== this.translationsLanguage;
+    const localeChanged = this.hasDateLocaleChanged(changedProps.get("hass"), this.hass);
 
     if (hassChanged && this.hass) {
       void this.loadTranslations();
@@ -74,6 +114,26 @@ export class MaintPanel extends LitElement {
     } else if (languageChanged && this.hass) {
       void this.loadTranslations();
     }
+
+    if (changedProps.has("datePickerTarget")) {
+      if (this.datePickerTarget) {
+        document.addEventListener("pointerdown", this.handleDatePickerOutside);
+        document.addEventListener("keydown", this.handleDatePickerKeydown);
+      } else {
+        document.removeEventListener("pointerdown", this.handleDatePickerOutside);
+        document.removeEventListener("keydown", this.handleDatePickerKeydown);
+      }
+    }
+
+    if (localeChanged) {
+      this.reformatDateInputs(changedProps.get("hass") as HassConnection | undefined);
+    }
+  }
+
+  disconnectedCallback(): void {
+    document.removeEventListener("pointerdown", this.handleDatePickerOutside);
+    document.removeEventListener("keydown", this.handleDatePickerKeydown);
+    super.disconnectedCallback();
   }
 
   protected render() {
@@ -144,11 +204,11 @@ export class MaintPanel extends LitElement {
             <div class="task-description">${task.description}</div>
             ${isDue ? html`<span class="pill pill-due">${this.panelText("labels.due")}</span>` : nothing}
           </div>
-          <div class="task-meta">
-            <div class="task-meta-column">
-              <div class="task-meta-title">${this.panelText("labels.next_scheduled")}</div>
-              <div class="task-meta-value">${formatDate(nextScheduled(task))}</div>
-            </div>
+            <div class="task-meta">
+              <div class="task-meta-column">
+                <div class="task-meta-title">${this.panelText("labels.next_scheduled")}</div>
+                <div class="task-meta-value">${formatDate(nextScheduled(task), this.hass)}</div>
+              </div>
             <div class="task-meta-column">
               <div class="task-meta-title">${this.panelText("labels.schedule")}</div>
               <div class="task-meta-value">
@@ -331,16 +391,32 @@ export class MaintPanel extends LitElement {
               </label>
               <label>
                 <span class="label-text">${this.panelText("fields.starting_from")}</span>
-                <input
-                  type="date"
-                  name="last_completed"
-                  placeholder=${this.panelText("placeholders.date")}
-                  @focus=${this.openDatePicker}
-                  @pointerdown=${this.openDatePicker}
-                  .value=${this.createLastCompleted}
-                  @input=${this.handleCreateLastCompletedInput}
-                  ?disabled=${this.busy || formDisabled}
-                />
+                <div class="date-input-wrapper date-picker-surface">
+                  <input
+                    type="text"
+                    inputmode="numeric"
+                    lang=${this.localeCode() ?? ""}
+                    name="last_completed"
+                    autocomplete="off"
+                    placeholder=${this.datePlaceholder()}
+                    .value=${this.createLastCompleted}
+                    @input=${this.handleCreateLastCompletedInput}
+                    @focus=${() => this.openDatePicker("create")}
+                    @click=${() => this.openDatePicker("create")}
+                    ?disabled=${this.busy || formDisabled}
+                  />
+                  <button
+                    type="button"
+                    class="icon-button date-picker-toggle date-picker-surface"
+                    aria-label=${this.panelText("placeholders.date")}
+                    title=${this.panelText("placeholders.date")}
+                    ?disabled=${this.busy || formDisabled}
+                    @click=${() => this.toggleDatePicker("create")}
+                  >
+                    <ha-icon icon="mdi:calendar-blank" aria-hidden="true"></ha-icon>
+                  </button>
+                  ${this.renderDatePicker("create", this.createLastCompleted)}
+                </div>
               </label>
             </div>
             <div class="recurrence-fields">
@@ -410,16 +486,33 @@ export class MaintPanel extends LitElement {
               </label>
               <label>
                 <span class="label-text">${this.panelText("fields.last_completed")}</span>
-                <input
-                  type="date"
-                  name="last_completed"
-                  required
-                  .value=${this.editForm.last_completed}
-                  ?disabled=${this.busy}
-                  @focus=${this.openDatePicker}
-                  @pointerdown=${this.openDatePicker}
-                  @input=${this.handleEditFieldInput}
-                />
+                <div class="date-input-wrapper date-picker-surface">
+                  <input
+                    type="text"
+                    inputmode="numeric"
+                    lang=${this.localeCode() ?? ""}
+                    name="last_completed"
+                    required
+                    autocomplete="off"
+                    placeholder=${this.datePlaceholder()}
+                    .value=${this.editForm.last_completed}
+                    ?disabled=${this.busy}
+                    @input=${this.handleEditFieldInput}
+                    @focus=${() => this.openDatePicker("edit")}
+                    @click=${() => this.openDatePicker("edit")}
+                  />
+                  <button
+                    type="button"
+                    class="icon-button date-picker-toggle date-picker-surface"
+                    aria-label=${this.panelText("placeholders.date")}
+                    title=${this.panelText("placeholders.date")}
+                    ?disabled=${this.busy}
+                    @click=${() => this.toggleDatePicker("edit")}
+                  >
+                    <ha-icon icon="mdi:calendar-blank" aria-hidden="true"></ha-icon>
+                  </button>
+                  ${this.renderDatePicker("edit", this.editForm.last_completed)}
+                </div>
               </label>
             </div>
             <div class="recurrence-fields">
@@ -442,6 +535,75 @@ export class MaintPanel extends LitElement {
               </button>
             </div>
           </form>
+        </div>
+      </div>
+    `;
+  }
+
+  private renderDatePicker(target: "create" | "edit", value: string | null | undefined) {
+    if (this.datePickerTarget !== target) {
+      return nothing;
+    }
+
+    const locale = this.localeCode();
+    const today = this.todayDate();
+    const selected = this.parseInputToDate(value) ?? today;
+    const visibleMonth = this.startOfMonth(this.datePickerMonth);
+    const monthLabel = this.formatMonthLabel(visibleMonth, locale);
+    const weekStart = this.firstWeekday();
+    const weekdayLabels = this.weekdayLabels(locale, weekStart);
+    const startOffset = (visibleMonth.getDay() - weekStart + 7) % 7;
+    const start = new Date(visibleMonth);
+    start.setDate(1 - startOffset);
+
+    const days = Array.from({ length: 42 }, (_, index) => {
+      const date = new Date(start);
+      date.setDate(start.getDate() + index);
+      return {
+        date,
+        inMonth: date.getMonth() === visibleMonth.getMonth(),
+        isToday: this.isSameDay(date, today),
+        isSelected: this.isSameDay(date, selected)
+      };
+    });
+
+    return html`
+      <div class="date-picker-popup date-picker-surface">
+        <div class="date-picker-header">
+          <button
+            type="button"
+            class="icon-button"
+            aria-label="Previous month"
+            @click=${() => this.changeDatePickerMonth(-1)}
+          >
+            <ha-icon icon="mdi:chevron-left" aria-hidden="true"></ha-icon>
+          </button>
+          <div class="date-picker-month">${monthLabel}</div>
+          <button
+            type="button"
+            class="icon-button"
+            aria-label="Next month"
+            @click=${() => this.changeDatePickerMonth(1)}
+          >
+            <ha-icon icon="mdi:chevron-right" aria-hidden="true"></ha-icon>
+          </button>
+        </div>
+        <div class="date-picker-weekdays">
+          ${weekdayLabels.map((label) => html`<span>${label}</span>`)}
+        </div>
+        <div class="date-picker-grid">
+          ${days.map(
+            (day) => html`
+              <button
+                type="button"
+                class=${this.datePickerDayClass(day)}
+                aria-label=${this.formatDayAria(day.date, locale)}
+                @click=${() => this.selectDateFromPicker(target, day.date)}
+              >
+                ${day.date.getDate()}
+              </button>
+            `
+          )}
         </div>
       </div>
     `;
@@ -540,6 +702,7 @@ export class MaintPanel extends LitElement {
 
   private async handleCreateTask(event: Event): Promise<void> {
     event.preventDefault();
+    this.closeDatePicker();
 
     if (!this.selectedEntryId || !this.hass) {
       return;
@@ -559,7 +722,7 @@ export class MaintPanel extends LitElement {
       interval_unit: formData.get("interval_unit"),
       weekly_every: formData.get("weekly_every"),
       weekly_days: formData.getAll("weekly_days")
-    }, this.localizeText.bind(this));
+    }, this.localizeText.bind(this), this.hass);
 
     if (result.error) {
       this.createError = result.error;
@@ -614,7 +777,7 @@ export class MaintPanel extends LitElement {
   private openEditModal(task: MaintTask): void {
     const baseForm: EditFormState = {
       description: task.description ?? "",
-      last_completed: formatDateInput(task.last_completed),
+      last_completed: formatDateInput(task.last_completed, this.hass),
       recurrence_type: task.recurrence.type,
       interval_every: "",
       interval_unit: "days",
@@ -639,6 +802,7 @@ export class MaintPanel extends LitElement {
     this.editingTaskId = null;
     this.editForm = null;
     this.editError = null;
+    this.closeDatePicker();
   }
 
   private handleEditFieldInput(event: Event): void {
@@ -704,6 +868,7 @@ export class MaintPanel extends LitElement {
 
   private handleEditSubmit(event: Event): void {
     event.preventDefault();
+    this.closeDatePicker();
     const form = event.currentTarget as HTMLFormElement | null;
     if (this.editingTaskId && form) {
       void this.saveTaskEdits(this.editingTaskId, form);
@@ -724,7 +889,7 @@ export class MaintPanel extends LitElement {
       interval_unit: formData.get("interval_unit"),
       weekly_every: formData.get("weekly_every"),
       weekly_days: formData.getAll("weekly_days")
-    }, this.localizeText.bind(this));
+    }, this.localizeText.bind(this), this.hass);
 
     if (result.error) {
       this.editError = result.error;
@@ -813,7 +978,16 @@ export class MaintPanel extends LitElement {
     this.createModalOpen = true;
     this.createError = null;
     this.createRecurrenceType = "interval";
-    this.createLastCompleted = this.currentDateIso();
+    this.createLastCompleted = this.currentDateInputValue();
+  }
+
+  private localeCode(): string | undefined {
+    return getLocaleCode(this.hass);
+  }
+
+  private datePlaceholder(): string {
+    const formatted = formatDatePlaceholder(this.hass);
+    return formatted || this.panelText("placeholders.date");
   }
 
   private closeCreateModal(): void {
@@ -822,26 +996,7 @@ export class MaintPanel extends LitElement {
     }
     this.createModalOpen = false;
     this.createError = null;
-  }
-
-  private openDatePicker(event: Event): void {
-    const input = event.currentTarget as HTMLInputElement | null;
-    if (!input || input.type !== "date") {
-      return;
-    }
-
-    if (event.type === "pointerdown") {
-      event.preventDefault();
-      input.focus();
-    }
-
-    if (typeof input.showPicker === "function") {
-      try {
-        input.showPicker();
-      } catch {
-        // Some browsers may block programmatic picker opens; ignore.
-      }
-    }
+    this.closeDatePicker();
   }
 
   private recurrenceTypeOptions(selected: RecurrenceType) {
@@ -916,6 +1071,173 @@ export class MaintPanel extends LitElement {
     this.editForm = nextForm;
   }
 
+  private toggleDatePicker(target: "create" | "edit"): void {
+    if (this.datePickerTarget === target) {
+      this.closeDatePicker();
+    } else {
+      this.openDatePicker(target);
+    }
+  }
+
+  private openDatePicker(target: "create" | "edit"): void {
+    if (target === "edit" && !this.editForm) {
+      return;
+    }
+    const value = target === "create" ? this.createLastCompleted : this.editForm?.last_completed;
+    const base = this.parseInputToDate(value) ?? this.todayDate();
+    this.datePickerMonth = this.startOfMonth(base);
+    this.datePickerTarget = target;
+  }
+
+  private closeDatePicker(): void {
+    this.datePickerTarget = null;
+  }
+
+  private changeDatePickerMonth(delta: number): void {
+    const next = new Date(this.datePickerMonth);
+    next.setMonth(next.getMonth() + delta);
+    this.datePickerMonth = this.startOfMonth(next);
+  }
+
+  private selectDateFromPicker(target: "create" | "edit", date: Date): void {
+    const formatted = formatDateInput(formatIsoDate(date), this.hass);
+    if (target === "create") {
+      this.createLastCompleted = formatted;
+      this.createError = null;
+    } else if (this.editForm) {
+      this.editForm = {
+        ...this.editForm,
+        last_completed: formatted
+      };
+      this.editError = null;
+    }
+    this.closeDatePicker();
+  }
+
+  private parseInputToDate(value: string | null | undefined): Date | null {
+    const iso = parseDate(value, this.hass);
+    if (!iso) {
+      return null;
+    }
+    return parseIsoDate(iso);
+  }
+
+  private todayDate(): Date {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }
+
+  private startOfMonth(value: Date): Date {
+    return new Date(value.getFullYear(), value.getMonth(), 1);
+  }
+
+  private isSameDay(a: Date, b: Date): boolean {
+    return (
+      a.getFullYear() === b.getFullYear() &&
+      a.getMonth() === b.getMonth() &&
+      a.getDate() === b.getDate()
+    );
+  }
+
+  private formatMonthLabel(value: Date, locale?: string): string {
+    try {
+      return new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(value);
+    } catch {
+      return `${value.toLocaleString(undefined, { month: "long" })} ${value.getFullYear()}`;
+    }
+  }
+
+  private firstWeekday(): number {
+    const locale = this.localeCode();
+    const intlLocale = (Intl as unknown as { Locale?: typeof Intl.Locale }).Locale;
+    if (intlLocale) {
+      try {
+        const info = new intlLocale(locale ?? "en");
+        const first = (info as unknown as { weekInfo?: { firstDay?: number } }).weekInfo?.firstDay;
+        if (typeof first === "number") {
+          return first;
+        }
+      } catch {
+        // Ignore and fall through to heuristic.
+      }
+    }
+
+    const code = (locale ?? "").toLowerCase();
+    if (code.startsWith("en-us")) {
+      return 0;
+    }
+    return 1;
+  }
+
+  private reformatDateInputs(previousHass?: HassConnection): void {
+    const reformatValue = (value: string | null | undefined): string | null => {
+      const iso =
+        parseDate(value, previousHass ?? this.hass) ??
+        parseDate(value, this.hass) ??
+        null;
+      if (!iso) {
+        return null;
+      }
+      return formatDateInput(iso, this.hass);
+    };
+
+    const updatedCreate = reformatValue(this.createLastCompleted);
+    if (updatedCreate !== null && !this.createModalOpen) {
+      this.createLastCompleted = updatedCreate;
+    }
+
+    if (this.editForm) {
+      const updatedEdit = reformatValue(this.editForm.last_completed);
+      if (updatedEdit !== null) {
+        this.editForm = { ...this.editForm, last_completed: updatedEdit };
+      }
+    }
+
+    this.datePickerMonth = this.startOfMonth(this.todayDate());
+  }
+
+  private weekdayLabels(locale: string | undefined, weekStart: number): string[] {
+    const base = new Date(2024, 0, 1);
+    const labels = Array.from({ length: 7 }, (_, index) => {
+      const day = new Date(base);
+      day.setDate(base.getDate() + index);
+      try {
+        return new Intl.DateTimeFormat(locale, { weekday: "short" }).format(day);
+      } catch {
+        return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][index];
+      }
+    });
+
+    const rotated = labels.slice(weekStart).concat(labels.slice(0, weekStart));
+    return rotated;
+  }
+
+  private datePickerDayClass(day: {
+    inMonth: boolean;
+    isToday: boolean;
+    isSelected: boolean;
+  }): string {
+    let className = "date-picker-day";
+    if (!day.inMonth) {
+      className += " muted";
+    }
+    if (day.isToday) {
+      className += " today";
+    }
+    if (day.isSelected) {
+      className += " selected";
+    }
+    return className;
+  }
+
+  private formatDayAria(date: Date, locale?: string): string {
+    try {
+      return new Intl.DateTimeFormat(locale, { dateStyle: "long" }).format(date);
+    } catch {
+      return formatIsoDate(date);
+    }
+  }
+
   private handleCreateLastCompletedInput(event: Event): void {
     const input = event.currentTarget as HTMLInputElement | null;
     if (!input) {
@@ -931,6 +1253,10 @@ export class MaintPanel extends LitElement {
     const month = (today.getMonth() + 1).toString().padStart(2, "0");
     const day = today.getDate().toString().padStart(2, "0");
     return `${year}-${month}-${day}`;
+  }
+
+  private currentDateInputValue(): string {
+    return formatDateInput(this.currentDateIso(), this.hass);
   }
 
   private localizeText(key: string, ...args: Array<string | number>): string {

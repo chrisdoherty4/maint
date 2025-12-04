@@ -1,4 +1,4 @@
-import type { FrequencyUnit, MaintTask, Recurrence, Weekday } from "./api.js";
+import type { FrequencyUnit, HassConnection, MaintTask, Recurrence, Weekday } from "./api.js";
 
 export type LocalizeFunc = (key: string, ...args: Array<string | number>) => string;
 
@@ -53,13 +53,131 @@ export const parseIsoDate = (value: string): Date | null => {
   return new Date(year, month - 1, day);
 };
 
-const formatIsoDate = (value: Date): string =>
+export const formatIsoDate = (value: Date): string =>
   `${value.getFullYear().toString().padStart(4, "0")}-${(value.getMonth() + 1)
     .toString()
     .padStart(2, "0")}-${value.getDate().toString().padStart(2, "0")}`;
 
+export const getLocaleCode = (hass?: HassConnection): string | undefined =>
+  hass?.locale?.language ?? hass?.language;
+
+const formatNumber = (value: number, minimumIntegerDigits: number, locale?: string): string => {
+  try {
+    return new Intl.NumberFormat(locale, {
+      minimumIntegerDigits,
+      useGrouping: false
+    }).format(value);
+  } catch {
+    return value.toString().padStart(minimumIntegerDigits, "0");
+  }
+};
+
+const formatOrderedDate = (
+  value: Date,
+  locale: string | undefined,
+  order: Array<"day" | "month" | "year">,
+  separator: string
+): string => {
+  const parts: Record<"day" | "month" | "year", string> = {
+    day: formatNumber(value.getDate(), 2, locale),
+    month: formatNumber(value.getMonth() + 1, 2, locale),
+    year: formatNumber(value.getFullYear(), 4, locale)
+  };
+
+  return order.map((part) => parts[part]).join(separator);
+};
+
+const formatWithUserDateFormat = (value: Date, hass?: HassConnection): string => {
+  const locale = getLocaleCode(hass);
+  const format = hass?.locale?.date_format?.toLowerCase();
+
+  switch (format) {
+    case "dmy":
+      return formatOrderedDate(value, locale, ["day", "month", "year"], "/");
+    case "mdy":
+      return formatOrderedDate(value, locale, ["month", "day", "year"], "/");
+    case "ymd":
+    case "iso":
+      return formatOrderedDate(value, locale, ["year", "month", "day"], "-");
+    default:
+      try {
+        return new Intl.DateTimeFormat(locale, {
+          year: "numeric",
+          month: "numeric",
+          day: "numeric"
+        }).format(value);
+      } catch {
+        return value.toLocaleDateString();
+      }
+  }
+};
+
+export const formatDatePlaceholder = (hass?: HassConnection): string => {
+  const sample = new Date(2024, 0, 31);
+  return formatWithUserDateFormat(sample, hass);
+};
+
+export type DateFormatOrder = Array<"day" | "month" | "year">;
+
+const toOrder = (format?: string | null): DateFormatOrder | null => {
+  switch (format?.toLowerCase()) {
+    case "dmy":
+      return ["day", "month", "year"];
+    case "mdy":
+      return ["month", "day", "year"];
+    case "ymd":
+    case "iso":
+      return ["year", "month", "day"];
+    default:
+      return null;
+  }
+};
+
+const parseUserDate = (value: string, hass?: HassConnection): string | null => {
+  const order = toOrder(hass?.locale?.date_format);
+  if (!order) {
+    return null;
+  }
+
+  const parts = value.split(/[^0-9]/).filter(Boolean);
+  if (parts.length !== 3) {
+    return null;
+  }
+
+  const [first, second, third] = parts.map(Number);
+  if ([first, second, third].some((part) => Number.isNaN(part))) {
+    return null;
+  }
+
+  const mapping: Record<DateFormatOrder[number], number> = {
+    [order[0]]: first,
+    [order[1]]: second,
+    [order[2]]: third
+  } as Record<DateFormatOrder[number], number>;
+
+  const year = mapping.year;
+  const month = mapping.month;
+  const day = mapping.day;
+  if (!year || !month || !day) {
+    return null;
+  }
+
+  const parsed = new Date(year, month - 1, day);
+  if (
+    Number.isNaN(parsed.getTime()) ||
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() + 1 !== month ||
+    parsed.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return formatIsoDate(parsed);
+};
+
 export const parseDate = (
-  value: string | number | boolean | FormDataEntryValue | null | undefined
+  value: string | number | boolean | FormDataEntryValue | null | undefined,
+  hass?: HassConnection
 ): string | null => {
   if (value === null || value === undefined) {
     return null;
@@ -70,38 +188,57 @@ export const parseDate = (
     return null;
   }
 
+  const userFormatted = parseUserDate(trimmed, hass);
+  if (userFormatted) {
+    return userFormatted;
+  }
+
+  const isoParsed = parseIsoDate(trimmed);
+  if (isoParsed) {
+    return formatIsoDate(isoParsed);
+  }
+
   const parsed = new Date(trimmed);
   if (Number.isNaN(parsed.getTime())) {
     return null;
   }
 
-  return trimmed;
-};
-
-export const formatDate = (value: string | null | undefined): string => {
-  if (!value) {
-    return "—";
-  }
-
-  const parsed = parseIsoDate(value);
-  if (!parsed) {
-    return "—";
-  }
-
-  return parsed.toLocaleDateString();
-};
-
-export const formatDateInput = (value: string | null | undefined): string => {
-  if (!value) {
-    return "";
-  }
-
-  const parsed = parseIsoDate(value);
-  if (!parsed) {
-    return "";
-  }
-
   return formatIsoDate(parsed);
+};
+
+export const formatDate = (value: string | null | undefined, hass?: HassConnection): string => {
+  if (!value) {
+    return "—";
+  }
+
+  const parsed = parseIsoDate(value);
+  if (!parsed) {
+    return "—";
+  }
+
+  return formatWithUserDateFormat(parsed, hass);
+};
+
+export const formatDateInput = (
+  value: string | null | undefined,
+  hass?: HassConnection
+): string => {
+  if (!value) {
+    return "";
+  }
+
+  const parsed = parseIsoDate(value);
+  if (!parsed) {
+    return "";
+  }
+
+  const order = toOrder(hass?.locale?.date_format);
+  if (!order) {
+    return formatIsoDate(parsed);
+  }
+
+  const separator = order[0] === "year" ? "-" : "/";
+  return formatOrderedDate(parsed, getLocaleCode(hass), order, separator);
 };
 
 const normalizeWeekdays = (days: Weekday[]): Weekday[] =>

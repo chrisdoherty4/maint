@@ -48,10 +48,16 @@ export interface TaskPayload {
   recurrence: Recurrence;
 }
 
+export interface FrontendLocale {
+  language?: string;
+  date_format?: string;
+}
+
 export interface HassConnection {
   callWS<T>(params: WsRequest): Promise<T>;
   localize?(key: string, ...args: Array<string | number>): string;
   language?: string;
+  locale?: FrontendLocale;
 }
 
 const DOMAIN = "maint";
