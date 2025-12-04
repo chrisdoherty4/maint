@@ -19,9 +19,38 @@ export const styles = css`
     margin-bottom: 4px;
   }
 
+  .page-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+
+  .page-header h1 {
+    margin: 0;
+  }
+
+  .title-block {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 240px;
+  }
+
+  .page-header button {
+    margin-left: auto;
+    align-self: center;
+  }
+
   .subtext {
     color: var(--secondary-text-color);
     margin-bottom: 24px;
+  }
+
+  .page-header .subtext {
+    margin: 0;
   }
 
   section {
@@ -30,6 +59,10 @@ export const styles = css`
     border: 1px solid var(--divider-color);
     padding: 14px 20px;
     margin-bottom: 24px;
+  }
+
+  .tasks-section {
+    margin-top: 12px;
   }
 
   select,
@@ -169,11 +202,11 @@ export const styles = css`
   margin-bottom: 12px;
 }
 
-.icon-button {
-  background: none;
-  color: var(--primary-text-color);
-  padding: 8px;
-  min-width: 36px;
+  .icon-button {
+    background: none;
+    color: var(--primary-text-color);
+    padding: 8px;
+    min-width: 36px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -239,6 +272,10 @@ export const styles = css`
   .error {
     color: var(--error-color);
     margin-bottom: 12px;
+  }
+
+  .global-error {
+    margin: 0 0 16px;
   }
 
   label {
@@ -320,15 +357,6 @@ export const styles = css`
     flex-direction: column;
   }
 
-  .form-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-bottom: 4px;
-    cursor: pointer;
-  }
-
   .form-header-text {
     display: flex;
     flex-direction: column;
@@ -339,26 +367,14 @@ export const styles = css`
     margin: 0;
   }
 
-  .form-actions {
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  .form-toggle {
-    margin-left: auto;
-  }
-
-  .form-fields {
-    margin-top: 16px;
-  }
-
   .modal-backdrop {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.4);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
+    padding-top: 12vh;
     z-index: 10;
   }
 

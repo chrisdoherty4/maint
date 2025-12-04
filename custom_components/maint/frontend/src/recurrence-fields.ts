@@ -38,7 +38,8 @@ export const renderRecurrenceFields = (
   type: RecurrenceType,
   recurrence: Recurrence | undefined,
   taskId: string | undefined,
-  localize: LocalizeFunc
+  localize: LocalizeFunc,
+  disabled = false
 ) => {
   const weekdayLabels = getWeekdayShortLabels(localize);
   if (type === "interval") {
@@ -61,11 +62,12 @@ export const renderRecurrenceFields = (
             step="1"
             required
             .value=${every}
+            ?disabled=${disabled}
           />
         </label>
         <label>
           <span class="label-text">${localize("component.maint.panel.fields.unit")}</span>
-          <select name="interval_unit">
+          <select name="interval_unit" ?disabled=${disabled}>
             <option value="days" ?selected=${unit === "days"}>
               ${localize("component.maint.panel.recurrence_options.units.days")}
             </option>
@@ -96,21 +98,22 @@ export const renderRecurrenceFields = (
             <input
               class="week-interval-input-field"
               type="number"
-              name="weekly_every"
-              min="1"
-              step="1"
-              required
-              .value=${every}
-            />
-            <span class="week-interval-suffix">
-              ${localize("component.maint.panel.fields.weeks_suffix")}
-            </span>
-          </div>
+            name="weekly_every"
+            min="1"
+            step="1"
+            required
+            .value=${every}
+            ?disabled=${disabled}
+          />
+          <span class="week-interval-suffix">
+            ${localize("component.maint.panel.fields.weeks_suffix")}
+          </span>
+        </div>
         </label>
         <div class="weekday-field">
           <span class="label-text">${localize("component.maint.panel.fields.on")}</span>
           <div class="weekday-grid" data-task=${taskId ?? ""}>
-            ${weekdayCheckboxes(selectedDays, weekdayLabels)}
+            ${weekdayCheckboxes(selectedDays, weekdayLabels, disabled)}
           </div>
         </div>
       </div>

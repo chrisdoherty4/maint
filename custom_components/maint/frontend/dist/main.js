@@ -946,7 +946,7 @@ var weekdayCheckboxes = (selectedDays, labels, disabled = false) => {
     `;
   });
 };
-var renderRecurrenceFields = (type, recurrence, taskId, localize) => {
+var renderRecurrenceFields = (type, recurrence, taskId, localize, disabled = false) => {
   const weekdayLabels = getWeekdayShortLabels(localize);
   if (type === "interval") {
     const every = recurrence?.type === "interval" ? recurrence.every : "";
@@ -962,11 +962,12 @@ var renderRecurrenceFields = (type, recurrence, taskId, localize) => {
             step="1"
             required
             .value=${every}
+            ?disabled=${disabled}
           />
         </label>
         <label>
           <span class="label-text">${localize("component.maint.panel.fields.unit")}</span>
-          <select name="interval_unit">
+          <select name="interval_unit" ?disabled=${disabled}>
             <option value="days" ?selected=${unit === "days"}>
               ${localize("component.maint.panel.recurrence_options.units.days")}
             </option>
@@ -992,21 +993,22 @@ var renderRecurrenceFields = (type, recurrence, taskId, localize) => {
             <input
               class="week-interval-input-field"
               type="number"
-              name="weekly_every"
-              min="1"
-              step="1"
-              required
-              .value=${every}
-            />
-            <span class="week-interval-suffix">
-              ${localize("component.maint.panel.fields.weeks_suffix")}
-            </span>
-          </div>
+            name="weekly_every"
+            min="1"
+            step="1"
+            required
+            .value=${every}
+            ?disabled=${disabled}
+          />
+          <span class="week-interval-suffix">
+            ${localize("component.maint.panel.fields.weeks_suffix")}
+          </span>
+        </div>
         </label>
         <div class="weekday-field">
           <span class="label-text">${localize("component.maint.panel.fields.on")}</span>
           <div class="weekday-grid" data-task=${taskId ?? ""}>
-            ${weekdayCheckboxes(selectedDays, weekdayLabels)}
+            ${weekdayCheckboxes(selectedDays, weekdayLabels, disabled)}
           </div>
         </div>
       </div>
@@ -1102,9 +1104,38 @@ var styles = i`
     margin-bottom: 4px;
   }
 
+  .page-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+
+  .page-header h1 {
+    margin: 0;
+  }
+
+  .title-block {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 240px;
+  }
+
+  .page-header button {
+    margin-left: auto;
+    align-self: center;
+  }
+
   .subtext {
     color: var(--secondary-text-color);
     margin-bottom: 24px;
+  }
+
+  .page-header .subtext {
+    margin: 0;
   }
 
   section {
@@ -1113,6 +1144,10 @@ var styles = i`
     border: 1px solid var(--divider-color);
     padding: 14px 20px;
     margin-bottom: 24px;
+  }
+
+  .tasks-section {
+    margin-top: 12px;
   }
 
   select,
@@ -1252,11 +1287,11 @@ var styles = i`
   margin-bottom: 12px;
 }
 
-.icon-button {
-  background: none;
-  color: var(--primary-text-color);
-  padding: 8px;
-  min-width: 36px;
+  .icon-button {
+    background: none;
+    color: var(--primary-text-color);
+    padding: 8px;
+    min-width: 36px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1322,6 +1357,10 @@ var styles = i`
   .error {
     color: var(--error-color);
     margin-bottom: 12px;
+  }
+
+  .global-error {
+    margin: 0 0 16px;
   }
 
   label {
@@ -1403,15 +1442,6 @@ var styles = i`
     flex-direction: column;
   }
 
-  .form-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-bottom: 4px;
-    cursor: pointer;
-  }
-
   .form-header-text {
     display: flex;
     flex-direction: column;
@@ -1422,26 +1452,14 @@ var styles = i`
     margin: 0;
   }
 
-  .form-actions {
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  .form-toggle {
-    margin-left: auto;
-  }
-
-  .form-fields {
-    margin-top: 16px;
-  }
-
   .modal-backdrop {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.4);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
+    padding-top: 12vh;
     z-index: 10;
   }
 
@@ -1529,11 +1547,9 @@ var de_default = {
     subtitle: "Verwalte wiederkehrende Aufgaben und halte dein Zuhause auf Kurs.",
     info_add_entry: "F\xFCge einen Maint-Integrations-Eintrag hinzu, um Aufgaben zu verfolgen.",
     info_enable_tracking: "F\xFCge einen Maint-Integrations-Eintrag hinzu, um die Nachverfolgung zu aktivieren.",
-    info_no_tasks: "Noch keine Aufgaben. Nutze das Formular oben, um eine zu erstellen.",
+    info_no_tasks: "Noch keine Aufgaben. Nutze die Schaltfl\xE4che \u201EAufgabe erstellen\u201C, um eine hinzuzuf\xFCgen.",
     section_create: "Aufgabe erstellen",
     section_tasks: "Aufgaben",
-    toggle_collapse: "Formular einklappen",
-    toggle_expand: "Formular ausklappen",
     fields: {
       description: "Beschreibung",
       schedule_type: "Intervalltyp",
@@ -1575,7 +1591,9 @@ var de_default = {
       delete_title: "Aufgabe l\xF6schen?",
       delete_prompt: "M\xF6chtest du \u201E{task}\u201C wirklich l\xF6schen?",
       edit_title: "Aufgabe bearbeiten",
-      edit_prompt: "Aktualisiere die Aufgabendetails unten."
+      edit_prompt: "Aktualisiere die Aufgabendetails unten.",
+      create_title: "Aufgabe erstellen",
+      create_prompt: "F\xFCge unten die Aufgabendetails hinzu."
     },
     errors: {
       load_entries: "Maint-Eintr\xE4ge konnten nicht geladen werden.",
@@ -1636,11 +1654,9 @@ var en_default = {
     subtitle: "Manage recurring tasks and keep your home on track.",
     info_add_entry: "Add a Maint integration entry to start tracking tasks.",
     info_enable_tracking: "Add a Maint integration entry to enable task tracking.",
-    info_no_tasks: "No tasks yet. Use the form above to create one.",
+    info_no_tasks: "No tasks yet. Use the Create task button to add one.",
     section_create: "Create task",
     section_tasks: "Tasks",
-    toggle_collapse: "Collapse form",
-    toggle_expand: "Expand form",
     fields: {
       description: "Description",
       schedule_type: "Schedule type",
@@ -1682,7 +1698,9 @@ var en_default = {
       delete_title: "Delete task?",
       delete_prompt: 'Are you sure you want to delete "{task}"?',
       edit_title: "Edit task",
-      edit_prompt: "Update the task details below."
+      edit_prompt: "Update the task details below.",
+      create_title: "Create task",
+      create_prompt: "Add the task details below."
     },
     errors: {
       load_entries: "Unable to load maint entries.",
@@ -1743,11 +1761,9 @@ var es_default = {
     subtitle: "Gestiona tareas recurrentes y mant\xE9n tu hogar al d\xEDa.",
     info_add_entry: "A\xF1ade una entrada de la integraci\xF3n Maint para empezar a registrar tareas.",
     info_enable_tracking: "A\xF1ade una entrada de Maint para habilitar el seguimiento de tareas.",
-    info_no_tasks: "A\xFAn no hay tareas. Usa el formulario de arriba para crear una.",
+    info_no_tasks: "A\xFAn no hay tareas. Usa el bot\xF3n Crear tarea para a\xF1adir una.",
     section_create: "Crear tarea",
     section_tasks: "Tareas",
-    toggle_collapse: "Contraer formulario",
-    toggle_expand: "Expandir formulario",
     fields: {
       description: "Descripci\xF3n",
       schedule_type: "Tipo de programaci\xF3n",
@@ -1789,7 +1805,9 @@ var es_default = {
       delete_title: "\xBFEliminar tarea?",
       delete_prompt: '\xBFSeguro que quieres eliminar "{task}"?',
       edit_title: "Editar tarea",
-      edit_prompt: "Actualiza los detalles de la tarea abajo."
+      edit_prompt: "Actualiza los detalles de la tarea abajo.",
+      create_title: "Crear tarea",
+      create_prompt: "A\xF1ade los detalles de la tarea abajo."
     },
     errors: {
       load_entries: "No se pudieron cargar las entradas de Maint.",
@@ -1850,11 +1868,9 @@ var fr_default = {
     subtitle: "G\xE9rez les t\xE2ches r\xE9currentes et gardez votre maison \xE0 jour.",
     info_add_entry: "Ajoutez une entr\xE9e Maint pour commencer \xE0 suivre les t\xE2ches.",
     info_enable_tracking: "Ajoutez une entr\xE9e de l'int\xE9gration Maint pour activer le suivi des t\xE2ches.",
-    info_no_tasks: "Aucune t\xE2che pour le moment. Utilisez le formulaire ci-dessus pour en cr\xE9er une.",
+    info_no_tasks: "Aucune t\xE2che pour le moment. Utilisez le bouton Cr\xE9er une t\xE2che pour en ajouter une.",
     section_create: "Cr\xE9er une t\xE2che",
     section_tasks: "T\xE2ches",
-    toggle_collapse: "Replier le formulaire",
-    toggle_expand: "D\xE9plier le formulaire",
     fields: {
       description: "Description",
       schedule_type: "Type de planification",
@@ -1896,7 +1912,9 @@ var fr_default = {
       delete_title: "Supprimer la t\xE2che ?",
       delete_prompt: "Voulez-vous vraiment supprimer \xAB {task} \xBB ?",
       edit_title: "Modifier la t\xE2che",
-      edit_prompt: "Mettez \xE0 jour les d\xE9tails de la t\xE2che ci-dessous."
+      edit_prompt: "Mettez \xE0 jour les d\xE9tails de la t\xE2che ci-dessous.",
+      create_title: "Cr\xE9er une t\xE2che",
+      create_prompt: "Ajoutez les d\xE9tails de la t\xE2che ci-dessous."
     },
     errors: {
       load_entries: "Impossible de charger les entr\xE9es Maint.",
@@ -1957,11 +1975,9 @@ var nl_default = {
     subtitle: "Beheer terugkerende taken en houd je huis op schema.",
     info_add_entry: "Voeg een Maint-integratie-entry toe om taken te volgen.",
     info_enable_tracking: "Voeg een Maint-entry toe om taaktracking in te schakelen.",
-    info_no_tasks: "Nog geen taken. Gebruik het formulier hierboven om er een te maken.",
+    info_no_tasks: "Nog geen taken. Gebruik de knop Taak maken om er een toe te voegen.",
     section_create: "Taak maken",
     section_tasks: "Taken",
-    toggle_collapse: "Formulier inklappen",
-    toggle_expand: "Formulier uitklappen",
     fields: {
       description: "Beschrijving",
       schedule_type: "Schema type",
@@ -2003,7 +2019,9 @@ var nl_default = {
       delete_title: "Taak verwijderen?",
       delete_prompt: 'Weet je zeker dat je "{task}" wilt verwijderen?',
       edit_title: "Taak bewerken",
-      edit_prompt: "Werk de taakdetails hieronder bij."
+      edit_prompt: "Werk de taakdetails hieronder bij.",
+      create_title: "Taak maken",
+      create_prompt: "Voeg hieronder de taakdetails toe."
     },
     errors: {
       load_entries: "Kon Maint-entries niet laden.",
@@ -2233,7 +2251,8 @@ var MaintPanel = class extends i4 {
     this.error = null;
     this.editingTaskId = null;
     this.confirmTaskId = null;
-    this.formExpanded = true;
+    this.createModalOpen = false;
+    this.createError = null;
     this.createLastCompleted = this.currentDateIso();
     this.createRecurrenceType = "interval";
     this.editForm = null;
@@ -2258,96 +2277,30 @@ var MaintPanel = class extends i4 {
   render() {
     const hasEntries = this.entries.length > 0;
     const formDisabled = !this.selectedEntryId;
+    const createDisabled = formDisabled || this.busy;
     return x`
       <div class="container">
-        <h1>${this.panelText("title")}</h1>
-        <p class="subtext">${this.panelText("subtitle")}</p>
-        ${hasEntries ? E : x`<p class="info">${this.panelText("info_add_entry")}</p>`}
-        ${this.renderCreateForm(formDisabled, hasEntries)}
-        ${this.renderTasksSection(formDisabled)}
-        ${this.renderDeleteModal()}
-        ${this.renderEditModal()}
-      </div>
-    `;
-  }
-  renderCreateForm(formDisabled, hasEntries) {
-    const toggleIcon = this.formExpanded ? "mdi:chevron-down" : "mdi:chevron-right";
-    const toggleLabel = this.formExpanded ? this.panelText("toggle_collapse") : this.panelText("toggle_expand");
-    return x`
-      <section>
-        <div
-          class="form-header"
-          tabindex="0"
-          role="button"
-          aria-expanded=${this.formExpanded}
-          @click=${this.toggleForm}
-          @keydown=${this.handleFormHeaderKeydown}
-        >
-          <div class="form-header-text">
-            <h2>${this.panelText("section_create")}</h2>
+        <div class="page-header">
+          <div class="title-block">
+            <h1>${this.panelText("title")}</h1>
+            <p class="subtext">${this.panelText("subtitle")}</p>
           </div>
           <button
             type="button"
-            id="form-toggle"
-            class="icon-button form-toggle"
-            aria-label=${toggleLabel}
-            title=${toggleLabel}
+            class="button-primary"
+            ?disabled=${createDisabled}
+            @click=${this.openCreateModal}
           >
-            <ha-icon icon=${toggleIcon} aria-hidden="true"></ha-icon>
+            ${this.panelText("buttons.create")}
           </button>
         </div>
-        ${this.error ? x`<div class="error">${this.error}</div>` : E}
-        ${hasEntries ? E : x`<p class="info">${this.panelText("info_enable_tracking")}</p>`}
-        ${this.formExpanded ? x`
-              <form id="task-form" @submit=${this.handleCreateTask}>
-                <div class="form-fields">
-                  <label>
-                    <span class="label-text">${this.panelText("fields.description")}</span>
-                    <input
-                      type="text"
-                      name="description"
-                      required
-                      placeholder=${this.panelText("placeholders.description_example")}
-                      ?disabled=${formDisabled}
-                    />
-                  </label>
-                  <div class="inline-fields">
-                    <label>
-                      <span class="label-text">${this.panelText("fields.schedule_type")}</span>
-                      <select
-                        name="recurrence_type"
-                        @change=${this.handleRecurrenceTypeChange}
-                        ?disabled=${formDisabled}
-                      >
-                        ${this.recurrenceTypeOptions(this.createRecurrenceType)}
-                      </select>
-                    </label>
-                    <label>
-                      <span class="label-text">${this.panelText("fields.starting_from")}</span>
-                      <input
-                        type="date"
-                        name="last_completed"
-                        placeholder=${this.panelText("placeholders.date")}
-                        @focus=${this.openDatePicker}
-                        @pointerdown=${this.openDatePicker}
-                        .value=${this.createLastCompleted}
-                        @input=${this.handleCreateLastCompletedInput}
-                        ?disabled=${formDisabled}
-                      />
-                    </label>
-                  </div>
-                  <div class="recurrence-fields">
-                    ${this.renderRecurrenceFields(this.createRecurrenceType)}
-                  </div>
-                </div>
-                <div class="form-actions">
-                  <button type="submit" ?disabled=${this.busy || formDisabled}>
-                    ${this.busy ? this.panelText("buttons.saving") : this.panelText("buttons.create")}
-                  </button>
-                </div>
-              </form>
-            ` : E}
-      </section>
+        ${this.error ? x`<div class="error global-error">${this.error}</div>` : E}
+        ${hasEntries ? E : x`<p class="info">${this.panelText("info_add_entry")}</p>`}
+        ${this.renderTasksSection(formDisabled)}
+        ${this.renderCreateModal(formDisabled)}
+        ${this.renderDeleteModal()}
+        ${this.renderEditModal()}
+      </div>
     `;
   }
   renderTasksSection(formDisabled) {
@@ -2515,6 +2468,79 @@ var MaintPanel = class extends i4 {
       </div>
     `;
   }
+  renderCreateModal(formDisabled) {
+    if (!this.createModalOpen) {
+      return E;
+    }
+    return x`
+      <div class="modal-backdrop">
+        <div class="modal edit-modal">
+          <h3>${this.panelText("modals.create_title")}</h3>
+          <p>${this.panelText("modals.create_prompt")}</p>
+          ${this.createError ? x`<div class="error">${this.createError}</div>` : E}
+          <form id="create-task-form" @submit=${this.handleCreateTask}>
+            <label>
+              <span class="label-text">${this.panelText("fields.description")}</span>
+              <input
+                type="text"
+                name="description"
+                required
+                placeholder=${this.panelText("placeholders.description_example")}
+                ?disabled=${this.busy || formDisabled}
+              />
+            </label>
+            <div class="inline-fields">
+              <label>
+                <span class="label-text">${this.panelText("fields.schedule_type")}</span>
+                <select
+                  name="recurrence_type"
+                  @change=${this.handleRecurrenceTypeChange}
+                  ?disabled=${this.busy || formDisabled}
+                >
+                  ${this.recurrenceTypeOptions(this.createRecurrenceType)}
+                </select>
+              </label>
+              <label>
+                <span class="label-text">${this.panelText("fields.starting_from")}</span>
+                <input
+                  type="date"
+                  name="last_completed"
+                  placeholder=${this.panelText("placeholders.date")}
+                  @focus=${this.openDatePicker}
+                  @pointerdown=${this.openDatePicker}
+                  .value=${this.createLastCompleted}
+                  @input=${this.handleCreateLastCompletedInput}
+                  ?disabled=${this.busy || formDisabled}
+                />
+              </label>
+            </div>
+            <div class="recurrence-fields">
+              ${this.renderRecurrenceFields(
+      this.createRecurrenceType,
+      void 0,
+      void 0,
+      this.busy || formDisabled
+    )}
+            </div>
+            <div class="modal-actions">
+              <button
+                type="button"
+                class="button-secondary"
+                id="cancel-create"
+                ?disabled=${this.busy}
+                @click=${this.closeCreateModal}
+              >
+                ${this.panelText("buttons.cancel")}
+              </button>
+              <button type="submit" ?disabled=${this.busy || formDisabled}>
+                ${this.busy ? this.panelText("buttons.saving") : this.panelText("buttons.create")}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+  }
   renderEditModal() {
     if (!this.editingTaskId || !this.editForm) {
       return E;
@@ -2590,6 +2616,7 @@ var MaintPanel = class extends i4 {
       return;
     }
     try {
+      this.error = null;
       const entries = await loadEntries(this.hass);
       this.entries = entries.map((entry) => ({
         entry_id: entry.entry_id,
@@ -2613,9 +2640,12 @@ var MaintPanel = class extends i4 {
       this.editForm = null;
       this.editError = null;
       this.confirmTaskId = null;
+      this.createModalOpen = false;
+      this.createError = null;
       return;
     }
     try {
+      this.error = null;
       this.busy = true;
       const tasks = await loadTasks(this.hass, this.selectedEntryId);
       this.tasks = this.sortTasks(tasks);
@@ -2623,7 +2653,6 @@ var MaintPanel = class extends i4 {
       this.editForm = null;
       this.editError = null;
       this.confirmTaskId = null;
-      this.formExpanded = this.tasks.length === 0;
     } catch (error) {
       console.error("Maint panel failed to load tasks", error);
       this.error = this.panelText("errors.load_tasks");
@@ -2644,6 +2673,7 @@ var MaintPanel = class extends i4 {
     const today = /* @__PURE__ */ new Date();
     const lastCompleted = `${today.getFullYear().toString().padStart(4, "0")}-${(today.getMonth() + 1).toString().padStart(2, "0")}-${today.getDate().toString().padStart(2, "0")}`;
     try {
+      this.error = null;
       this.busy = true;
       await updateMaintTask(this.hass, this.selectedEntryId, taskId, {
         description: task.description,
@@ -2678,24 +2708,30 @@ var MaintPanel = class extends i4 {
       weekly_days: formData.getAll("weekly_days")
     }, this.localizeText.bind(this));
     if (result.error) {
-      this.error = result.error;
+      this.createError = result.error;
       return;
     }
     if (!result.values) {
       return;
     }
+    let createdTask = false;
     try {
       this.busy = true;
+      this.createError = null;
       const created = await createMaintTask(this.hass, this.selectedEntryId, result.values);
       this.tasks = this.sortTasks([...this.tasks, created]);
-      form.reset();
       this.error = null;
+      form.reset();
+      createdTask = true;
     } catch (error) {
       console.error("Maint panel failed to create task", error);
-      this.error = this.panelText("errors.create");
+      this.createError = this.panelText("errors.create");
     } finally {
       this.busy = false;
       this.createLastCompleted = this.currentDateIso();
+      if (createdTask) {
+        this.closeCreateModal();
+      }
     }
   }
   handleEditTask(event) {
@@ -2858,6 +2894,7 @@ var MaintPanel = class extends i4 {
     }
     const taskId = this.confirmTaskId;
     try {
+      this.error = null;
       this.busy = true;
       await deleteMaintTask(this.hass, this.selectedEntryId, taskId);
       this.tasks = this.sortTasks(
@@ -2867,9 +2904,6 @@ var MaintPanel = class extends i4 {
         this.editingTaskId = null;
         this.editForm = null;
         this.editError = null;
-      }
-      if (this.tasks.length === 0) {
-        this.formExpanded = true;
       }
     } catch (error) {
       console.error("Maint panel failed to delete task", error);
@@ -2882,14 +2916,21 @@ var MaintPanel = class extends i4 {
   cancelDelete() {
     this.confirmTaskId = null;
   }
-  toggleForm() {
-    this.formExpanded = !this.formExpanded;
-  }
-  handleFormHeaderKeydown(event) {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      this.toggleForm();
+  openCreateModal() {
+    if (!this.selectedEntryId || this.busy) {
+      return;
     }
+    this.createModalOpen = true;
+    this.createError = null;
+    this.createRecurrenceType = "interval";
+    this.createLastCompleted = this.currentDateIso();
+  }
+  closeCreateModal() {
+    if (this.busy) {
+      return;
+    }
+    this.createModalOpen = false;
+    this.createError = null;
   }
   openDatePicker(event) {
     const input = event.currentTarget;
@@ -2918,12 +2959,13 @@ var MaintPanel = class extends i4 {
         </option>`
     );
   }
-  renderRecurrenceFields(type, recurrence, taskId) {
+  renderRecurrenceFields(type, recurrence, taskId, disabled = false) {
     return renderRecurrenceFields(
       type,
       recurrence,
       taskId,
-      this.localizeText.bind(this)
+      this.localizeText.bind(this),
+      disabled
     );
   }
   handleRecurrenceTypeChange(event) {
@@ -2932,6 +2974,7 @@ var MaintPanel = class extends i4 {
       return;
     }
     this.createRecurrenceType = select.value;
+    this.createError = null;
   }
   renderEditRecurrenceFields() {
     if (!this.editForm) {
@@ -2968,6 +3011,7 @@ var MaintPanel = class extends i4 {
       return;
     }
     this.createLastCompleted = input.value;
+    this.createError = null;
   }
   currentDateIso() {
     const today = /* @__PURE__ */ new Date();
@@ -3038,7 +3082,10 @@ __decorateClass([
 ], MaintPanel.prototype, "confirmTaskId", 2);
 __decorateClass([
   r5()
-], MaintPanel.prototype, "formExpanded", 2);
+], MaintPanel.prototype, "createModalOpen", 2);
+__decorateClass([
+  r5()
+], MaintPanel.prototype, "createError", 2);
 __decorateClass([
   r5()
 ], MaintPanel.prototype, "createLastCompleted", 2);

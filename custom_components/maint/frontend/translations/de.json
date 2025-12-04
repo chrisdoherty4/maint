@@ -4,11 +4,9 @@
     "subtitle": "Verwalte wiederkehrende Aufgaben und halte dein Zuhause auf Kurs.",
     "info_add_entry": "Füge einen Maint-Integrations-Eintrag hinzu, um Aufgaben zu verfolgen.",
     "info_enable_tracking": "Füge einen Maint-Integrations-Eintrag hinzu, um die Nachverfolgung zu aktivieren.",
-    "info_no_tasks": "Noch keine Aufgaben. Nutze das Formular oben, um eine zu erstellen.",
+    "info_no_tasks": "Noch keine Aufgaben. Nutze die Schaltfläche „Aufgabe erstellen“, um eine hinzuzufügen.",
     "section_create": "Aufgabe erstellen",
     "section_tasks": "Aufgaben",
-    "toggle_collapse": "Formular einklappen",
-    "toggle_expand": "Formular ausklappen",
     "fields": {
       "description": "Beschreibung",
       "schedule_type": "Intervalltyp",
@@ -50,7 +48,9 @@
       "delete_title": "Aufgabe löschen?",
       "delete_prompt": "Möchtest du „{task}“ wirklich löschen?",
       "edit_title": "Aufgabe bearbeiten",
-      "edit_prompt": "Aktualisiere die Aufgabendetails unten."
+      "edit_prompt": "Aktualisiere die Aufgabendetails unten.",
+      "create_title": "Aufgabe erstellen",
+      "create_prompt": "Füge unten die Aufgabendetails hinzu."
     },
     "errors": {
       "load_entries": "Maint-Einträge konnten nicht geladen werden.",
