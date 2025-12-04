@@ -1,5 +1,9 @@
+import deTranslations from "../translations/de.json";
 import enTranslations from "../translations/en.json";
+import esTranslations from "../translations/es.json";
 import frTranslations from "../translations/fr.json";
+import nlTranslations from "../translations/nl.json";
+import ptTranslations from "../translations/pt.json";
 
 type TranslationValue = string | TranslationTree;
 type TranslationTree = { [key: string]: TranslationValue };
@@ -7,8 +11,12 @@ type TranslationTree = { [key: string]: TranslationValue };
 const INTEGRATION_PREFIX = "component.maint";
 
 const RAW_TRANSLATIONS: Record<string, TranslationTree> = {
+  de: deTranslations as TranslationTree,
   en: enTranslations as TranslationTree,
-  fr: frTranslations as TranslationTree
+  es: esTranslations as TranslationTree,
+  fr: frTranslations as TranslationTree,
+  nl: nlTranslations as TranslationTree,
+  pt: ptTranslations as TranslationTree
 };
 
 const flattenTranslations = (

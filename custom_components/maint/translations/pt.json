@@ -1,0 +1,47 @@
+{
+  "title": "Maint",
+  "config": {
+    "abort": {
+      "single_instance_allowed": "Apenas uma entrada é permitida."
+    },
+    "step": {
+      "user": {
+        "description": "Acompanhe tarefas recorrentes de manutenção doméstica."
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "sync_to_calendar": "Sincronizar tarefas com o calendário",
+          "calendar_name": "Nome do calendário"
+        }
+      }
+    }
+  },
+  "services": {
+    "reset_last_completed": {
+      "name": "Repor última conclusão",
+      "description": "Define a data de última conclusão de uma tarefa Maint para hoje ou para uma data fornecida.",
+      "fields": {
+        "entity_id": {
+          "name": "Entidade da tarefa",
+          "description": "Entidade do sensor binário da tarefa Maint a repor. Utilize entry_id/task_id se a entidade não estiver disponível."
+        },
+        "entry_id": {
+          "name": "ID da entrada",
+          "description": "ID da entrada de configuração da Maint. Obrigatório se entity_id não for fornecido."
+        },
+        "task_id": {
+          "name": "ID da tarefa",
+          "description": "ID da tarefa Maint. Obrigatório se entity_id não for fornecido."
+        },
+        "last_completed": {
+          "name": "Última conclusão",
+          "description": "Data a guardar como última conclusão. Por padrão, hoje quando omitida."
+        }
+      }
+    }
+  }
+}
