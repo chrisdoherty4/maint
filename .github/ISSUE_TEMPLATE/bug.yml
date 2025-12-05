@@ -5,12 +5,7 @@ body:
 - type: markdown
   attributes:
     value: Before you open a new issue, search through the existing issues to see if others have had the same problem.
-- type: textarea
-  attributes:
-    label: "System Health details"
-    description: "Paste the data from the System Health card in Home Assistant (https://www.home-assistant.io/more-info/system-health#github-issues)"
-  validations:
-    required: true
+
 - type: checkboxes
   attributes:
     label: Checklist
@@ -21,14 +16,16 @@ body:
         required: true
       - label: This issue only contains 1 issue (if you have multiple issues, open one issue for each issue).
         required: true
-      - label: This issue is not a duplicate issue of any [previous issues](https://github.com/ludeeus/integration_blueprint/issues?q=is%3Aissue+label%3A%22Bug%22+)..
+      - label: This issue is not a duplicate issue of any [previous issues](https://github.com/chrisdoherty4/maint/issues?q=is%3Aissue+label%3A%22Bug%22+)..
         required: true
+
 - type: textarea
   attributes:
     label: "Describe the issue"
     description: "A clear and concise description of what the issue is."
   validations:
     required: true
+
 - type: textarea
   attributes:
     label: Reproduction steps
@@ -40,13 +37,14 @@ body:
       ...
   validations:
     required: true
+
 - type: textarea
   attributes:
     label: "Debug logs"
-    description: "To enable debug logs check this https://www.home-assistant.io/integrations/logger/, this **needs** to include _everything_ from startup of Home Assistant to the point where you encounter the issue."
+    description: "Some issues don't require debug logs, however if you don't provide them and we need them you risk your issue being closed. To enable debug logs check this https://www.home-assistant.io/integrations/logger/.."
     render: text
   validations:
-    required: true
+    required: false
 
 - type: textarea
   attributes:
