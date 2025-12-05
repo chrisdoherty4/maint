@@ -1,4 +1,4 @@
-import type { FrequencyUnit, HassConnection, MaintTask, Recurrence, Weekday } from "./api.js";
+import type { FrequencyUnit, HassConnection, MaintTask, Recurrence, Weekday } from "./task/index.js";
 
 export type LocalizeFunc = (key: string, ...args: Array<string | number>) => string;
 
@@ -331,9 +331,23 @@ export const formatRecurrence = (recurrence: Recurrence, localize: LocalizeFunc)
 const computeNextSchedule = (lastCompleted: Date, recurrence: Recurrence): Date | null => {
   switch (recurrence.type) {
     case "interval": {
-      const days = recurrence.unit === "weeks" ? recurrence.every * 7 : recurrence.every;
+      const every = recurrence.every ?? 0;
+      if (every <= 0) {
+        return null;
+      }
       const next = new Date(lastCompleted.getTime());
-      next.setDate(next.getDate() + days);
+      if (recurrence.unit === "weeks") {
+        next.setDate(next.getDate() + every * 7);
+      } else if (recurrence.unit === "months") {
+        const originalDay = next.getDate();
+        next.setMonth(next.getMonth() + every);
+        // If month rolled over (e.g., Jan 31 -> March 2), clamp to last day of target month.
+        if (next.getDate() !== originalDay) {
+          next.setDate(0);
+        }
+      } else {
+        next.setDate(next.getDate() + every);
+      }
       return next;
     }
     case "weekly": {
@@ -386,31 +400,15 @@ export const nextScheduled = (task: MaintTask | null | undefined): string | null
     return null;
   }
 
-  if (task.next_scheduled) {
-    return task.next_scheduled;
+  if (task.last_completed && task.recurrence) {
+    const parsed = parseIsoDate(task.last_completed);
+    if (parsed) {
+      const next = computeNextSchedule(parsed, task.recurrence);
+      if (next) {
+        return formatIsoDate(next);
+      }
+    }
   }
 
-  if (!task.last_completed || !task.recurrence) {
-    return null;
-  }
-
-  const parsed = parseIsoDate(task.last_completed);
-  if (!parsed) {
-    return null;
-  }
-
-  const next = computeNextSchedule(parsed, task.recurrence);
-  return next ? formatIsoDate(next) : null;
+  return task.next_scheduled ?? null;
 };
-
-export const normalizeTask = (task: MaintTask): MaintTask => ({
-  ...task,
-  recurrence:
-    task.recurrence?.type === "weekly"
-      ? {
-          ...task.recurrence,
-          every: task.recurrence.every ?? 1,
-          days: normalizeWeekdays(task.recurrence.days)
-        }
-      : task.recurrence
-});
