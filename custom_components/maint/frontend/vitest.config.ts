@@ -6,6 +6,15 @@ export default defineConfig({
     environment: "jsdom",
     include: ["tests/**/*.test.ts"],
     clearMocks: true,
-    restoreMocks: true
+    restoreMocks: true,
+    reporters: [
+      "default",
+      ["junit", { outputFile: "junit.xml" }]
+    ],
+    coverage: {
+      enabled: true,
+      reporter: ["text-summary", "lcov"],
+      reportsDirectory: "coverage"
+    }
   }
 });

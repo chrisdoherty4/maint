@@ -116,5 +116,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run TypeScript unit tests
-        run: npm test
+      - name: Run TypeScript unit tests with coverage
+        run: npm test -- --coverage
+
+      - name: Upload frontend junit results to Codecov
+        if: ${{ always() }}
+        uses: codecov/test-results-action@v1
+        with:
+          files: ./custom_components/maint/frontend/junit.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload frontend coverage to Codecov
+        if: ${{ always() }}
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./custom_components/maint/frontend/coverage/lcov.info
+          flags: frontend
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}

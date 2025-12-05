@@ -54,7 +54,6 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
-junit.xml
 
 # Translations
 *.mo
@@ -216,3 +215,10 @@ node_modules/
 
 # Keep the compiled frontend since its needed for HACS install.
 !/custom_components/maint/frontend/dist
+
+# Coverage
+junit.xml
+.coverage
+.coverage.xml
+coverage.xml
+coerage/
