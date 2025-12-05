@@ -1,0 +1,28 @@
+.weekly-inline {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+.weekly-every {
+  max-width: 30%;
+  min-width: 140px;
+}
+
+.weekday-row {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.weekday-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.weekday-chip input {
+  margin: 0;
+}

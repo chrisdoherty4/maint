@@ -118,9 +118,13 @@ export const styles = css`
     width: 100%;
   }
 
-.task-row + .task-row {
-  border-top: 1px solid var(--divider-color);
-}
+  .task-row + .task-row {
+    border-top: 1px solid var(--divider-color);
+  }
+
+  maint-task-row + maint-task-row .task-row {
+    border-top: 1px solid var(--divider-color);
+  }
 
   .task-details {
     flex: 1;
