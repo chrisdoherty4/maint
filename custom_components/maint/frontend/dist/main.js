@@ -4538,28 +4538,6 @@ var MaintPanel = class extends i4 {
     }
     this.stopBusy();
   }
-  handleEditTask(event) {
-    if (!this.dataState.selectedEntryId) {
-      return;
-    }
-    const taskId = event.detail?.taskId;
-    if (!taskId) {
-      return;
-    }
-    const task = this.dataState.tasks.find((item) => item.task_id === taskId);
-    if (!task) {
-      return;
-    }
-    this.error = null;
-    this.editFeature.start(task, {
-      hass: this.hass,
-      entryId: this.dataState.selectedEntryId ?? null,
-      panelText: this.panelText.bind(this),
-      localize: this.localizeText.bind(this),
-      locale: localeCode(this.hass),
-      weekStart: this.firstWeekday()
-    });
-  }
   openCreateModal() {
     if (!this.dataState.selectedEntryId || this.busy) {
       return;

@@ -50,14 +50,15 @@ jobs:
           python-version: "3.13"
           cache: "pip"
 
-      - name: Install requirements
-        run: python3 -m pip install -r requirements.txt
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: custom_components/maint/frontend/package-lock.json
 
-      - name: Lint
-        run: python3 -m ruff check .
-
-      - name: Format
-        run: python3 -m ruff format . --check
+      - name: Run lint
+        run: make lint
 
   backend-tests:
     name: Python Unit Tests
@@ -72,13 +73,8 @@ jobs:
           python-version: "3.13"
           cache: "pip"
 
-      - name: Install dependencies
-        run: python3 -m pip install -r requirements.txt
-
       - name: Run unit tests with coverage
-        run: |
-          python3 -m pytest --cov=custom_components/maint --cov-report=xml --junitxml=junit.xml
-          python3 -m coverage report
+        run: make test-backend
 
       - name: Upload coverage to Codecov
         if: ${{ always() }}
@@ -99,9 +95,6 @@ jobs:
   frontend-tests:
     name: TypeScript Unit Tests
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: custom_components/maint/frontend
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v6
@@ -113,11 +106,8 @@ jobs:
           cache: "npm"
           cache-dependency-path: custom_components/maint/frontend/package-lock.json
 
-      - name: Install dependencies
-        run: npm ci
-
       - name: Run TypeScript unit tests with coverage
-        run: npm test -- --coverage
+        run: make test-frontend
 
       - name: Upload frontend junit results to Codecov
         if: ${{ always() }}
