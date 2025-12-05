@@ -33,12 +33,11 @@ tasks.
     - When new tests are working, use the coverage report to identify areas that could use improvement; 80% coverage is preferred but not required.
     - If a redesign is needed for better testability/cleaner code, propose them before making the refactor
 
-
 ### Frontend
 
 - The frontend is written in TypeScript - always modify the TypeScript and compile down to JavaScript.
 - Compile using the `./scripts/frontend`.
-- Avoid using the `unknown` type whenever possible.
+- Use actual types (as opposed to `unknown`) whenever possible.
 
 ## Translations
 
