@@ -51,8 +51,10 @@ Prioritize clean code:
 Code should follow a hexagonal architecture. Avoid packages/module names such as common, util and
 const. Instead focus on colocating code based on the feature or capability it belongs to.
 
-Before implementing a feature or refactor, talk through your design to provide an opportunity for
-feedback.
+Do not implement any changes without sharing your proposal. This includes refactors, styling changes,
+and new functionality. Include a summary where you explain the problem back to the user and provide
+an overview of your proposed changes. Additionally include a details section with specifics on what
+you plan to do.
 
 ### Testing & Linting
 

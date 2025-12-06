@@ -1371,29 +1371,26 @@ var MaintTaskList = class extends i4 {
     }
     const hasTasks = this.tasks.length > 0;
     return x`
-      <section class="tasks-section">
-        <h2>${this.panelText("section_tasks")}</h2>
-        ${!hasTasks ? x`<p class="info">${this.panelText("info_no_tasks")}</p>` : x`
-              <div class="task-list" role="list">
-                ${this.tasks.map(
+      ${!hasTasks ? x`<p class="info tasks-section-empty">${this.panelText("info_no_tasks")}</p>` : x`
+            <div class="task-list" role="list">
+              ${this.tasks.map(
       (task) => x`
-                    <maint-task-row
-                      .task=${task}
-                      .hass=${this.hass}
-                      .busy=${this.busy}
-                      .editing=${this.editing}
-                      .due=${this.isTaskDue(task)}
-                      .panelText=${this.panelText}
-                      .localizeText=${this.localizeText}
-                      @complete-task=${(event) => this.forward("complete-task", event.detail)}
-                      @edit-task=${(event) => this.forward("edit-task", event.detail)}
-                      @delete-task=${(event) => this.forward("delete-task", event.detail)}
-                    ></maint-task-row>
-                  `
+                  <maint-task-row
+                    .task=${task}
+                    .hass=${this.hass}
+                    .busy=${this.busy}
+                    .editing=${this.editing}
+                    .due=${this.isTaskDue(task)}
+                    .panelText=${this.panelText}
+                    .localizeText=${this.localizeText}
+                    @complete-task=${(event) => this.forward("complete-task", event.detail)}
+                    @edit-task=${(event) => this.forward("edit-task", event.detail)}
+                    @delete-task=${(event) => this.forward("delete-task", event.detail)}
+                  ></maint-task-row>
+                `
     )}
-              </div>
-            `}
-      </section>
+            </div>
+          `}
     `;
   }
   forward(name, detail) {
@@ -2963,6 +2960,40 @@ var styles = i`
 
   .tasks-section {
     margin-top: 12px;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .tasks-section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+  }
+
+  .tasks-section-header h2 {
+    margin: 0;
+    flex: 1;
+  }
+
+  .tasks-create-button {
+    margin-left: auto;
+  }
+
+  .tasks-section-divider {
+    height: 1px;
+    width: 100%;
+    background: var(--divider-color);
+  }
+
+  .tasks-section-content {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tasks-section-empty {
+    margin: 0;
+    padding: 14px 20px;
   }
 
   select,
@@ -3007,7 +3038,6 @@ var styles = i`
     display: flex;
     flex-direction: column;
     gap: 0;
-    margin-top: 12px;
   }
 
   .task-row {
@@ -3032,6 +3062,7 @@ var styles = i`
     display: flex;
     flex-direction: column;
     gap: 12px;
+    padding-left: 20px;
   }
 
   .task-description-line {
@@ -3093,17 +3124,14 @@ var styles = i`
     flex-direction: column;
     align-items: flex-end;
     gap: 6px;
-    margin-left: 12px;
     min-width: 140px;
+    padding-right: 20px;
+    box-sizing: border-box;
   }
 
 .action-buttons {
   display: flex;
   gap: 8px;
-}
-
-.tasks-section h2 {
-  margin-bottom: 12px;
 }
 
   .icon-button {
@@ -4594,7 +4622,6 @@ var MaintPanel = class extends i4 {
   render() {
     const hasEntries = this.dataState.entries.length > 0;
     const formDisabled = !this.dataState.selectedEntryId;
-    const createDisabled = formDisabled || this.busy;
     return x`
       <div class="container">
         <div class="page-header">
@@ -4602,14 +4629,6 @@ var MaintPanel = class extends i4 {
             <h1>${this.panelText("title")}</h1>
             <p class="subtext">${this.panelText("subtitle")}</p>
           </div>
-          <button
-            type="button"
-            class="button-primary"
-            ?disabled=${createDisabled}
-            @click=${this.openCreateModal}
-          >
-            ${this.panelText("buttons.create")}
-          </button>
         </div>
         ${this.error ? x`<div class="error global-error">${this.error}</div>` : E}
         ${hasEntries ? E : x`<p class="info">${this.panelText("info_add_entry")}</p>`}
@@ -4621,13 +4640,33 @@ var MaintPanel = class extends i4 {
     `;
   }
   renderTasksSection(formDisabled) {
+    const createDisabled = formDisabled || this.busy;
+    const header = x`
+      <div class="tasks-section-header">
+        <h2>${this.panelText("section_tasks")}</h2>
+        <button
+          type="button"
+          class="button-primary tasks-create-button"
+          ?disabled=${createDisabled}
+          @click=${this.openCreateModal}
+        >
+          ${this.panelText("buttons.create")}
+        </button>
+      </div>
+      <div class="tasks-section-divider" role="presentation"></div>
+    `;
     if (formDisabled) {
       return x`<section class="tasks-section">
-        <h2>${this.panelText("section_tasks")}</h2>
-        <p class="info">${this.panelText("info_enable_tracking")}</p>
+        ${header}
+        <div class="tasks-section-content">
+          <p class="info tasks-section-empty">${this.panelText("info_enable_tracking")}</p>
+        </div>
       </section>`;
     }
-    return this.taskListFeature.render({
+    return x`<section class="tasks-section">
+      ${header}
+      <div class="tasks-section-content">
+        ${this.taskListFeature.render({
       tasks: this.dataState.tasks,
       hass: this.hass,
       entryId: this.dataState.selectedEntryId ?? null,
@@ -4635,7 +4674,9 @@ var MaintPanel = class extends i4 {
       editing: Boolean(this.editState.taskId),
       panelText: this.panelText.bind(this),
       localizeText: this.localizeText.bind(this)
-    });
+    })}
+      </div>
+    </section>`;
   }
   renderCreateModal(formDisabled) {
     return this.createFeature.render({

@@ -156,34 +156,31 @@ export class MaintTaskList extends LitElement {
     const hasTasks = this.tasks.length > 0;
 
     return html`
-      <section class="tasks-section">
-        <h2>${this.panelText("section_tasks")}</h2>
-        ${!hasTasks
-        ? html`<p class="info">${this.panelText("info_no_tasks")}</p>`
+      ${!hasTasks
+        ? html`<p class="info tasks-section-empty">${this.panelText("info_no_tasks")}</p>`
         : html`
-              <div class="task-list" role="list">
-                ${this.tasks.map(
-        (task) => html`
-                    <maint-task-row
-                      .task=${task}
-                      .hass=${this.hass}
-                      .busy=${this.busy}
-                      .editing=${this.editing}
-                      .due=${this.isTaskDue(task)}
-                      .panelText=${this.panelText}
-                      .localizeText=${this.localizeText}
-                      @complete-task=${(event: CustomEvent<{ taskId: string }>) =>
-        this.forward("complete-task", event.detail)}
-                      @edit-task=${(event: CustomEvent<{ taskId: string }>) =>
-        this.forward("edit-task", event.detail)}
-                      @delete-task=${(event: CustomEvent<{ taskId: string }>) =>
-        this.forward("delete-task", event.detail)}
-                    ></maint-task-row>
-                  `
-      )}
-              </div>
-            `}
-      </section>
+            <div class="task-list" role="list">
+              ${this.tasks.map(
+                (task) => html`
+                  <maint-task-row
+                    .task=${task}
+                    .hass=${this.hass}
+                    .busy=${this.busy}
+                    .editing=${this.editing}
+                    .due=${this.isTaskDue(task)}
+                    .panelText=${this.panelText}
+                    .localizeText=${this.localizeText}
+                    @complete-task=${(event: CustomEvent<{ taskId: string }>) =>
+                      this.forward("complete-task", event.detail)}
+                    @edit-task=${(event: CustomEvent<{ taskId: string }>) =>
+                      this.forward("edit-task", event.detail)}
+                    @delete-task=${(event: CustomEvent<{ taskId: string }>) =>
+                      this.forward("delete-task", event.detail)}
+                  ></maint-task-row>
+                `
+              )}
+            </div>
+          `}
     `;
   }
 

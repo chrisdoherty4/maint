@@ -63,6 +63,40 @@ export const styles = css`
 
   .tasks-section {
     margin-top: 12px;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .tasks-section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+  }
+
+  .tasks-section-header h2 {
+    margin: 0;
+    flex: 1;
+  }
+
+  .tasks-create-button {
+    margin-left: auto;
+  }
+
+  .tasks-section-divider {
+    height: 1px;
+    width: 100%;
+    background: var(--divider-color);
+  }
+
+  .tasks-section-content {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tasks-section-empty {
+    margin: 0;
+    padding: 14px 20px;
   }
 
   select,
@@ -107,7 +141,6 @@ export const styles = css`
     display: flex;
     flex-direction: column;
     gap: 0;
-    margin-top: 12px;
   }
 
   .task-row {
@@ -132,6 +165,7 @@ export const styles = css`
     display: flex;
     flex-direction: column;
     gap: 12px;
+    padding-left: 20px;
   }
 
   .task-description-line {
@@ -193,17 +227,14 @@ export const styles = css`
     flex-direction: column;
     align-items: flex-end;
     gap: 6px;
-    margin-left: 12px;
     min-width: 140px;
+    padding-right: 20px;
+    box-sizing: border-box;
   }
 
 .action-buttons {
   display: flex;
   gap: 8px;
-}
-
-.tasks-section h2 {
-  margin-bottom: 12px;
 }
 
   .icon-button {

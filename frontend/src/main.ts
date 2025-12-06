@@ -192,7 +192,6 @@ export class MaintPanel extends LitElement {
   protected render() {
     const hasEntries = this.dataState.entries.length > 0;
     const formDisabled = !this.dataState.selectedEntryId;
-    const createDisabled = formDisabled || this.busy;
 
     return html`
       <div class="container">
@@ -201,14 +200,6 @@ export class MaintPanel extends LitElement {
             <h1>${this.panelText("title")}</h1>
             <p class="subtext">${this.panelText("subtitle")}</p>
           </div>
-          <button
-            type="button"
-            class="button-primary"
-            ?disabled=${createDisabled}
-            @click=${this.openCreateModal}
-          >
-            ${this.panelText("buttons.create")}
-          </button>
         </div>
         ${this.error ? html`<div class="error global-error">${this.error}</div>` : nothing}
         ${hasEntries
@@ -223,22 +214,45 @@ export class MaintPanel extends LitElement {
   }
 
   private renderTasksSection(formDisabled: boolean) {
+    const createDisabled = formDisabled || this.busy;
+    const header = html`
+      <div class="tasks-section-header">
+        <h2>${this.panelText("section_tasks")}</h2>
+        <button
+          type="button"
+          class="button-primary tasks-create-button"
+          ?disabled=${createDisabled}
+          @click=${this.openCreateModal}
+        >
+          ${this.panelText("buttons.create")}
+        </button>
+      </div>
+      <div class="tasks-section-divider" role="presentation"></div>
+    `;
+
     if (formDisabled) {
       return html`<section class="tasks-section">
-        <h2>${this.panelText("section_tasks")}</h2>
-        <p class="info">${this.panelText("info_enable_tracking")}</p>
+        ${header}
+        <div class="tasks-section-content">
+          <p class="info tasks-section-empty">${this.panelText("info_enable_tracking")}</p>
+        </div>
       </section>`;
     }
 
-    return this.taskListFeature.render({
-      tasks: this.dataState.tasks,
-      hass: this.hass,
-      entryId: this.dataState.selectedEntryId ?? null,
-      busy: this.busy,
-      editing: Boolean(this.editState.taskId),
-      panelText: this.panelText.bind(this),
-      localizeText: this.localizeText.bind(this)
-    });
+    return html`<section class="tasks-section">
+      ${header}
+      <div class="tasks-section-content">
+        ${this.taskListFeature.render({
+          tasks: this.dataState.tasks,
+          hass: this.hass,
+          entryId: this.dataState.selectedEntryId ?? null,
+          busy: this.busy,
+          editing: Boolean(this.editState.taskId),
+          panelText: this.panelText.bind(this),
+          localizeText: this.localizeText.bind(this)
+        })}
+      </div>
+    </section>`;
   }
 
   private renderCreateModal(formDisabled: boolean) {
