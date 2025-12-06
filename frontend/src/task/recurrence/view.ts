@@ -78,13 +78,8 @@ export const renderRecurrenceFields = (
       { value: "6", label: localize?.("component.maint.recurrence.weekday_short.6") ?? "Sun" }
     ];
     return html`
-      <div
-        class="weekly-inline form-row"
-        data-recurrence-type="weekly"
-        style="display:flex;align-items:flex-end;gap:0.5rem;flex-wrap:nowrap;"
-        @change=${onChange}
-      >
-        <label class="weekly-every" style="max-width:30%;min-width:140px;flex:0 0 30%;">
+      <div class="weekly-inline form-row grid-two-up" data-recurrence-type="weekly" @change=${onChange}>
+        <label class="weekly-every">
           <span class="label-text">${t(localize, "component.maint.panel.fields.weekly_every", "Every N weeks")}</span>
           <input
             type="number"
@@ -95,33 +90,24 @@ export const renderRecurrenceFields = (
             ?disabled=${disabled}
           />
         </label>
-        <div class="weekday-row" style="display:flex;gap:0.4rem;flex-wrap:nowrap;align-items:center;">
-          ${weekdayGroup.map(
+        <div class="weekday-selection">
+          <span class="label-text weekday-row-label">
+            ${t(localize, "component.maint.panel.fields.weekly_on", "On")}
+          </span>
+          <div class="weekday-row">
+            ${weekdayGroup.concat(weekendGroup).map(
       (day) => html`<label class="weekday-chip">
-            <input
-              type="checkbox"
-              name="weekly_days"
-              value=${day.value}
-              ?checked=${weeklyDays.includes(day.value)}
-              ?disabled=${disabled}
-            />
-            <span>${day.label}</span>
-          </label>`
+                <input
+                  type="checkbox"
+                  name="weekly_days"
+                  value=${day.value}
+                  ?checked=${weeklyDays.includes(day.value)}
+                  ?disabled=${disabled}
+                />
+                <span>${day.label}</span>
+              </label>`
     )}
-        </div>
-        <div class="weekday-row" style="display:flex;gap:0.4rem;flex-wrap:nowrap;align-items:center;margin-top:0.25rem;">
-          ${weekendGroup.map(
-      (day) => html`<label class="weekday-chip">
-            <input
-              type="checkbox"
-              name="weekly_days"
-              value=${day.value}
-              ?checked=${weeklyDays.includes(day.value)}
-              ?disabled=${disabled}
-            />
-            <span>${day.label}</span>
-          </label>`
-    )}
+          </div>
         </div>
       </div>
     `;

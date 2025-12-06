@@ -23,6 +23,9 @@ deps-backend:
 deps-frontend:
 	cd $(FRONTEND_DIR) && npm ci
 
+# Build all parts of the integration.
+build: build-frontend
+
 # Build the frontend bundle.
 build-frontend: deps-frontend
 	cd $(FRONTEND_DIR) && npm run build

@@ -1159,13 +1159,8 @@ var renderRecurrenceFields = (type, recurrence, form, localize, disabled, onChan
       { value: "6", label: localize?.("component.maint.recurrence.weekday_short.6") ?? "Sun" }
     ];
     return x`
-      <div
-        class="weekly-inline form-row"
-        data-recurrence-type="weekly"
-        style="display:flex;align-items:flex-end;gap:0.5rem;flex-wrap:nowrap;"
-        @change=${onChange}
-      >
-        <label class="weekly-every" style="max-width:30%;min-width:140px;flex:0 0 30%;">
+      <div class="weekly-inline form-row grid-two-up" data-recurrence-type="weekly" @change=${onChange}>
+        <label class="weekly-every">
           <span class="label-text">${t4(localize, "component.maint.panel.fields.weekly_every", "Every N weeks")}</span>
           <input
             type="number"
@@ -1176,33 +1171,24 @@ var renderRecurrenceFields = (type, recurrence, form, localize, disabled, onChan
             ?disabled=${disabled}
           />
         </label>
-        <div class="weekday-row" style="display:flex;gap:0.4rem;flex-wrap:nowrap;align-items:center;">
-          ${weekdayGroup.map(
+        <div class="weekday-selection">
+          <span class="label-text weekday-row-label">
+            ${t4(localize, "component.maint.panel.fields.weekly_on", "On")}
+          </span>
+          <div class="weekday-row">
+            ${weekdayGroup.concat(weekendGroup).map(
       (day) => x`<label class="weekday-chip">
-            <input
-              type="checkbox"
-              name="weekly_days"
-              value=${day.value}
-              ?checked=${weeklyDays.includes(day.value)}
-              ?disabled=${disabled}
-            />
-            <span>${day.label}</span>
-          </label>`
+                <input
+                  type="checkbox"
+                  name="weekly_days"
+                  value=${day.value}
+                  ?checked=${weeklyDays.includes(day.value)}
+                  ?disabled=${disabled}
+                />
+                <span>${day.label}</span>
+              </label>`
     )}
-        </div>
-        <div class="weekday-row" style="display:flex;gap:0.4rem;flex-wrap:nowrap;align-items:center;margin-top:0.25rem;">
-          ${weekendGroup.map(
-      (day) => x`<label class="weekday-chip">
-            <input
-              type="checkbox"
-              name="weekly_days"
-              value=${day.value}
-              ?checked=${weeklyDays.includes(day.value)}
-              ?disabled=${disabled}
-            />
-            <span>${day.label}</span>
-          </label>`
-    )}
+          </div>
         </div>
       </div>
     `;
@@ -3438,6 +3424,7 @@ var styles = i`
     border-radius: 10px;
     border: 1px solid var(--divider-color);
     background: var(--card-background-color);
+    margin: 2px 6px 6px 0;
   }
 
   .weekday-chip input {
@@ -3514,15 +3501,49 @@ var styles = i`
   }
 
   @media (max-width: 720px) {
+    :host {
+      --maint-panel-padding: 16px;
+    }
+
+    .container {
+      max-width: none;
+      margin: 0;
+    }
+
     section {
       padding: 16px;
+    }
+
+    .tasks-section {
+      margin-left: calc(-1 * var(--maint-panel-padding));
+      margin-right: calc(-1 * var(--maint-panel-padding));
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
+    }
+
+    .tasks-section-header,
+    .tasks-section-content,
+    .tasks-section-empty {
+      padding-left: var(--maint-panel-padding);
+      padding-right: var(--maint-panel-padding);
+    }
+
+    .tasks-section-header {
+      padding-top: var(--maint-panel-padding);
+      padding-bottom: var(--maint-panel-padding);
     }
 
     .task-row {
       flex-direction: column;
       align-items: flex-start;
       gap: 12px;
-      padding: 12px;
+      padding: 12px 0;
+    }
+
+    .task-details {
+      padding-left: 0;
+      width: 100%;
     }
 
     .task-actions {
@@ -3542,8 +3563,17 @@ var styles = i`
       margin-left: auto;
     }
 
-    .task-meta {
-      grid-template-columns: 1fr;
+    .modal {
+      border-radius: 0;
+      max-width: none;
+      width: 100vw;
+      margin: 0;
+      border-left: none;
+      border-right: none;
+    }
+
+    .modal.edit-modal {
+      width: 100vw;
     }
   }
 `;

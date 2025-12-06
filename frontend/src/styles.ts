@@ -541,6 +541,7 @@ export const styles = css`
     border-radius: 10px;
     border: 1px solid var(--divider-color);
     background: var(--card-background-color);
+    margin: 2px 6px 6px 0;
   }
 
   .weekday-chip input {
@@ -617,15 +618,49 @@ export const styles = css`
   }
 
   @media (max-width: 720px) {
+    :host {
+      --maint-panel-padding: 16px;
+    }
+
+    .container {
+      max-width: none;
+      margin: 0;
+    }
+
     section {
       padding: 16px;
+    }
+
+    .tasks-section {
+      margin-left: calc(-1 * var(--maint-panel-padding));
+      margin-right: calc(-1 * var(--maint-panel-padding));
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
+    }
+
+    .tasks-section-header,
+    .tasks-section-content,
+    .tasks-section-empty {
+      padding-left: var(--maint-panel-padding);
+      padding-right: var(--maint-panel-padding);
+    }
+
+    .tasks-section-header {
+      padding-top: var(--maint-panel-padding);
+      padding-bottom: var(--maint-panel-padding);
     }
 
     .task-row {
       flex-direction: column;
       align-items: flex-start;
       gap: 12px;
-      padding: 12px;
+      padding: 12px 0;
+    }
+
+    .task-details {
+      padding-left: 0;
+      width: 100%;
     }
 
     .task-actions {
@@ -645,8 +680,17 @@ export const styles = css`
       margin-left: auto;
     }
 
-    .task-meta {
-      grid-template-columns: 1fr;
+    .modal {
+      border-radius: 0;
+      max-width: none;
+      width: 100vw;
+      margin: 0;
+      border-left: none;
+      border-right: none;
+    }
+
+    .modal.edit-modal {
+      width: 100vw;
     }
   }
 `;

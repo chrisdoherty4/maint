@@ -1,26 +1,47 @@
 /* src/task/recurrence/styles.css */
 .weekly-inline {
   display: flex;
-  align-items: flex-end;
-  gap: 0.5rem;
-  flex-wrap: nowrap;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  width: 100%;
 }
 .weekly-every {
-  max-width: 30%;
+  flex: 0 0 180px;
+  max-width: 220px;
   min-width: 140px;
 }
 .weekday-row {
   display: flex;
   gap: 0.4rem;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
+  flex: 1 1 260px;
+  min-width: 0;
 }
-.weekday-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
+.weekday-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1 1 320px;
+  min-width: 0;
 }
-.weekday-chip input {
-  margin: 0;
+.weekday-row-label {
+  font-weight: 600;
+}
+@media (max-width: 720px) {
+  .weekly-inline {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .weekly-every {
+    flex: 1 1 auto;
+    max-width: none;
+    min-width: 0;
+  }
+  .weekday-row {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
 /*# sourceMappingURL=main.css.map */
