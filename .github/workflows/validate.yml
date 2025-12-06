@@ -55,7 +55,7 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
-          cache-dependency-path: custom_components/maint/frontend/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Run lint
         run: make lint
@@ -104,7 +104,7 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
-          cache-dependency-path: custom_components/maint/frontend/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Run TypeScript unit tests with coverage
         run: make test-frontend
