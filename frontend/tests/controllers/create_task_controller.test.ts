@@ -60,4 +60,22 @@ describe("CreateTaskController", () => {
     expect(controller.state.busy).toBe(false);
     expect(controller.state.error).toBeNull();
   });
+
+  it("manages date picker toggles and resets last completed", () => {
+    const controller = new CreateTaskController();
+    controller.open("2024-01-02");
+
+    const opened = controller.openDatePicker();
+    expect(opened.datePickerOpen).toBe(true);
+
+    const toggled = controller.toggleDatePicker();
+    expect(toggled.datePickerOpen).toBe(false);
+
+    const setDate = controller.setDate("2024-03-04");
+    expect(setDate.lastCompleted).toBe("2024-03-04");
+    expect(setDate.datePickerOpen).toBe(false);
+
+    const reset = controller.resetLastCompleted("2024-04-05");
+    expect(reset.lastCompleted).toBe("2024-04-05");
+  });
 });

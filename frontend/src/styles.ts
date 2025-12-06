@@ -282,23 +282,36 @@ export const styles = css`
     margin: 0 0 16px;
   }
 
+  .task-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
   label {
     display: block;
-    margin-bottom: 12px;
+    margin-bottom: 0;
+  }
+
+  .form-row {
+    margin: 2px 0;
   }
 
   .label-text {
     display: block;
     font-weight: 600;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
   }
 
-  .inline-fields {
+  .task-form > div.form-row {
+    width: 100%;
+  }
+
+  .grid-two-up {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 16px;
-    margin-top: 10px;
-    margin-bottom: 12px;
+    gap: 10px;
+    width: 100%;
   }
 
   .date-input-wrapper {
@@ -309,10 +322,14 @@ export const styles = css`
     position: relative;
   }
 
+  .date-input-wrapper maint-date-picker {
+    display: contents;
+  }
+
   .date-picker-toggle {
-    min-width: 42px;
-    height: 42px;
-    padding: 8px;
+    min-width: 36px;
+    height: 36px;
+    padding: 6px;
   }
 
   .date-picker-popup {
@@ -408,8 +425,57 @@ export const styles = css`
     width: 100%;
   }
 
-  .recurrence-fields {
-    margin-top: 4px;
+  .optional-config {
+    margin-top: 12px;
+    padding: 0;
+  }
+
+  .optional-config summary {
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--primary-text-color);
+    outline: none;
+    padding: 0;
+    margin-bottom: 6px;
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .optional-config summary::-webkit-details-marker,
+  .optional-config summary::marker {
+    display: none;
+    content: "";
+  }
+
+  .optional-config summary::before {
+    content: "▶";
+    display: inline-block;
+    width: 1rem;
+    text-align: center;
+    color: var(--secondary-text-color);
+    margin-right: 4px;
+  }
+
+  .optional-config[open] summary::before {
+    content: "▼";
+  }
+
+  .optional-body {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .optional-body label {
+    display: block;
+  }
+
+  .help-text {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--secondary-text-color);
   }
 
   .weekday-field {

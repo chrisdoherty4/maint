@@ -1115,7 +1115,7 @@ var t4 = (localize, key, fallback) => {
   const value = localize(key);
   return value && value !== key ? value : fallback;
 };
-var renderRecurrenceFields = (type, recurrence, form, localize, disabled) => {
+var renderRecurrenceFields = (type, recurrence, form, localize, disabled, onChange) => {
   const recurrenceType = type;
   const currentUnit = form?.interval_unit ?? (recurrence?.type === "interval" ? recurrence.unit : "days");
   const intervalEvery = form?.interval_every ?? (recurrence?.type === "interval" ? recurrence.every.toString() : "");
@@ -1123,7 +1123,7 @@ var renderRecurrenceFields = (type, recurrence, form, localize, disabled) => {
   const weeklyDays = form?.weekly_days ?? (recurrence?.type === "weekly" ? recurrence.days.map((day) => day.toString()) : []);
   if (recurrenceType === "interval") {
     return x`
-      <div class="inline-fields" data-recurrence-type="interval">
+      <div class="form-row grid-two-up" data-recurrence-type="interval" @change=${onChange}>
         <label>
           <span class="label-text">${t4(localize, "component.maint.panel.fields.interval_every", "Every")}</span>
           <input
@@ -1160,9 +1160,10 @@ var renderRecurrenceFields = (type, recurrence, form, localize, disabled) => {
     ];
     return x`
       <div
-        class="weekly-inline"
+        class="weekly-inline form-row"
         data-recurrence-type="weekly"
         style="display:flex;align-items:flex-end;gap:0.5rem;flex-wrap:nowrap;"
+        @change=${onChange}
       >
         <label class="weekly-every" style="max-width:30%;min-width:140px;flex:0 0 30%;">
           <span class="label-text">${t4(localize, "component.maint.panel.fields.weekly_every", "Every N weeks")}</span>
@@ -1436,6 +1437,7 @@ MaintTaskList = __decorateClass([
 
 // src/task/index.ts
 var DOMAIN = "maint";
+var DEFAULT_ICON = "mdi:check-circle-outline";
 var normalizeWeekdays2 = (days = []) => {
   const unique = Array.from(new Set(days));
   const sorted = unique.sort((a3, b3) => a3 - b3);
@@ -1523,11 +1525,15 @@ var validateTaskFields = (fields, localize, hass) => {
   if (!recurrence.ok) {
     return { error: recurrence.error ?? localize("component.maint.panel.validation.schedule_required") };
   }
+  const iconRaw = fields.icon;
+  const icon = typeof iconRaw === "string" ? iconRaw.trim() : iconRaw === null ? null : void 0;
+  const normalizedIcon = icon === "" ? null : icon ?? DEFAULT_ICON;
   return {
     values: {
       description,
       last_completed: lastCompleted,
-      recurrence: recurrence.value
+      recurrence: recurrence.value,
+      icon: normalizedIcon
     }
   };
 };
@@ -1542,21 +1548,33 @@ var listTasks = async (hass, entryId) => {
   });
   return tasks.map((task) => normalizeTask(task));
 };
-var createTask = async (hass, entryId, payload) => normalizeTask(
-  await hass.callWS({
+var createTask = async (hass, entryId, payload) => {
+  const { icon, ...rest } = payload;
+  const request = {
     type: "maint/task/create",
     entry_id: entryId,
-    ...payload
-  })
-);
-var updateTask = async (hass, entryId, taskId, payload) => normalizeTask(
-  await hass.callWS({
+    ...rest
+  };
+  if (icon !== void 0) {
+    request.icon = icon;
+  }
+  const task = await hass.callWS(request);
+  return normalizeTask(task);
+};
+var updateTask = async (hass, entryId, taskId, payload) => {
+  const { icon, ...rest } = payload;
+  const request = {
     type: "maint/task/update",
     entry_id: entryId,
     task_id: taskId,
-    ...payload
-  })
-);
+    ...rest
+  };
+  if (icon !== void 0) {
+    request.icon = icon;
+  }
+  const task = await hass.callWS(request);
+  return normalizeTask(task);
+};
 var deleteTask = (hass, entryId, taskId) => hass.callWS({
   type: "maint/task/delete",
   entry_id: entryId,
@@ -1664,7 +1682,7 @@ var renderTaskForm = (props) => {
         <p>${props.subtitle}</p>
         ${props.error ? x`<div class="error">${props.error}</div>` : E}
         <form class="task-form" @submit=${props.onSubmit}>
-          <label>
+          <label class="form-row">
             <span class="label-text">${props.panelText("fields.description")}</span>
             <input
               type="text"
@@ -1676,7 +1694,7 @@ var renderTaskForm = (props) => {
               @input=${props.onFieldInput}
             />
           </label>
-          <div class="inline-fields">
+          <div class="form-row grid-two-up">
           <label>
             <span class="label-text">${props.panelText("fields.schedule_type")}</span>
             <select
@@ -1711,7 +1729,7 @@ var renderTaskForm = (props) => {
                   aria-label=${props.panelText("placeholders.date")}
                   title=${props.panelText("placeholders.date")}
                   ?disabled=${disabled}
-                  @click=${props.onToggleDatePicker}
+              @click=${props.onToggleDatePicker}
                 >
                   <ha-icon icon="mdi:calendar-blank" aria-hidden="true"></ha-icon>
                 </button>
@@ -1725,15 +1743,34 @@ var renderTaskForm = (props) => {
               </div>
             </label>
           </div>
-          <div class="recurrence-fields" @change=${props.onWeeklyDayChange}>
-            ${renderRecurrenceFields(
+          ${renderRecurrenceFields(
     props.recurrenceType,
     props.recurrence,
     props.recurrenceForm,
     props.localize,
-    disabled
+    disabled,
+    props.onWeeklyDayChange
   )}
-          </div>
+          <details
+            class="optional-config"
+            ?open=${Boolean(props.icon && props.icon !== (props.defaultIcon ?? ""))}
+          >
+            <summary>${props.panelText("optional.heading")}</summary>
+            <div class="optional-body">
+              <label>
+                <span class="label-text">${props.panelText("fields.icon")}</span>
+                <input
+                  type="text"
+                  name="icon"
+                  placeholder=${props.panelText("placeholders.icon_example")}
+                  .value=${props.icon ?? ""}
+                  ?disabled=${disabled}
+                  @input=${props.onFieldInput}
+                />
+                <p class="help-text">${props.panelText("help.icon")}</p>
+              </label>
+            </div>
+          </details>
           <div class="modal-actions" style="margin-top: 1rem;">
             <button
               type="button"
@@ -1787,6 +1824,8 @@ var MaintCreateModal = class extends i4 {
       submitLabel: this.busy ? this.panelText("buttons.saving") : this.panelText("buttons.create"),
       dateLabel: this.panelText("fields.starting_from"),
       description: "",
+      icon: DEFAULT_ICON,
+      defaultIcon: DEFAULT_ICON,
       lastCompleted: this.lastCompleted,
       recurrenceType: this.recurrenceType,
       datePlaceholder: this.datePlaceholder,
@@ -2084,7 +2123,8 @@ var CreateTaskController = class {
         interval_every: formData.get("interval_every"),
         interval_unit: formData.get("interval_unit"),
         weekly_every: formData.get("weekly_every"),
-        weekly_days: formData.getAll("weekly_days")
+        weekly_days: formData.getAll("weekly_days"),
+        icon: formData.get("icon")
       },
       localize,
       hass
@@ -2520,7 +2560,8 @@ var UpdateTaskController = class {
       interval_every: "",
       interval_unit: "days",
       weekly_every: "1",
-      weekly_days: []
+      weekly_days: [],
+      icon: task.icon ?? DEFAULT_ICON
     };
     if (task.recurrence.type === "interval") {
       baseForm.interval_every = task.recurrence.every.toString();
@@ -2571,6 +2612,9 @@ var UpdateTaskController = class {
         break;
       case "weekly_every":
         nextForm.weekly_every = value;
+        break;
+      case "icon":
+        nextForm.icon = value;
         break;
       default:
         break;
@@ -2638,7 +2682,8 @@ var UpdateTaskController = class {
         interval_every: formData.get("interval_every"),
         interval_unit: formData.get("interval_unit"),
         weekly_every: formData.get("weekly_every"),
-        weekly_days: formData.getAll("weekly_days")
+        weekly_days: formData.getAll("weekly_days"),
+        icon: formData.get("icon")
       },
       localize,
       hass
@@ -3137,23 +3182,36 @@ var styles = i`
     margin: 0 0 16px;
   }
 
+  .task-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
   label {
     display: block;
-    margin-bottom: 12px;
+    margin-bottom: 0;
+  }
+
+  .form-row {
+    margin: 2px 0;
   }
 
   .label-text {
     display: block;
     font-weight: 600;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
   }
 
-  .inline-fields {
+  .task-form > div.form-row {
+    width: 100%;
+  }
+
+  .grid-two-up {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 16px;
-    margin-top: 10px;
-    margin-bottom: 12px;
+    gap: 10px;
+    width: 100%;
   }
 
   .date-input-wrapper {
@@ -3164,10 +3222,14 @@ var styles = i`
     position: relative;
   }
 
+  .date-input-wrapper maint-date-picker {
+    display: contents;
+  }
+
   .date-picker-toggle {
-    min-width: 42px;
-    height: 42px;
-    padding: 8px;
+    min-width: 36px;
+    height: 36px;
+    padding: 6px;
   }
 
   .date-picker-popup {
@@ -3263,8 +3325,57 @@ var styles = i`
     width: 100%;
   }
 
-  .recurrence-fields {
-    margin-top: 4px;
+  .optional-config {
+    margin-top: 12px;
+    padding: 0;
+  }
+
+  .optional-config summary {
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--primary-text-color);
+    outline: none;
+    padding: 0;
+    margin-bottom: 6px;
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .optional-config summary::-webkit-details-marker,
+  .optional-config summary::marker {
+    display: none;
+    content: "";
+  }
+
+  .optional-config summary::before {
+    content: "▶";
+    display: inline-block;
+    width: 1rem;
+    text-align: center;
+    color: var(--secondary-text-color);
+    margin-right: 4px;
+  }
+
+  .optional-config[open] summary::before {
+    content: "▼";
+  }
+
+  .optional-body {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .optional-body label {
+    display: block;
+  }
+
+  .help-text {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--secondary-text-color);
   }
 
   .weekday-field {
@@ -3427,11 +3538,19 @@ var de_default = {
       every: "Alle",
       unit: "Einheit",
       on: "Am",
-      weeks_suffix: "Woche(n)"
+      weeks_suffix: "Woche(n)",
+      icon: "Icon"
     },
     placeholders: {
       description_example: "Batterie Rauchmelder",
-      date: "tt/mm/jjjj"
+      date: "tt/mm/jjjj",
+      icon_example: "mdi:bed"
+    },
+    optional: {
+      heading: "Optionale Konfiguration"
+    },
+    help: {
+      icon: "Verwende einen Home Assistant Icon-Namen wie mdi:check-circle-outline."
     },
     recurrence_options: {
       interval: "Alle N",
@@ -3534,11 +3653,19 @@ var en_default = {
       every: "Every",
       unit: "Unit",
       on: "On",
-      weeks_suffix: "week(s)"
+      weeks_suffix: "week(s)",
+      icon: "Icon"
     },
     placeholders: {
       description_example: "Smoke detector battery",
-      date: "mm/dd/yyyy"
+      date: "mm/dd/yyyy",
+      icon_example: "mdi:bed"
+    },
+    optional: {
+      heading: "Optional configuration"
+    },
+    help: {
+      icon: "Use a Home Assistant icon name such as mdi:check-circle-outline."
     },
     recurrence_options: {
       interval: "Every N",
@@ -3641,11 +3768,19 @@ var es_default = {
       every: "Cada",
       unit: "Unidad",
       on: "En",
-      weeks_suffix: "semana(s)"
+      weeks_suffix: "semana(s)",
+      icon: "Icono"
     },
     placeholders: {
       description_example: "Bater\xEDa del detector de humo",
-      date: "dd/mm/aaaa"
+      date: "dd/mm/aaaa",
+      icon_example: "mdi:bed"
+    },
+    optional: {
+      heading: "Configuraci\xF3n opcional"
+    },
+    help: {
+      icon: "Usa un nombre de icono de Home Assistant como mdi:check-circle-outline."
     },
     recurrence_options: {
       interval: "Cada N",
@@ -3748,11 +3883,19 @@ var fr_default = {
       every: "Tous les",
       unit: "Unit\xE9",
       on: "Le",
-      weeks_suffix: "semaine(s)"
+      weeks_suffix: "semaine(s)",
+      icon: "Ic\xF4ne"
     },
     placeholders: {
       description_example: "Pile du d\xE9tecteur de fum\xE9e",
-      date: "jj/mm/aaaa"
+      date: "jj/mm/aaaa",
+      icon_example: "mdi:bed"
+    },
+    optional: {
+      heading: "Configuration optionnelle"
+    },
+    help: {
+      icon: "Utilisez un nom d'ic\xF4ne Home Assistant comme mdi:check-circle-outline."
     },
     recurrence_options: {
       interval: "Chaque N",
@@ -3855,11 +3998,19 @@ var nl_default = {
       every: "Elke",
       unit: "Eenheid",
       on: "Op",
-      weeks_suffix: "week/weken"
+      weeks_suffix: "week/weken",
+      icon: "Icoon"
     },
     placeholders: {
       description_example: "Batterij rookmelder",
-      date: "dd/mm/jjjj"
+      date: "dd/mm/jjjj",
+      icon_example: "mdi:bed"
+    },
+    optional: {
+      heading: "Optionele configuratie"
+    },
+    help: {
+      icon: "Gebruik een Home Assistant-pictogramnaam zoals mdi:check-circle-outline."
     },
     recurrence_options: {
       interval: "Elke N",
@@ -3964,11 +4115,19 @@ var pt_default = {
       every: "A cada",
       unit: "Unidade",
       on: "Em",
-      weeks_suffix: "semana(s)"
+      weeks_suffix: "semana(s)",
+      icon: "\xCDcone"
     },
     placeholders: {
       description_example: "Bateria do detector de fuma\xE7a",
-      date: "dd/mm/aaaa"
+      date: "dd/mm/aaaa",
+      icon_example: "mdi:bed"
+    },
+    optional: {
+      heading: "Configura\xE7\xE3o opcional"
+    },
+    help: {
+      icon: "Use um nome de \xEDcone do Home Assistant, como mdi:check-circle-outline."
     },
     recurrence_options: {
       interval: "A cada N",
@@ -4141,6 +4300,8 @@ var MaintEditModal = class extends i4 {
       dateLabel: this.panelText("fields.last_completed"),
       description: this.form.description,
       lastCompleted: this.form.last_completed,
+      icon: this.form.icon,
+      defaultIcon: DEFAULT_ICON,
       requireLastCompleted: true,
       recurrenceType: this.form.recurrence_type,
       recurrenceForm: this.form,

@@ -26,7 +26,8 @@ export const renderRecurrenceFields = (
   recurrence?: Recurrence,
   form?: Partial<RecurrenceFormState>,
   localize?: LocalizeFunc,
-  disabled?: boolean
+  disabled?: boolean,
+  onChange?: (event: Event) => void
 ) => {
   const recurrenceType = type;
   const currentUnit =
@@ -40,7 +41,7 @@ export const renderRecurrenceFields = (
 
   if (recurrenceType === "interval") {
     return html`
-      <div class="inline-fields" data-recurrence-type="interval">
+      <div class="form-row grid-two-up" data-recurrence-type="interval" @change=${onChange}>
         <label>
           <span class="label-text">${t(localize, "component.maint.panel.fields.interval_every", "Every")}</span>
           <input
@@ -78,9 +79,10 @@ export const renderRecurrenceFields = (
     ];
     return html`
       <div
-        class="weekly-inline"
+        class="weekly-inline form-row"
         data-recurrence-type="weekly"
         style="display:flex;align-items:flex-end;gap:0.5rem;flex-wrap:nowrap;"
+        @change=${onChange}
       >
         <label class="weekly-every" style="max-width:30%;min-width:140px;flex:0 0 30%;">
           <span class="label-text">${t(localize, "component.maint.panel.fields.weekly_every", "Every N weeks")}</span>
@@ -95,7 +97,7 @@ export const renderRecurrenceFields = (
         </label>
         <div class="weekday-row" style="display:flex;gap:0.4rem;flex-wrap:nowrap;align-items:center;">
           ${weekdayGroup.map(
-    (day) => html`<label class="weekday-chip">
+      (day) => html`<label class="weekday-chip">
             <input
               type="checkbox"
               name="weekly_days"
@@ -105,11 +107,11 @@ export const renderRecurrenceFields = (
             />
             <span>${day.label}</span>
           </label>`
-  )}
+    )}
         </div>
         <div class="weekday-row" style="display:flex;gap:0.4rem;flex-wrap:nowrap;align-items:center;margin-top:0.25rem;">
           ${weekendGroup.map(
-    (day) => html`<label class="weekday-chip">
+      (day) => html`<label class="weekday-chip">
             <input
               type="checkbox"
               name="weekly_days"
@@ -119,7 +121,7 @@ export const renderRecurrenceFields = (
             />
             <span>${day.label}</span>
           </label>`
-  )}
+    )}
         </div>
       </div>
     `;

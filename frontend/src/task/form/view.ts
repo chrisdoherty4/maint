@@ -19,10 +19,12 @@ export interface TaskFormRenderProps {
   cancelButtonId?: string;
   description?: string;
   lastCompleted?: string;
+  defaultIcon?: string;
   requireLastCompleted?: boolean;
   recurrenceType: RecurrenceType;
   recurrence?: Recurrence;
   recurrenceForm?: Partial<RecurrenceFormState>;
+  icon?: string | null;
   datePlaceholder: string;
   locale?: string;
   datePickerOpen: boolean;
@@ -70,7 +72,7 @@ export const renderTaskForm = (props: TaskFormRenderProps): TemplateResult | typ
         <p>${props.subtitle}</p>
         ${props.error ? html`<div class="error">${props.error}</div>` : nothing}
         <form class="task-form" @submit=${props.onSubmit}>
-          <label>
+          <label class="form-row">
             <span class="label-text">${props.panelText("fields.description")}</span>
             <input
               type="text"
@@ -82,7 +84,7 @@ export const renderTaskForm = (props: TaskFormRenderProps): TemplateResult | typ
               @input=${props.onFieldInput}
             />
           </label>
-          <div class="inline-fields">
+          <div class="form-row grid-two-up">
           <label>
             <span class="label-text">${props.panelText("fields.schedule_type")}</span>
             <select
@@ -117,7 +119,7 @@ export const renderTaskForm = (props: TaskFormRenderProps): TemplateResult | typ
                   aria-label=${props.panelText("placeholders.date")}
                   title=${props.panelText("placeholders.date")}
                   ?disabled=${disabled}
-                  @click=${props.onToggleDatePicker}
+              @click=${props.onToggleDatePicker}
                 >
                   <ha-icon icon="mdi:calendar-blank" aria-hidden="true"></ha-icon>
                 </button>
@@ -131,15 +133,34 @@ export const renderTaskForm = (props: TaskFormRenderProps): TemplateResult | typ
               </div>
             </label>
           </div>
-          <div class="recurrence-fields" @change=${props.onWeeklyDayChange}>
-            ${renderRecurrenceFields(
-              props.recurrenceType,
-              props.recurrence,
-              props.recurrenceForm,
-              props.localize,
-              disabled
-            )}
-          </div>
+          ${renderRecurrenceFields(
+            props.recurrenceType,
+            props.recurrence,
+            props.recurrenceForm,
+            props.localize,
+            disabled,
+            props.onWeeklyDayChange
+          )}
+          <details
+            class="optional-config"
+            ?open=${Boolean(props.icon && props.icon !== (props.defaultIcon ?? ""))}
+          >
+            <summary>${props.panelText("optional.heading")}</summary>
+            <div class="optional-body">
+              <label>
+                <span class="label-text">${props.panelText("fields.icon")}</span>
+                <input
+                  type="text"
+                  name="icon"
+                  placeholder=${props.panelText("placeholders.icon_example")}
+                  .value=${props.icon ?? ""}
+                  ?disabled=${disabled}
+                  @input=${props.onFieldInput}
+                />
+                <p class="help-text">${props.panelText("help.icon")}</p>
+              </label>
+            </div>
+          </details>
           <div class="modal-actions" style="margin-top: 1rem;">
             <button
               type="button"

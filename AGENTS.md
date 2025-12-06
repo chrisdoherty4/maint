@@ -51,15 +51,16 @@ Prioritize clean code:
 Code should follow a hexagonal architecture. Avoid packages/module names such as common, util and
 const. Instead focus on colocating code based on the feature or capability it belongs to.
 
-Write tests for new code. Focus on testing the public API. Validate tests using the `make test-frontend`
-or `make test-backend` targets. Review the code coverage output for tests to determine areas
-that need improvement - aim for >70% coverage.
-
-Lint code using the `make lint-frontend` and `make lint-backend` targets. Fix any issues linters
-find.
-
 Before implementing a feature or refactor, talk through your design to provide an opportunity for
 feedback.
+
+### Testing & Linting
+
+Write tests that focus on the public API of classes, modules and packages. Update existing tests
+when refactoring and add new tests for new functionality. Run the tests with `make test` and fix
+any issues they find.
+
+Once you've finished making changes find and fix lint issues with `make lint`.
 
 ### Python
 
@@ -69,6 +70,8 @@ Use type hints for all variables, parameters and return values. Include adequete
 
 Always use TypeScript and compile down to JavaScript. Assign real types to variables - i.e. avoid
 the `unknown` type.
+
+The TypeScript should be built with `make build-frontend` as an initial sanity check before testing.
 
 ## Translations
 

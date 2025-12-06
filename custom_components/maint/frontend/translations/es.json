@@ -15,11 +15,19 @@
       "every": "Cada",
       "unit": "Unidad",
       "on": "En",
-      "weeks_suffix": "semana(s)"
+      "weeks_suffix": "semana(s)",
+      "icon": "Icono"
     },
     "placeholders": {
       "description_example": "Batería del detector de humo",
-      "date": "dd/mm/aaaa"
+      "date": "dd/mm/aaaa",
+      "icon_example": "mdi:bed"
+    },
+    "optional": {
+      "heading": "Configuración opcional"
+    },
+    "help": {
+      "icon": "Usa un nombre de icono de Home Assistant como mdi:check-circle-outline."
     },
     "recurrence_options": {
       "interval": "Cada N",
