@@ -2,56 +2,95 @@
 
 ## Overview
 
-This repository is a Home Assistant integration built as a custom component. It is installed using [HACS](https://www.hacs.xyz/).
-The integration is composed of a backend and frontend. It is used for managing home maintenance
-tasks.
+This repository is a Home Assistant integration built as a custom component. It is installed using
+[HACS](https://www.hacs.xyz/). The integration is composed of a backend and frontend. It is used
+for managing home maintenance tasks.
 
-## Development Environment
+## Repository Layout
 
-- You run inside a devcontainer that should already have tools setup.
-- If a tool you need isn't available, stop and ask what to do suggesting alternatives if you have any.
+`/custom_components/maint` contains the integration backend written in Python.
+
+`/tests` contains the backend tests.
+
+`/frontend/src` contains the integrations frontend written in TypeScript.
+
+`/frontend/tests` contains the frontend tests.
+
+`/custom_components/maint/frontend` contains the compiled frontend sources - they are JavaScript and CSS.
+
+`/custom_components/maint/translations` contains standard translations that satisfy Home Assistant
+expectations (https://developers.home-assistant.io/docs/internationalization/core).
+
+`/frontend/translations` contains the frontend specific translations that do not fit into the
+standard translation specification. They are used by the frontend only.
+
+`/brand` contains logo's and icons.
+
+`/scripts` contains helper scripts - it should be used sparingly since we use Make.
+
+`/config` contains Home Assistant configuration used for launching a local Home Assistant instance.
+
+`/.github` contains GitHub actions workflows and other configuration.
 
 ## Development
 
-### General
+### Environment
 
-- When you look to make changes, propose the changes first. Provide an summary followed by details including rationale.
-- Prioritize readable, maintainable code. Keep changes aligned with module layout.
-- Avoid packages/modules named common, utils, const etc. Instead, prefer placing constants an interfaces near the consumer where possible.
-- Maintain separation of concerns between modules.
-- Lint and test changes and fix issues.
+Development typically happens inside a devcontainer. While developing you may need additional
+tooling. Ask to install additional tooling via the `.devcontainer.json`.
 
-### Backend
+### Coding Philosophy
 
-- Provide type hints for all function parameters and returns.
-- Code is linted using ruff; run `scripts/lint` (it formats then checks/fixes) after Python changes.
-- Include adequete debug logging.
-- Testing
-    - Tests are defined in `/tests`
-    - Run tests with `python3 -m pytest --cov=custom_components/maint --cov-report=xml --junitxml=junit.xml`
-    - Focus on the public API of modules. For example functions prefixed with _ should be considered private.
-    - When new tests are working, use the coverage report to identify areas that could use improvement; 80% coverage is preferred but not required.
-    - If a redesign is needed for better testability/cleaner code, propose them before making the refactor
+Prioritize clean code:
 
-### Frontend
+- Clarify over cleverness - make it easy for humans to read
+- Single Responsibility Principal - units of code should have 1 reason to change
+- Separation of Concerns - code should have a clean separation; e.g. business logic != persistence logic
+- Testable - code is written so its easy to test
 
-- The frontend is written in TypeScript - always modify the TypeScript and compile down to JavaScript.
-- Compile using the `./scripts/frontend`.
-- Use actual types (as opposed to `unknown`) whenever possible.
+Code should follow a hexagonal architecture. Avoid packages/module names such as common, util and
+const. Instead focus on colocating code based on the feature or capability it belongs to.
+
+Write tests for new code. Focus on testing the public API. Validate tests using the `make test-frontend`
+or `make test-backend` targets. Review the code coverage output for tests to determine areas
+that need improvement - aim for >70% coverage.
+
+Lint code using the `make lint-frontend` and `make lint-backend` targets. Fix any issues linters
+find.
+
+Before implementing a feature or refactor, talk through your design to provide an opportunity for
+feedback.
+
+### Python
+
+Use type hints for all variables, parameters and return values. Include adequete debug logging.
+
+### TypeScript
+
+Always use TypeScript and compile down to JavaScript. Assign real types to variables - i.e. avoid
+the `unknown` type.
 
 ## Translations
 
-- Backend Home Assistant standard keys for translations live in `custom_components/maint/translations/<lang>.json`.
-- Frontend translations live in `custom_components/maint/frontend/translations/<lang>.json`. The frontend must be compiled for them to be usable.
-- Use the English definition as the source of translations
-- When adding new translation strings, ensure all translation files are updated.
-- Ensure the README.md is updated to reflect the supported languages.
+Translations should be used when implemented features that have user facing text. The translations
+directories contain JSON files with country codes corresponding to the translation. When adding
+translation strings ensure all translation files are updated.
+
+To add a new translation create a new JSON file for both backend and frontend translations. Use
+English as the source language to translate. Update the README to reflect the list of supported
+languages.
 
 ## README.md
 
-- Add new features to the READMEs feature section. Feature details should be concerned with what the user interacts with only.
-- The README always refers to the present tense so you should avoid phrasing such as "Maint currently".
+The README exists to market the integration to readers. It contains a list of features. Ensure the
+features are updated when a new feature is added. The feature list should include a concise summary
+of features and only reference what the user interacts with - do not include implementation detail.
+
+The README is always in the present tense - do not use terminology like "Maint currently".
+
+Maintain the optional configuration with all the options available for Maint and what they do.
 
 ## Temporary Constraints
 
-- Do not attempt to maintain backward compatibility. We have not released yet so backwards compatibility is unnecessary.
+Do not attempt to maintain backward compatibility. We have not released v1 so backward compatibility
+is unnecessary.
