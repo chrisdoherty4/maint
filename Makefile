@@ -1,9 +1,9 @@
 PYTHON ?= python3
-FRONTEND_DIR := custom_components/maint/frontend
+FRONTEND_DIR := frontend
 
 .DEFAULT_GOAL := help
 
-.PHONY: help setup deps deps-backend deps-frontend build-frontend lint lint-backend lint-frontend test test-backend test-frontend
+.PHONY: help setup deps deps-backend deps-frontend build-frontend lint lint-backend lint-frontend test test-backend test-frontend develop
 
 # Show available targets and their descriptions.
 help:
@@ -50,3 +50,12 @@ test-backend: deps-backend
 # Run frontend vitest with coverage and junit output.
 test-frontend: deps-frontend
 	cd $(FRONTEND_DIR) && npm test -- --coverage
+
+# Run Home Assistant locally for development.
+launch: deps-backend build-frontend
+	@set -e; \
+	if [ ! -d "$(CURDIR)/config" ]; then \
+		mkdir -p "$(CURDIR)/config"; \
+		hass --config "$(CURDIR)/config" --script ensure_config; \
+	fi; \
+	PYTHONPATH="$$PYTHONPATH:$(CURDIR)/custom_components" hass --config "$(CURDIR)/config" --debug

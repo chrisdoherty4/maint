@@ -1,0 +1,105 @@
+{
+  "panel": {
+    "title": "Mantenimiento",
+    "subtitle": "Gestiona tareas recurrentes y mantén tu hogar al día.",
+    "info_add_entry": "Añade una entrada de la integración Maint para empezar a registrar tareas.",
+    "info_enable_tracking": "Añade una entrada de Maint para habilitar el seguimiento de tareas.",
+    "info_no_tasks": "Aún no hay tareas. Usa el botón Crear tarea para añadir una.",
+    "section_create": "Crear tarea",
+    "section_tasks": "Tareas",
+    "fields": {
+      "description": "Descripción",
+      "schedule_type": "Tipo de programación",
+      "starting_from": "A partir de",
+      "last_completed": "Última finalización",
+      "every": "Cada",
+      "unit": "Unidad",
+      "on": "En",
+      "weeks_suffix": "semana(s)"
+    },
+    "placeholders": {
+      "description_example": "Batería del detector de humo",
+      "date": "dd/mm/aaaa"
+    },
+    "recurrence_options": {
+      "interval": "Cada N",
+      "weekly": "Días de la semana",
+      "units": {
+        "days": "Días",
+        "weeks": "Semanas",
+        "months": "Meses"
+      }
+    },
+    "buttons": {
+      "create": "Crear tarea",
+      "saving": "Guardando…",
+      "mark_complete": "Marcar como completada",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "cancel": "Cancelar",
+      "save_changes": "Guardar cambios"
+    },
+    "labels": {
+      "due": "Pendiente",
+      "next_scheduled": "Próxima programación",
+      "schedule": "Programa"
+    },
+    "modals": {
+      "delete_title": "¿Eliminar tarea?",
+      "delete_prompt": "¿Seguro que quieres eliminar \"{task}\"?",
+      "edit_title": "Editar tarea",
+      "edit_prompt": "Actualiza los detalles de la tarea abajo.",
+      "create_title": "Crear tarea",
+      "create_prompt": "Añade los detalles de la tarea abajo."
+    },
+    "errors": {
+      "load_entries": "No se pudieron cargar las entradas de Maint.",
+      "load_tasks": "No se pudieron cargar las tareas.",
+      "mark_complete": "No se pudo marcar la tarea como completada.",
+      "create": "No se pudo crear la tarea. Revisa los registros para más detalles.",
+      "update": "No se pudo actualizar la tarea.",
+      "delete": "No se pudo eliminar la tarea."
+    },
+    "validation": {
+      "description_required": "Introduce una descripción.",
+      "last_completed_invalid": "Introduce una fecha válida para la última finalización.",
+      "schedule_required": "Elige un programa.",
+      "interval_every_required": "Indica la frecuencia de repetición.",
+      "interval_unit_required": "Elige una unidad de frecuencia.",
+      "weekly_every_required": "Indica cuántas semanas entre repeticiones.",
+      "weekly_days_required": "Selecciona al menos un día de la semana."
+    }
+  },
+  "recurrence": {
+    "every_day": "Cada día",
+    "every_interval": "Cada {count} {unit}",
+    "weekly_on": "Semanal en {days}",
+    "weekly_every_on": "Cada {count} semanas en {days}",
+    "unit": {
+      "day_one": "día",
+      "day_other": "días",
+      "week_one": "semana",
+      "week_other": "semanas",
+      "month_one": "mes",
+      "month_other": "meses"
+    },
+    "weekday_full": {
+      "0": "Lunes",
+      "1": "Martes",
+      "2": "Miércoles",
+      "3": "Jueves",
+      "4": "Viernes",
+      "5": "Sábado",
+      "6": "Domingo"
+    },
+    "weekday_short": {
+      "0": "Lun",
+      "1": "Mar",
+      "2": "Mié",
+      "3": "Jue",
+      "4": "Vie",
+      "5": "Sáb",
+      "6": "Dom"
+    }
+  }
+}

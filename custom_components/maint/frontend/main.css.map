@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "sources": ["../src/task/recurrence/styles.css"],
+  "sources": ["../../../frontend/src/task/recurrence/styles.css"],
   "sourcesContent": [".weekly-inline {\n  display: flex;\n  align-items: flex-end;\n  gap: 0.5rem;\n  flex-wrap: nowrap;\n}\n\n.weekly-every {\n  max-width: 30%;\n  min-width: 140px;\n}\n\n.weekday-row {\n  display: flex;\n  gap: 0.4rem;\n  flex-wrap: nowrap;\n  align-items: center;\n}\n\n.weekday-chip {\n  display: inline-flex;\n  align-items: center;\n  gap: 0.2rem;\n}\n\n.weekday-chip input {\n  margin: 0;\n}\n"],
   "mappings": ";AAAA,CAAC;AACC,WAAS;AACT,eAAa;AACb,OAAK;AACL,aAAW;AACb;AAEA,CAAC;AACC,aAAW;AACX,aAAW;AACb;AAEA,CAAC;AACC,WAAS;AACT,OAAK;AACL,aAAW;AACX,eAAa;AACf;AAEA,CAAC;AACC,WAAS;AACT,eAAa;AACb,OAAK;AACP;AAEA,CANC,aAMa;AACZ,UAAQ;AACV;",
   "names": []

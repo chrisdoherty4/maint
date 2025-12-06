@@ -1,0 +1,105 @@
+{
+  "panel": {
+    "title": "Maintenance",
+    "subtitle": "Manage recurring tasks and keep your home on track.",
+    "info_add_entry": "Add a Maint integration entry to start tracking tasks.",
+    "info_enable_tracking": "Add a Maint integration entry to enable task tracking.",
+    "info_no_tasks": "No tasks yet. Use the Create task button to add one.",
+    "section_create": "Create task",
+    "section_tasks": "Tasks",
+    "fields": {
+      "description": "Description",
+      "schedule_type": "Schedule type",
+      "starting_from": "Starting from",
+      "last_completed": "Last completed",
+      "every": "Every",
+      "unit": "Unit",
+      "on": "On",
+      "weeks_suffix": "week(s)"
+    },
+    "placeholders": {
+      "description_example": "Smoke detector battery",
+      "date": "mm/dd/yyyy"
+    },
+    "recurrence_options": {
+      "interval": "Every N",
+      "weekly": "Days of the week",
+      "units": {
+        "days": "Days",
+        "weeks": "Weeks",
+        "months": "Months"
+      }
+    },
+    "buttons": {
+      "create": "Create task",
+      "saving": "Saving…",
+      "mark_complete": "Mark complete",
+      "edit": "Edit",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "save_changes": "Save changes"
+    },
+    "labels": {
+      "due": "Due",
+      "next_scheduled": "Next scheduled",
+      "schedule": "Schedule"
+    },
+    "modals": {
+      "delete_title": "Delete task?",
+      "delete_prompt": "Are you sure you want to delete \"{task}\"?",
+      "edit_title": "Edit task",
+      "edit_prompt": "Update the task details below.",
+      "create_title": "Create task",
+      "create_prompt": "Add the task details below."
+    },
+    "errors": {
+      "load_entries": "Unable to load maint entries.",
+      "load_tasks": "Unable to load tasks.",
+      "mark_complete": "Unable to mark task complete.",
+      "create": "Could not create task. Check the logs for details.",
+      "update": "Could not update the task.",
+      "delete": "Could not delete the task."
+    },
+    "validation": {
+      "description_required": "Enter a description.",
+      "last_completed_invalid": "Enter a valid date for last completed.",
+      "schedule_required": "Choose a schedule.",
+      "interval_every_required": "Enter how often the task repeats.",
+      "interval_unit_required": "Choose a frequency unit.",
+      "weekly_every_required": "Enter how many weeks between repeats.",
+      "weekly_days_required": "Select at least one day of the week."
+    }
+  },
+  "recurrence": {
+    "every_day": "Every day",
+    "every_interval": "Every {count} {unit}",
+    "weekly_on": "Weekly on {days}",
+    "weekly_every_on": "Every {count} weeks on {days}",
+    "unit": {
+      "day_one": "day",
+      "day_other": "days",
+      "week_one": "week",
+      "week_other": "weeks",
+      "month_one": "month",
+      "month_other": "months"
+    },
+    "weekday_full": {
+      "0": "Monday",
+      "1": "Tuesday",
+      "2": "Wednesday",
+      "3": "Thursday",
+      "4": "Friday",
+      "5": "Saturday",
+      "6": "Sunday"
+    },
+    "weekday_short": {
+      "0": "Mon",
+      "1": "Tue",
+      "2": "Wed",
+      "3": "Thu",
+      "4": "Fri",
+      "5": "Sat",
+      "6": "Sun"
+    }
+  }
+}

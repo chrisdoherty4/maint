@@ -1,0 +1,105 @@
+{
+  "panel": {
+    "title": "Manutenção",
+    "subtitle": "Gerencie tarefas recorrentes e mantenha sua casa em dia.",
+    "info_add_entry": "Adicione uma entrada da integração Maint para começar a acompanhar tarefas.",
+    "info_enable_tracking": "Adicione uma entrada do Maint para habilitar o acompanhamento de tarefas.",
+    "info_no_tasks": "Ainda não há tarefas. Use o formulário acima para criar uma.",
+    "section_create": "Criar tarefa",
+    "section_tasks": "Tarefas",
+    "toggle_collapse": "Recolher formulário",
+    "toggle_expand": "Expandir formulário",
+    "fields": {
+      "description": "Descrição",
+      "schedule_type": "Tipo de programação",
+      "starting_from": "A partir de",
+      "last_completed": "Última conclusão",
+      "every": "A cada",
+      "unit": "Unidade",
+      "on": "Em",
+      "weeks_suffix": "semana(s)"
+    },
+    "placeholders": {
+      "description_example": "Bateria do detector de fumaça",
+      "date": "dd/mm/aaaa"
+    },
+    "recurrence_options": {
+      "interval": "A cada N",
+      "weekly": "Dias da semana",
+      "units": {
+        "days": "Dias",
+        "weeks": "Semanas",
+        "months": "Meses"
+      }
+    },
+    "buttons": {
+      "create": "Criar tarefa",
+      "saving": "Salvando…",
+      "mark_complete": "Marcar como concluída",
+      "edit": "Editar",
+      "delete": "Excluir",
+      "cancel": "Cancelar",
+      "save_changes": "Salvar alterações"
+    },
+    "labels": {
+      "due": "Pendente",
+      "next_scheduled": "Próximo agendamento",
+      "schedule": "Programação"
+    },
+    "modals": {
+      "delete_title": "Excluir tarefa?",
+      "delete_prompt": "Tem certeza de que deseja excluir \"{task}\"?",
+      "edit_title": "Editar tarefa",
+      "edit_prompt": "Atualize os detalhes da tarefa abaixo."
+    },
+    "errors": {
+      "load_entries": "Não foi possível carregar as entradas do Maint.",
+      "load_tasks": "Não foi possível carregar as tarefas.",
+      "mark_complete": "Não foi possível marcar a tarefa como concluída.",
+      "create": "Não foi possível criar a tarefa. Verifique os registros para mais detalhes.",
+      "update": "Não foi possível atualizar a tarefa.",
+      "delete": "Não foi possível excluir a tarefa."
+    },
+    "validation": {
+      "description_required": "Informe uma descrição.",
+      "last_completed_invalid": "Informe uma data válida para a última conclusão.",
+      "schedule_required": "Escolha uma programação.",
+      "interval_every_required": "Informe com que frequência a tarefa se repete.",
+      "interval_unit_required": "Escolha uma unidade de frequência.",
+      "weekly_every_required": "Informe quantas semanas entre repetições.",
+      "weekly_days_required": "Selecione ao menos um dia da semana."
+    }
+  },
+  "recurrence": {
+    "every_day": "Todos os dias",
+    "every_interval": "A cada {count} {unit}",
+    "weekly_on": "Semanalmente em {days}",
+    "weekly_every_on": "A cada {count} semanas em {days}",
+    "unit": {
+      "day_one": "dia",
+      "day_other": "dias",
+      "week_one": "semana",
+      "week_other": "semanas",
+      "month_one": "mês",
+      "month_other": "meses"
+    },
+    "weekday_full": {
+      "0": "Segunda-feira",
+      "1": "Terça-feira",
+      "2": "Quarta-feira",
+      "3": "Quinta-feira",
+      "4": "Sexta-feira",
+      "5": "Sábado",
+      "6": "Domingo"
+    },
+    "weekday_short": {
+      "0": "Seg",
+      "1": "Ter",
+      "2": "Qua",
+      "3": "Qui",
+      "4": "Sex",
+      "5": "Sáb",
+      "6": "Dom"
+    }
+  }
+}
