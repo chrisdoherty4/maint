@@ -1,7 +1,7 @@
 import { LitElement, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
 
-import type { RecurrenceType } from "../index.js";
+import { DEFAULT_ICON, type RecurrenceType } from "../index.js";
 import { renderTaskForm } from "../form/view.js";
 
 @customElement("maint-create-modal")
@@ -40,6 +40,8 @@ export class MaintCreateModal extends LitElement {
       submitLabel: this.busy ? this.panelText("buttons.saving") : this.panelText("buttons.create"),
       dateLabel: this.panelText("fields.starting_from"),
       description: "",
+      icon: DEFAULT_ICON,
+      defaultIcon: DEFAULT_ICON,
       lastCompleted: this.lastCompleted,
       recurrenceType: this.recurrenceType,
       datePlaceholder: this.datePlaceholder,

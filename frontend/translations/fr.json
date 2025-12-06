@@ -15,11 +15,19 @@
       "every": "Tous les",
       "unit": "Unité",
       "on": "Le",
-      "weeks_suffix": "semaine(s)"
+      "weeks_suffix": "semaine(s)",
+      "icon": "Icône"
     },
     "placeholders": {
       "description_example": "Pile du détecteur de fumée",
-      "date": "jj/mm/aaaa"
+      "date": "jj/mm/aaaa",
+      "icon_example": "mdi:bed"
+    },
+    "optional": {
+      "heading": "Configuration optionnelle"
+    },
+    "help": {
+      "icon": "Utilisez un nom d'icône Home Assistant comme mdi:check-circle-outline."
     },
     "recurrence_options": {
       "interval": "Chaque N",

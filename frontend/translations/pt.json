@@ -17,11 +17,19 @@
       "every": "A cada",
       "unit": "Unidade",
       "on": "Em",
-      "weeks_suffix": "semana(s)"
+      "weeks_suffix": "semana(s)",
+      "icon": "Ícone"
     },
     "placeholders": {
       "description_example": "Bateria do detector de fumaça",
-      "date": "dd/mm/aaaa"
+      "date": "dd/mm/aaaa",
+      "icon_example": "mdi:bed"
+    },
+    "optional": {
+      "heading": "Configuração opcional"
+    },
+    "help": {
+      "icon": "Use um nome de ícone do Home Assistant, como mdi:check-circle-outline."
     },
     "recurrence_options": {
       "interval": "A cada N",

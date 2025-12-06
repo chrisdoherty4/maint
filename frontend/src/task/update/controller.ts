@@ -1,4 +1,4 @@
-import type { HassConnection, MaintTask, RecurrenceType } from "../index.js";
+import { DEFAULT_ICON, type HassConnection, type MaintTask, type RecurrenceType } from "../index.js";
 import { formatDateInput, type LocalizeFunc } from "../../formatting.js";
 import { updateTask } from "../index.js";
 import { validateTaskFields } from "../index.js";
@@ -39,7 +39,8 @@ export class UpdateTaskController {
       interval_every: "",
       interval_unit: "days",
       weekly_every: "1",
-      weekly_days: []
+      weekly_days: [],
+      icon: task.icon ?? DEFAULT_ICON
     };
 
     if (task.recurrence.type === "interval") {
@@ -96,6 +97,9 @@ export class UpdateTaskController {
         break;
       case "weekly_every":
         nextForm.weekly_every = value;
+        break;
+      case "icon":
+        nextForm.icon = value;
         break;
       default:
         break;
@@ -179,7 +183,8 @@ export class UpdateTaskController {
         interval_every: formData.get("interval_every"),
         interval_unit: formData.get("interval_unit"),
         weekly_every: formData.get("weekly_every"),
-        weekly_days: formData.getAll("weekly_days")
+        weekly_days: formData.getAll("weekly_days"),
+        icon: formData.get("icon")
       },
       localize,
       hass

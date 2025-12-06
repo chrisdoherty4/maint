@@ -1,13 +1,14 @@
 import { LitElement, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
 
-import type { RecurrenceType } from "../index.js";
+import { DEFAULT_ICON, type RecurrenceType } from "../index.js";
 import { renderTaskForm } from "../form/view.js";
 import type { RecurrenceFormState } from "../recurrence/view.js";
 
 export interface EditFormState extends RecurrenceFormState {
   description: string;
   last_completed: string;
+  icon: string;
 }
 
 @customElement("maint-edit-modal")
@@ -45,6 +46,8 @@ export class MaintEditModal extends LitElement {
       dateLabel: this.panelText("fields.last_completed"),
       description: this.form.description,
       lastCompleted: this.form.last_completed,
+      icon: this.form.icon,
+      defaultIcon: DEFAULT_ICON,
       requireLastCompleted: true,
       recurrenceType: this.form.recurrence_type as RecurrenceType,
       recurrenceForm: this.form,

@@ -1,6 +1,7 @@
 import { parseDate, type LocalizeFunc } from "../formatting.js";
 
 const DOMAIN = "maint";
+export const DEFAULT_ICON = "mdi:check-circle-outline";
 
 export type FrequencyUnit = "days" | "weeks" | "months";
 export type RecurrenceType = "interval" | "weekly";
@@ -42,12 +43,14 @@ export interface MaintTask {
   last_completed: string | null;
   recurrence: Recurrence;
   next_scheduled?: string | null;
+  icon?: string | null;
 }
 
 export interface TaskPayload {
   description: string;
   last_completed: string;
   recurrence: Recurrence;
+  icon?: string | null;
 }
 
 export interface HassConnection {
@@ -76,6 +79,7 @@ export interface TaskFields {
   interval_unit?: FrequencyUnitField;
   weekly_days?: WeeklyDaysField;
   weekly_every?: WeeklyEveryField;
+   icon?: ScalarField;
 }
 
 const normalizeWeekdays = (days: Weekday[] = []): Weekday[] => {
@@ -189,11 +193,16 @@ export const validateTaskFields = (
     return { error: recurrence.error ?? localize("component.maint.panel.validation.schedule_required") };
   }
 
+  const iconRaw = fields.icon;
+  const icon = typeof iconRaw === "string" ? iconRaw.trim() : iconRaw === null ? null : undefined;
+  const normalizedIcon = icon === "" ? null : icon ?? DEFAULT_ICON;
+
   return {
     values: {
       description,
       last_completed: lastCompleted,
-      recurrence: recurrence.value
+      recurrence: recurrence.value,
+      icon: normalizedIcon
     }
   };
 };
@@ -216,29 +225,39 @@ export const createTask = async (
   hass: HassConnection,
   entryId: string,
   payload: TaskPayload
-): Promise<MaintTask> =>
-  normalizeTask(
-    await hass.callWS<MaintTask>({
-      type: "maint/task/create",
-      entry_id: entryId,
-      ...payload
-    })
-  );
+): Promise<MaintTask> => {
+  const { icon, ...rest } = payload;
+  const request: WsRequest = {
+    type: "maint/task/create",
+    entry_id: entryId,
+    ...rest
+  };
+  if (icon !== undefined) {
+    request.icon = icon;
+  }
+  const task = await hass.callWS<MaintTask>(request);
+  return normalizeTask(task);
+};
 
 export const updateTask = async (
   hass: HassConnection,
   entryId: string,
   taskId: string,
   payload: TaskPayload
-): Promise<MaintTask> =>
-  normalizeTask(
-    await hass.callWS<MaintTask>({
-      type: "maint/task/update",
-      entry_id: entryId,
-      task_id: taskId,
-      ...payload
-    })
-  );
+): Promise<MaintTask> => {
+  const { icon, ...rest } = payload;
+  const request: WsRequest = {
+    type: "maint/task/update",
+    entry_id: entryId,
+    task_id: taskId,
+    ...rest
+  };
+  if (icon !== undefined) {
+    request.icon = icon;
+  }
+  const task = await hass.callWS<MaintTask>(request);
+  return normalizeTask(task);
+};
 
 export const deleteTask = (hass: HassConnection, entryId: string, taskId: string): Promise<void> =>
   hass.callWS<void>({

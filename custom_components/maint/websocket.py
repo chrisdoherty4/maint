@@ -10,9 +10,17 @@ from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import entity_registry as er
+from homeassistant.util import slugify
 
 from .domain import DOMAIN
-from .models import MaintConfigEntry, MaintRuntimeData, MaintTaskStore, Recurrence
+from .models import (
+    MaintConfigEntry,
+    MaintRuntimeData,
+    MaintTask,
+    MaintTaskStore,
+    Recurrence,
+)
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -47,6 +55,8 @@ TASK_DESCRIPTION_VALIDATION = _validated_description
 TASK_LAST_COMPLETED_KEY = "last_completed"
 TASK_LAST_COMPLETED_VALIDATION = cv.date
 TASK_RECURRENCE_KEY = "recurrence"
+TASK_ICON_KEY = "icon"
+TASK_ICON_VALIDATION = vol.Any(None, cv.string)
 
 RECURRENCE_TYPE = vol.In(["interval", "weekly"])
 
@@ -128,6 +138,59 @@ def _parse_recurrence(raw: dict[str, Any]) -> Recurrence:
     return Recurrence.from_dict(raw)
 
 
+def _normalized_icon(raw: str | None) -> str | None:
+    """Return a trimmed icon string or None when empty/absent."""
+    if raw is None:
+        return None
+    icon = raw.strip()
+    return icon if icon else None
+
+
+def _task_icon(hass: HomeAssistant, entry_id: str, task_id: str) -> str | None:
+    """Return the icon configured for a task's binary sensor."""
+    registry = er.async_get(hass)
+    unique_id = f"{entry_id}_{task_id}"
+    entity_id = registry.async_get_entity_id("binary_sensor", DOMAIN, unique_id)
+    if entity_id is None:
+        return None
+    entity_entry = registry.async_get(entity_id)
+    return entity_entry.icon if entity_entry else None
+
+
+def _task_response(
+    hass: HomeAssistant, entry: MaintConfigEntry, task: MaintTask
+) -> dict[str, Any]:
+    """Return websocket response payload including the current icon."""
+    data = task.to_dict()
+    data[TASK_ICON_KEY] = _task_icon(hass, entry.entry_id, task.task_id)
+    return data
+
+
+def _apply_icon(
+    hass: HomeAssistant,
+    entry: MaintConfigEntry,
+    task_id: str,
+    description: str,
+    icon: str | None,
+) -> None:
+    """Persist a task's icon to the entity registry."""
+    registry = er.async_get(hass)
+    unique_id = f"{entry.entry_id}_{task_id}"
+    suggested_object_id = slugify(f"{entry.title}_{description}")
+    entity_entry = registry.async_get_or_create(
+        "binary_sensor",
+        DOMAIN,
+        unique_id,
+        suggested_object_id=suggested_object_id,
+        config_entry=entry,
+    )
+    entity_id = entity_entry.entity_id
+    if entity_id is None:
+        entity_id = registry.async_get_entity_id("binary_sensor", DOMAIN, unique_id)
+    if entity_id and entity_entry.icon != icon:
+        registry.async_update_entity(entity_id, icon=icon)
+
+
 @websocket_api.websocket_command(
     {
         vol.Required(WS_TYPE_KEY): WS_TYPE_TASK_LIST,
@@ -150,7 +213,9 @@ async def websocket_list_tasks(
         entry.entry_id,
         len(tasks),
     )
-    connection.send_result(msg["id"], [task.to_dict() for task in tasks])
+    connection.send_result(
+        msg["id"], [_task_response(hass, entry, task) for task in tasks]
+    )
 
 
 @websocket_api.websocket_command(
@@ -160,6 +225,7 @@ async def websocket_list_tasks(
         vol.Required(TASK_DESCRIPTION_KEY): TASK_DESCRIPTION_VALIDATION,
         vol.Required(TASK_LAST_COMPLETED_KEY): TASK_LAST_COMPLETED_VALIDATION,
         vol.Required(TASK_RECURRENCE_KEY): RECURRENCE_VALIDATION,
+        vol.Optional(TASK_ICON_KEY): TASK_ICON_VALIDATION,
     }
 )
 @websocket_api.async_response
@@ -173,13 +239,17 @@ async def websocket_create_task(
 
     store, entry = resolved
     recurrence = _parse_recurrence(msg[TASK_RECURRENCE_KEY])
+    icon_provided = TASK_ICON_KEY in msg
+    icon = _normalized_icon(msg.get(TASK_ICON_KEY) if icon_provided else None)
     task = await store.async_create_task(
         entry.entry_id,
         description=msg[TASK_DESCRIPTION_KEY],
         last_completed=msg[TASK_LAST_COMPLETED_KEY],
         recurrence=recurrence,
     )
-    connection.send_result(msg["id"], task.to_dict())
+    if icon_provided:
+        _apply_icon(hass, entry, task.task_id, task.description, icon)
+    connection.send_result(msg["id"], _task_response(hass, entry, task))
     _LOGGER.debug(
         "Websocket created Maint task %s for entry %s",
         task.task_id,
@@ -195,6 +265,7 @@ async def websocket_create_task(
         vol.Required(TASK_DESCRIPTION_KEY): TASK_DESCRIPTION_VALIDATION,
         vol.Required(TASK_LAST_COMPLETED_KEY): TASK_LAST_COMPLETED_VALIDATION,
         vol.Required(TASK_RECURRENCE_KEY): RECURRENCE_VALIDATION,
+        vol.Optional(TASK_ICON_KEY): TASK_ICON_VALIDATION,
     }
 )
 @websocket_api.async_response
@@ -210,6 +281,8 @@ async def websocket_update_task(
     last_completed = msg[TASK_LAST_COMPLETED_KEY]
     description = msg[TASK_DESCRIPTION_KEY]
     recurrence = _parse_recurrence(msg[TASK_RECURRENCE_KEY])
+    icon_provided = TASK_ICON_KEY in msg
+    icon = _normalized_icon(msg.get(TASK_ICON_KEY) if icon_provided else None)
 
     try:
         task = await store.async_update_task(
@@ -228,7 +301,10 @@ async def websocket_update_task(
         connection.send_error(msg["id"], "task_not_found", f"Task {task_id} not found")
         return
 
-    connection.send_result(msg["id"], task.to_dict())
+    if icon_provided:
+        _apply_icon(hass, entry, task.task_id, task.description, icon)
+
+    connection.send_result(msg["id"], _task_response(hass, entry, task))
     _LOGGER.debug(
         "Websocket updated Maint task %s for entry %s", task.task_id, entry.entry_id
     )
@@ -261,7 +337,7 @@ async def websocket_delete_task(
         )
         connection.send_error(msg["id"], "task_not_found", f"Task {task_id} not found")
         return
-    connection.send_result(msg["id"], task.to_dict())
+    connection.send_result(msg["id"], _task_response(hass, entry, task))
     _LOGGER.debug(
         "Websocket deleted Maint task %s for entry %s", task.task_id, entry.entry_id
     )

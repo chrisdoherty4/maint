@@ -80,4 +80,44 @@ describe("UpdateTaskController", () => {
     expect(controller.state.busy).toBe(false);
     expect(controller.state.error).toBeNull();
   });
+
+  it("updates fields and toggles date picker state", () => {
+    const controller = new UpdateTaskController();
+    controller.start(task(), hass);
+    controller.state.error = "oops";
+
+    const updated = controller.updateField("icon", "mdi:fan");
+    expect(updated.form?.icon).toBe("mdi:fan");
+    expect(updated.error).toBeNull();
+
+    const opened = controller.openDatePicker();
+    expect(opened.datePickerOpen).toBe(true);
+    const toggled = controller.toggleDatePicker();
+    expect(toggled.datePickerOpen).toBe(false);
+
+    const withDate = controller.setDate("2024-03-03");
+    expect(withDate.form?.last_completed).toBe("2024-03-03");
+    expect(withDate.datePickerOpen).toBe(false);
+  });
+
+  it("manages weekly day toggling and reset after delete", () => {
+    const controller = new UpdateTaskController();
+    controller.start(
+      task({ recurrence: { type: "weekly", every: 1, days: [1, 3] }, task_id: "t1" }),
+      hass
+    );
+
+    const added = controller.toggleWeeklyDay("5", true);
+    expect(added.form?.weekly_days).toEqual(["1", "3", "5"]);
+
+    const removed = controller.toggleWeeklyDay("3", false);
+    expect(removed.form?.weekly_days).toEqual(["1", "5"]);
+
+    const same = controller.resetAfterDelete("other");
+    expect(same.open).toBe(true);
+
+    const cleared = controller.resetAfterDelete("t1");
+    expect(cleared.open).toBe(false);
+    expect(cleared.form).toBeNull();
+  });
 });

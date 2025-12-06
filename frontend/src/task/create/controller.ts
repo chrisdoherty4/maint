@@ -100,7 +100,8 @@ export class CreateTaskController {
         interval_every: formData.get("interval_every"),
         interval_unit: formData.get("interval_unit"),
         weekly_every: formData.get("weekly_every"),
-        weekly_days: formData.getAll("weekly_days")
+        weekly_days: formData.getAll("weekly_days"),
+        icon: formData.get("icon")
       },
       localize,
       hass
