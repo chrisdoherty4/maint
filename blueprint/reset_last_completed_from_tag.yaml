@@ -31,7 +31,8 @@ actions:
   - action: logbook.log
     data_template:
       name: Maint
-      message: 'Resetting {{ task }} beacuse tag {{ tag }} was scanned'
+      message: |
+        Resetting {{ task }} beacuse tag {{ tag }} was scanned
   - action: maint.reset_last_completed
     target:
       entity_id: '{{ task }}'
