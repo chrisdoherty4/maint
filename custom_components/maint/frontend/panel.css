@@ -43,7 +43,7 @@ h1 {
 }
 section {
   background: var(--card-background-color);
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid var(--divider-color);
   padding: 14px 20px;
   margin-bottom: 24px;
@@ -90,7 +90,7 @@ input,
 textarea {
   width: 100%;
   padding: 8px;
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid var(--divider-color);
   box-sizing: border-box;
   background: var(--card-background-color);
@@ -104,7 +104,7 @@ button {
   background-color: var(--primary-color);
   color: var(--text-primary-color);
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 10px 16px;
   cursor: pointer;
 }
@@ -224,7 +224,7 @@ maint-task-row + maint-task-row .task-row {
   background: var(--primary-color);
   color: var(--text-primary-color);
   border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 6px 10px;
   white-space: nowrap;
   font-size: 12px;
@@ -393,7 +393,7 @@ label {
   padding: 6px 0;
   box-sizing: border-box;
   min-width: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid var(--divider-color);
   background: var(--card-background-color);
   color: var(--primary-text-color);
@@ -531,7 +531,7 @@ h2 {
 }
 .modal {
   background: var(--card-background-color);
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid var(--divider-color);
   padding: 20px;
   max-width: 420px;
@@ -559,7 +559,7 @@ h2 {
   background-color: var(--card-background-color);
   color: var(--primary-text-color);
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 10px 16px;
   cursor: pointer;
   border: 1px solid var(--divider-color);
@@ -568,7 +568,7 @@ h2 {
   background-color: var(--error-color);
   color: var(--text-primary-color);
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 10px 16px;
   cursor: pointer;
 }

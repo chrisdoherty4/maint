@@ -15,10 +15,13 @@
 @text-on-primary: var(--text-primary-color);
 @warning-color: var(--warning-color);
 @error-color: var(--error-color);
+@radius-large: 10px;
+@radius-medium: 6px;
+@radius-small: 4px;
 
 .card-surface(@padding: 14px 20px) {
   background: @card-bg;
-  border-radius: 12px;
+  border-radius: @radius-large;
   border: 1px solid @divider-color;
   padding: @padding;
 }
@@ -26,7 +29,7 @@
 .form-control() {
   width: 100%;
   padding: 8px;
-  border-radius: 8px;
+  border-radius: @radius-medium;
   border: 1px solid @divider-color;
   box-sizing: border-box;
   background: @card-bg;
@@ -37,7 +40,7 @@
   background-color: @bg;
   color: @color;
   border: none;
-  border-radius: 8px;
+  border-radius: @radius-medium;
   padding: 10px 16px;
   cursor: pointer;
 }
@@ -296,7 +299,7 @@ maint-task-row+maint-task-row {
     background: @primary-color;
     color: @text-on-primary;
     border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
+    border-radius: @radius-medium;
     padding: 6px 10px;
     white-space: nowrap;
     font-size: 12px;
@@ -454,7 +457,7 @@ label {
     padding: 12px;
     background: @card-bg;
     border: 1px solid @divider-color;
-    border-radius: 10px;
+    border-radius: @radius-large;
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
     width: 260px;
     z-index: 5;
@@ -496,7 +499,7 @@ label {
     padding: 6px 0;
     box-sizing: border-box;
     min-width: 0;
-    border-radius: 8px;
+    border-radius: @radius-medium;
     border: 1px solid @divider-color;
     background: @card-bg;
     color: @primary-text;
@@ -622,7 +625,7 @@ label {
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  border-radius: 10px;
+  border-radius: @radius-large;
   border: 1px solid @divider-color;
   background: @card-bg;
   margin: 2px 6px 6px 0;
