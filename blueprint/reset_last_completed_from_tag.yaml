@@ -25,7 +25,6 @@ conditions:
     value_template: "{{ trigger.event.data.tag_id == tag }}"
 
 actions:
-  - condition:
   - action: maint.reset_last_completed
     target:
       entity_id: !input task
