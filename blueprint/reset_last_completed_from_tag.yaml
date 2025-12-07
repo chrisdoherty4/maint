@@ -25,6 +25,14 @@ conditions:
     value_template: "{{ trigger.event.data.tag_id == tag }}"
 
 actions:
+  - variables:
+      tag: !input tag
+      task: !input task
+  - action: logbook.log
+    data_template:
+      name: Maint
+      message: >
+        Resetting {% task %} beacuse tag {% tag %} was scanned
   - action: maint.reset_last_completed
     target:
       entity_id: !input task
