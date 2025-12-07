@@ -32,7 +32,7 @@ actions:
     data_template:
       name: Maint
       message: >
-        Resetting {% task %} beacuse tag {% tag %} was scanned
+        Resetting {{ task }} beacuse tag {{ tag }} was scanned
   - action: maint.reset_last_completed
     target:
-      entity_id: !input task
+      entity_id: '{{ task }}'
