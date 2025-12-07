@@ -64,9 +64,10 @@ Lint commands:
 
 - `make lint`: lint both frontend and backend
 - `make lint-frontend`: lint the frontend only
+- `make lint-frontend-less`: lint the LeSS only
 - `make lint-backend`: lint the backend only
 
-Fix all lint issues.
+Run the relevant linters for the code that has changed. Fix all lint issues.
 
 ### Python
 

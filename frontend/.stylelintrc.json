@@ -1,0 +1,24 @@
+{
+  "extends": [
+    "stylelint-config-standard-less"
+  ],
+  "plugins": [
+    "stylelint-less"
+  ],
+  "rules": {
+    "alpha-value-notation": "number",
+    "color-function-notation": "legacy",
+    "media-feature-range-notation": "prefix",
+    "no-descending-specificity": null,
+    "declaration-empty-line-before": null,
+    "selector-type-no-unknown": [
+      true,
+      {
+        "ignoreTypes": [
+          "/^ha-/",
+          "/^maint-/"
+        ]
+      }
+    ]
+  }
+}

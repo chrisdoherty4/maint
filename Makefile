@@ -3,7 +3,7 @@ FRONTEND_DIR := frontend
 
 .DEFAULT_GOAL := help
 
-.PHONY: help setup deps deps-backend deps-frontend build-frontend build-frontend-less lint lint-backend lint-frontend test test-backend test-frontend develop
+.PHONY: help setup deps deps-backend deps-frontend build-frontend build-frontend-less lint lint-backend lint-frontend lint-frontend-less test test-backend test-frontend develop
 
 # Show available targets and their descriptions.
 help:
@@ -42,9 +42,13 @@ lint-backend: deps-backend
 	$(PYTHON) -m ruff format . --check
 	$(PYTHON) -m ruff check .
 
-# Lint frontend with ESLint.
+# Lint frontend TypeScript and LeSS assets.
 lint-frontend: deps-frontend
 	cd $(FRONTEND_DIR) && npm run lint
+
+# Lint frontend LeSS with Stylelint.
+lint-frontend-less: deps-frontend
+	cd $(FRONTEND_DIR) && npm run lint:less
 
 # Run backend and frontend tests.
 test: test-backend test-frontend
