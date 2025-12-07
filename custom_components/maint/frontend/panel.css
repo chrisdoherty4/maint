@@ -23,16 +23,16 @@ h1 {
 .page-header h1 {
   margin: 0;
 }
+.page-header button {
+  margin-left: auto;
+  align-self: center;
+}
 .title-block {
   display: flex;
   flex-direction: column;
   gap: 6px;
   flex: 1;
   min-width: 240px;
-}
-.page-header button {
-  margin-left: auto;
-  align-self: center;
 }
 .subtext {
   color: var(--secondary-text-color);
@@ -63,9 +63,6 @@ section {
   margin: 0;
   flex: 1;
 }
-.tasks-create-button {
-  margin-left: auto;
-}
 .tasks-section-divider {
   height: 1px;
   width: 100%;
@@ -78,6 +75,9 @@ section {
 .tasks-section-empty {
   margin: 0;
   padding: 14px 20px;
+}
+.tasks-create-button {
+  margin-left: auto;
 }
 select,
 input,
@@ -160,6 +160,7 @@ maint-task-row + maint-task-row .task-row {
   font-weight: 700;
   color: var(--text-primary-color);
   line-height: 1;
+  background: var(--primary-color);
 }
 .pill-due {
   background: var(--warning-color);
@@ -269,6 +270,9 @@ maint-task-row + maint-task-row .task-row {
   flex-direction: column;
   gap: 10px;
 }
+.task-form > div.form-row {
+  width: 100%;
+}
 label {
   display: block;
   margin-bottom: 0;
@@ -280,9 +284,6 @@ label {
   display: block;
   font-weight: 600;
   margin-bottom: 6px;
-}
-.task-form > div.form-row {
-  width: 100%;
 }
 .grid-two-up {
   display: grid;
@@ -458,13 +459,13 @@ label {
 .optional-config[open] summary::before {
   content: "▼";
 }
-.optional-body {
+.optional-config .optional-body {
   margin-top: 12px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-.optional-body label {
+.optional-config .optional-body label {
   display: block;
 }
 .help-text {
@@ -530,8 +531,8 @@ h2 {
 }
 .modal {
   background: var(--card-background-color);
-  border: 1px solid var(--divider-color);
   border-radius: 12px;
+  border: 1px solid var(--divider-color);
   padding: 20px;
   max-width: 420px;
   width: calc(100% - 32px);
@@ -549,19 +550,27 @@ h2 {
   margin: 0 0 16px;
   color: var(--secondary-text-color);
 }
-.modal-actions {
+.modal .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
 }
 .button-secondary {
-  background: none;
+  background-color: var(--card-background-color);
   color: var(--primary-text-color);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
   border: 1px solid var(--divider-color);
 }
 .button-danger {
-  background: var(--error-color);
+  background-color: var(--error-color);
   color: var(--text-primary-color);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
 }
 @media (max-width: 720px) {
   :host {
