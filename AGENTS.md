@@ -2,9 +2,9 @@
 
 ## Overview
 
-This repository is a Home Assistant integration built as a custom component. It is installed using
+This repository is a Home Assistant integration built as a custom component. It's installed using
 [HACS](https://www.hacs.xyz/). The integration is composed of a backend and frontend. It is used
-for managing home maintenance tasks.
+for managing recurring home maintenance tasks.
 
 ## Repository Layout
 
@@ -36,8 +36,8 @@ standard translation specification. They are used by the frontend only.
 
 ### Environment
 
-Development typically happens inside a devcontainer. While developing you may need additional
-tooling. Ask to install additional tooling via the `.devcontainer.json`.
+Development happens inside a devcontainer. If you need additional tooling, ask the user if you can
+modify the `/.devcontainer.json` to add the feature.
 
 ### Coding Philosophy
 
@@ -45,24 +45,36 @@ Prioritize clean code:
 
 - Clarify over cleverness - make it easy for humans to read
 - Single Responsibility Principal - units of code should have 1 reason to change
-- Separation of Concerns - code should have a clean separation; e.g. business logic != persistence logic
+- Separation of Concerns - code should have a clean separation; e.g. business logic separate from
+  persistence logic
 - Testable - code is written so its easy to test
 
-Code should follow a hexagonal architecture. Avoid packages/module names such as common, util and
-const. Instead focus on colocating code based on the feature or capability it belongs to.
+Code should follow a hexagonal architecture. Avoid packages/module names like common, util and
+const. Focus on colocating code based on the feature or capability it relates to.
 
-Do not implement any changes without sharing your proposal. This includes refactors, styling changes,
-and new functionality. Include a summary where you explain the problem back to the user and provide
-an overview of your proposed changes. Additionally include a details section with specifics on what
-you plan to do.
+Before making changes to the code, make a proposal with an overview and details of what you plan
+to change.
 
 ### Testing & Linting
 
-Write tests that focus on the public API of classes, modules and packages. Update existing tests
-when refactoring and add new tests for new functionality. Run the tests with `make test` and fix
-any issues they find.
+Write tests that focus on the public API of classes, modules, and packages. When refactoring update
+existing tests. Add new tests for new code.
 
-Once you've finished making changes find and fix lint issues with `make lint`.
+Test commands:
+
+- `make test`: run both backend and frontend tests
+- `make test-frontend`: run frontend tests only
+- `make test-backend`: run backend tests only
+
+Run the relevant tests for the code that has changed. Fix all test issues.
+
+Lint commands:
+
+- `make lint`: lint both frontend and backend
+- `make lint-frontend`: lint the frontend only
+- `make lint-backend`: lint the backend only
+
+Fix all lint issues.
 
 ### Python
 
@@ -70,8 +82,8 @@ Use type hints for all variables, parameters and return values. Include adequete
 
 ### TypeScript
 
-Always use TypeScript and compile down to JavaScript. Assign real types to variables - i.e. avoid
-the `unknown` type.
+Always use TypeScript for the frontend, it will be compiled down to JavaScript. Assign real types to
+variables - i.e. avoid the `unknown` type.
 
 ### CSS
 
@@ -79,23 +91,22 @@ When making CSS only changes do not run tests or build the frontend.
 
 ## Translations
 
-Translations should be used when implemented features that have user facing text. The translations
-directories contain JSON files with country codes corresponding to the translation. When adding
-translation strings ensure all translation files are updated.
+All user facing text should have translations. Translation files are named with the country code they
+correspond to. When adding translation strings ensure all translation files are updated.
 
-To add a new translation create a new JSON file for both backend and frontend translations. Use
+To add a new language create a new JSON file for both backend and frontend translations. Use
 English as the source language to translate. Update the README to reflect the list of supported
 languages.
 
 ## README.md
 
-The README exists to market the integration to readers. It contains a list of features. Ensure the
-features are updated when a new feature is added. The feature list should include a concise summary
-of features and only reference what the user interacts with - do not include implementation detail.
-
 The README is always in the present tense - do not use terminology like "Maint currently".
 
-Maintain the optional configuration with all the options available for Maint and what they do.
+The README exists to market the integration to readers. When adding a new feature update the feature
+list with a concise summary. Only include details of user facing functionality - avoid implementation
+detail.
+
+Update the optional configuration notes with concicse summary of optional settings.
 
 ## Temporary Constraints
 
