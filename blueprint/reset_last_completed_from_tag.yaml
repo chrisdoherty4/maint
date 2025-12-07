@@ -1,0 +1,29 @@
+blueprint:
+  name: "Maint Reset Task (v0.5.3)"
+  description: "Reset the last completed date of maintenance tasks."
+  domain: automation
+  input:
+    tag:
+      name: "Tag"
+      description: "The NFC tag ID to trigger the reset."
+      selector:
+        text:
+    task:
+      name: "Task"
+      description: "The binary sensor for the target task."
+      selector:
+        entity:
+          domain: binary_sensor
+          integration: maint
+
+triggers:
+  - trigger: event
+    event_type: tag_scanned
+
+conditions:
+  - "{{ trigger.event.data.tag_id == tag }}"
+
+actions:
+  - action: maint.reset_last_completed
+    target:
+      entity_id: '{{ task }}'
