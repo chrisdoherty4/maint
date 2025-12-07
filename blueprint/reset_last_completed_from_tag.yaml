@@ -22,9 +22,10 @@ triggers:
 
 conditions:
   - condition: template
-    value_template: "{{ trigger.event.data.tag_id == !input tag }}"
+    value_template: "{{ trigger.event.data.tag_id == tag }}"
 
 actions:
+  - condition:
   - action: maint.reset_last_completed
     target:
-      entity_id: '{{ !input task }}'
+      entity_id: !input task
