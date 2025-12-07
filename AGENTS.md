@@ -8,29 +8,21 @@ for managing recurring home maintenance tasks.
 
 ## Repository Layout
 
-`/custom_components/maint` contains the integration backend written in Python.
-
-`/tests` contains the backend tests.
-
-`/frontend/src` contains the integrations frontend written in TypeScript.
-
-`/frontend/tests` contains the frontend tests.
-
-`/custom_components/maint/frontend` contains the compiled frontend sources - they are JavaScript and CSS.
-
-`/custom_components/maint/translations` contains standard translations that satisfy Home Assistant
-expectations (https://developers.home-assistant.io/docs/internationalization/core).
-
-`/frontend/translations` contains the frontend specific translations that do not fit into the
-standard translation specification. They are used by the frontend only.
-
-`/brand` contains logo's and icons.
-
-`/scripts` contains helper scripts - it should be used sparingly since we use Make.
-
-`/config` contains Home Assistant configuration used for launching a local Home Assistant instance.
-
-`/.github` contains GitHub actions workflows and other configuration.
+- `/custom_components/maint`: integration backend written in Python
+  - `/frontend`: compiled frontend sources - JavaScript and CSS
+  - `/translations`: standard translations that satisfy Home Assistant expectations
+    (https://developers.home-assistant.io/docs/internationalization/core)
+- `/tests`: backend tests
+- `/frontend`: frontend configuration like npm configs etc
+  - `/src`: the integrations frontend written in TypeScript
+  - `/less`: LeSS stylesheets for the maint panel
+  - `/tests`: frontend tests
+  - `/translations`: frontend specific translations that do not fit into the
+    standard translation specification; they are used by the frontend only
+- `/brand`: logo's and icons
+- `/scripts`: helper scripts - it should be used sparingly since we use Make
+- `/config`: Home Assistant configuration used for launching a local Home Assistant instance
+- `/.github`: GitHub configuration
 
 ## Development
 
@@ -85,8 +77,9 @@ Use type hints for all variables, parameters and return values. Include adequete
 Always use TypeScript for the frontend, it will be compiled down to JavaScript. Assign real types to
 variables - i.e. avoid the `unknown` type.
 
-### CSS
+### LeSS/CSS
 
+We write frontend styles in LeSS. It is compiled into CSS using the `make build-frontend-less`.
 When making CSS only changes do not run tests or build the frontend.
 
 ## Translations

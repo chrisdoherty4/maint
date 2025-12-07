@@ -3,7 +3,7 @@ FRONTEND_DIR := frontend
 
 .DEFAULT_GOAL := help
 
-.PHONY: help setup deps deps-backend deps-frontend build-frontend lint lint-backend lint-frontend test test-backend test-frontend develop
+.PHONY: help setup deps deps-backend deps-frontend build-frontend build-frontend-less lint lint-backend lint-frontend test test-backend test-frontend develop
 
 # Show available targets and their descriptions.
 help:
@@ -27,8 +27,12 @@ deps-frontend:
 build: build-frontend
 
 # Build the frontend bundle.
-build-frontend: deps-frontend
+build-frontend: deps-frontend build-frontend-less
 	cd $(FRONTEND_DIR) && npm run build
+
+# Compile LESS assets for the frontend.
+build-frontend-less:
+	cd $(FRONTEND_DIR) && npm run build:less
 
 # Run all linters.
 lint: lint-backend lint-frontend

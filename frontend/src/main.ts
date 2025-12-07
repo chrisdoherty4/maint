@@ -16,9 +16,46 @@ import { DeleteTaskFeature, type DeleteFeatureState } from "./task/delete/featur
 import { TaskListController, type TaskListState } from "./task/list/controller.js";
 import { UpdateTaskFeature } from "./task/update/feature.js";
 import type { EditControllerState } from "./task/update/controller.js";
-import { styles } from "./styles.js";
 import { getUiTranslations } from "./translations.js";
 import "./task/update/view.js";
+
+const panelStylesUrl = new URL("./panel.css", import.meta.url);
+const supportsConstructableStylesheets =
+  typeof Document !== "undefined" &&
+  "adoptedStyleSheets" in Document.prototype &&
+  typeof CSSStyleSheet !== "undefined" &&
+  "replaceSync" in CSSStyleSheet.prototype;
+
+let panelStyleSheet: CSSStyleSheet | null = null;
+let panelStyleText: string | null = null;
+let panelStylesPromise: Promise<void> | null = null;
+
+const loadPanelStyles = async (): Promise<void> => {
+  if (!panelStylesPromise) {
+    panelStylesPromise = (async () => {
+      const response = await fetch(panelStylesUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to load panel styles: ${response.status}`);
+      }
+      const cssText = await response.text();
+      if (supportsConstructableStylesheets) {
+        const sheet = new CSSStyleSheet();
+        sheet.replaceSync(cssText);
+        panelStyleSheet = sheet;
+      } else {
+        panelStyleText = cssText;
+      }
+    })();
+  }
+
+  try {
+    await panelStylesPromise;
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("Unable to load Maint panel styles", error);
+    panelStylesPromise = null;
+  }
+};
 
 @customElement("maint-panel")
 export class MaintPanel extends LitElement {
@@ -44,6 +81,8 @@ export class MaintPanel extends LitElement {
   @state() private createState: CreateControllerState = this.createFeature.state;
   @state() private editState: EditControllerState = this.editFeature.state;
   @state() private deleteState: DeleteFeatureState = this.deleteFeature.state;
+
+  private panelStyleElement?: HTMLStyleElement;
 
   private initialized = false;
   private lastDateLocaleKey: string | null = null;
@@ -179,6 +218,11 @@ export class MaintPanel extends LitElement {
     super.disconnectedCallback();
   }
 
+  protected async firstUpdated(changedProps: PropertyValueMap<this>): Promise<void> {
+    await super.firstUpdated(changedProps);
+    await this.applyPanelStyles();
+  }
+
   private startBusy(): void {
     this.busyCounter += 1;
     this.busy = true;
@@ -187,6 +231,28 @@ export class MaintPanel extends LitElement {
   private stopBusy(): void {
     this.busyCounter = Math.max(0, this.busyCounter - 1);
     this.busy = this.busyCounter > 0;
+  }
+
+  private async applyPanelStyles(): Promise<void> {
+    await loadPanelStyles();
+    const root = this.renderRoot as ShadowRoot;
+    if (supportsConstructableStylesheets && panelStyleSheet) {
+      const sheets = root.adoptedStyleSheets ?? [];
+      if (!sheets.includes(panelStyleSheet)) {
+        root.adoptedStyleSheets = [...sheets, panelStyleSheet];
+      }
+      return;
+    }
+
+    if (!panelStyleText || this.panelStyleElement) {
+      return;
+    }
+
+    const style = document.createElement("style");
+    style.dataset.panelStyles = "true";
+    style.textContent = panelStyleText;
+    this.panelStyleElement = style;
+    root.append(style);
   }
 
   protected render() {
@@ -433,7 +499,6 @@ export class MaintPanel extends LitElement {
     return this.dataState.tasks.find((task) => task.task_id === this.deleteState.taskId)?.description ?? null;
   }
 
-  static styles = styles;
 }
 
 declare global {
