@@ -51,7 +51,6 @@ const loadPanelStyles = async (): Promise<void> => {
   try {
     await panelStylesPromise;
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error("Unable to load Maint panel styles", error);
     panelStylesPromise = null;
   }
@@ -309,14 +308,14 @@ export class MaintPanel extends LitElement {
       ${header}
       <div class="tasks-section-content">
         ${this.taskListFeature.render({
-          tasks: this.dataState.tasks,
-          hass: this.hass,
-          entryId: this.dataState.selectedEntryId ?? null,
-          busy: this.busy,
-          editing: Boolean(this.editState.taskId),
-          panelText: this.panelText.bind(this),
-          localizeText: this.localizeText.bind(this)
-        })}
+      tasks: this.dataState.tasks,
+      hass: this.hass,
+      entryId: this.dataState.selectedEntryId ?? null,
+      busy: this.busy,
+      editing: Boolean(this.editState.taskId),
+      panelText: this.panelText.bind(this),
+      localizeText: this.localizeText.bind(this)
+    })}
       </div>
     </section>`;
   }

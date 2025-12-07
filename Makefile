@@ -46,6 +46,10 @@ lint-backend: deps-backend
 lint-frontend: deps-frontend
 	cd $(FRONTEND_DIR) && npm run lint
 
+# Lint frontend TypeScript.
+lint-frontend-ts: deps-frontend
+	cd $(FRONTEND_DIR) && npm run lint:ts
+
 # Lint frontend LeSS with Stylelint.
 lint-frontend-less: deps-frontend
 	cd $(FRONTEND_DIR) && npm run lint:less
