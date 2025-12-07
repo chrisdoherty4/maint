@@ -1,7 +1,6 @@
 import { html } from "lit";
 
 import type { Recurrence, RecurrenceType } from "../index.js";
-import "./styles.css";
 
 export interface RecurrenceFormState {
   recurrence_type: RecurrenceType;
@@ -80,15 +79,21 @@ export const renderRecurrenceFields = (
     return html`
       <div class="weekly-inline form-row grid-two-up" data-recurrence-type="weekly" @change=${onChange}>
         <label class="weekly-every">
-          <span class="label-text">${t(localize, "component.maint.panel.fields.weekly_every", "Every N weeks")}</span>
-          <input
-            type="number"
-            name="weekly_every"
-            min="1"
-            required
-            .value=${weeklyEvery}
-            ?disabled=${disabled}
-          />
+          <span class="label-text">${t(localize, "component.maint.panel.fields.every", "Every")}</span>
+          <div class="weekly-every-input">
+            <input
+              class="weekly-every-field"
+              type="number"
+              name="weekly_every"
+              min="1"
+              required
+              .value=${weeklyEvery}
+              ?disabled=${disabled}
+            />
+            <span class="weeks-suffix">
+              ${t(localize, "component.maint.panel.fields.weeks_suffix", "week(s)")}
+            </span>
+          </div>
         </label>
         <div class="weekday-selection">
           <span class="label-text weekday-row-label">

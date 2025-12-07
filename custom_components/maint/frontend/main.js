@@ -1161,15 +1161,21 @@ var renderRecurrenceFields = (type, recurrence, form, localize, disabled, onChan
     return x`
       <div class="weekly-inline form-row grid-two-up" data-recurrence-type="weekly" @change=${onChange}>
         <label class="weekly-every">
-          <span class="label-text">${t4(localize, "component.maint.panel.fields.weekly_every", "Every N weeks")}</span>
-          <input
-            type="number"
-            name="weekly_every"
-            min="1"
-            required
-            .value=${weeklyEvery}
-            ?disabled=${disabled}
-          />
+          <span class="label-text">${t4(localize, "component.maint.panel.fields.every", "Every")}</span>
+          <div class="weekly-every-input">
+            <input
+              class="weekly-every-field"
+              type="number"
+              name="weekly_every"
+              min="1"
+              required
+              .value=${weeklyEvery}
+              ?disabled=${disabled}
+            />
+            <span class="weeks-suffix">
+              ${t4(localize, "component.maint.panel.fields.weeks_suffix", "week(s)")}
+            </span>
+          </div>
         </label>
         <div class="weekday-selection">
           <span class="label-text weekday-row-label">
@@ -3228,6 +3234,56 @@ var styles = i`
     width: 100%;
   }
 
+  .weekly-inline {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    width: 100%;
+  }
+
+  .weekly-every {
+    flex: 0 0 auto;
+    min-width: 150px;
+  }
+
+  .weekly-every-input {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .weekly-every-field {
+    width: 100%;
+  }
+
+  .weeks-suffix {
+    white-space: nowrap;
+    color: var(--secondary-text-color);
+  }
+
+  .weekday-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    flex: 1 1 auto;
+  }
+
+  .weekday-row-label {
+    font-weight: 600;
+  }
+
+  .weekday-row {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    flex: 0 0 auto;
+  }
+
   .date-input-wrapper {
     display: grid;
     grid-template-columns: 1fr auto;
@@ -3563,6 +3619,26 @@ var styles = i`
       margin-left: auto;
     }
 
+    .weekly-inline {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .weekly-every {
+      flex: 1 1 auto;
+      max-width: none;
+      min-width: 0;
+    }
+
+    .weekday-selection {
+      width: 100%;
+    }
+
+    .weekday-row {
+      width: 100%;
+      justify-content: flex-start;
+    }
+
     .modal {
       border-radius: 0;
       max-width: none;
@@ -3611,8 +3687,8 @@ var de_default = {
       icon: "Verwende einen Home Assistant Icon-Namen wie mdi:check-circle-outline."
     },
     recurrence_options: {
-      interval: "Alle N",
-      weekly: "Wochentage",
+      interval: "Intervall",
+      weekly: "W\xF6chentliches Muster",
       units: {
         days: "Tage",
         weeks: "Wochen",
@@ -3673,13 +3749,13 @@ var de_default = {
       month_other: "Monate"
     },
     weekday_full: {
-      "0": "Montag",
-      "1": "Dienstag",
-      "2": "Mittwoch",
-      "3": "Donnerstag",
-      "4": "Freitag",
-      "5": "Samstag",
-      "6": "Sonntag"
+      "0": "Mo",
+      "1": "Di",
+      "2": "Mi",
+      "3": "Do",
+      "4": "Fr",
+      "5": "Sa",
+      "6": "So"
     },
     weekday_short: {
       "0": "Mo",
@@ -3726,8 +3802,8 @@ var en_default = {
       icon: "Use a Home Assistant icon name such as mdi:check-circle-outline."
     },
     recurrence_options: {
-      interval: "Every N",
-      weekly: "Days of the week",
+      interval: "Interval",
+      weekly: "Weekly pattern",
       units: {
         days: "Days",
         weeks: "Weeks",
@@ -3788,13 +3864,13 @@ var en_default = {
       month_other: "months"
     },
     weekday_full: {
-      "0": "Monday",
-      "1": "Tuesday",
-      "2": "Wednesday",
-      "3": "Thursday",
-      "4": "Friday",
-      "5": "Saturday",
-      "6": "Sunday"
+      "0": "Mon",
+      "1": "Tue",
+      "2": "Wed",
+      "3": "Thu",
+      "4": "Fri",
+      "5": "Sat",
+      "6": "Sun"
     },
     weekday_short: {
       "0": "Mon",
@@ -3841,8 +3917,8 @@ var es_default = {
       icon: "Usa un nombre de icono de Home Assistant como mdi:check-circle-outline."
     },
     recurrence_options: {
-      interval: "Cada N",
-      weekly: "D\xEDas de la semana",
+      interval: "Intervalo",
+      weekly: "Patr\xF3n semanal",
       units: {
         days: "D\xEDas",
         weeks: "Semanas",
@@ -3903,13 +3979,13 @@ var es_default = {
       month_other: "meses"
     },
     weekday_full: {
-      "0": "Lunes",
-      "1": "Martes",
-      "2": "Mi\xE9rcoles",
-      "3": "Jueves",
-      "4": "Viernes",
-      "5": "S\xE1bado",
-      "6": "Domingo"
+      "0": "Lun",
+      "1": "Mar",
+      "2": "Mi\xE9",
+      "3": "Jue",
+      "4": "Vie",
+      "5": "S\xE1b",
+      "6": "Dom"
     },
     weekday_short: {
       "0": "Lun",
@@ -3956,8 +4032,8 @@ var fr_default = {
       icon: "Utilisez un nom d'ic\xF4ne Home Assistant comme mdi:check-circle-outline."
     },
     recurrence_options: {
-      interval: "Chaque N",
-      weekly: "Jours de la semaine",
+      interval: "Intervalle",
+      weekly: "Mod\xE8le hebdomadaire",
       units: {
         days: "Jours",
         weeks: "Semaines",
@@ -4018,13 +4094,13 @@ var fr_default = {
       month_other: "mois"
     },
     weekday_full: {
-      "0": "Lundi",
-      "1": "Mardi",
-      "2": "Mercredi",
-      "3": "Jeudi",
-      "4": "Vendredi",
-      "5": "Samedi",
-      "6": "Dimanche"
+      "0": "Lun",
+      "1": "Mar",
+      "2": "Mer",
+      "3": "Jeu",
+      "4": "Ven",
+      "5": "Sam",
+      "6": "Dim"
     },
     weekday_short: {
       "0": "Lun",
@@ -4071,8 +4147,8 @@ var nl_default = {
       icon: "Gebruik een Home Assistant-pictogramnaam zoals mdi:check-circle-outline."
     },
     recurrence_options: {
-      interval: "Elke N",
-      weekly: "Dagen van de week",
+      interval: "Interval",
+      weekly: "Wekelijks patroon",
       units: {
         days: "Dagen",
         weeks: "Weken",
@@ -4133,13 +4209,13 @@ var nl_default = {
       month_other: "maanden"
     },
     weekday_full: {
-      "0": "Maandag",
-      "1": "Dinsdag",
-      "2": "Woensdag",
-      "3": "Donderdag",
-      "4": "Vrijdag",
-      "5": "Zaterdag",
-      "6": "Zondag"
+      "0": "Ma",
+      "1": "Di",
+      "2": "Wo",
+      "3": "Do",
+      "4": "Vr",
+      "5": "Za",
+      "6": "Zo"
     },
     weekday_short: {
       "0": "Ma",
@@ -4188,8 +4264,8 @@ var pt_default = {
       icon: "Use um nome de \xEDcone do Home Assistant, como mdi:check-circle-outline."
     },
     recurrence_options: {
-      interval: "A cada N",
-      weekly: "Dias da semana",
+      interval: "Intervalo",
+      weekly: "Padr\xE3o semanal",
       units: {
         days: "Dias",
         weeks: "Semanas",
@@ -4248,13 +4324,13 @@ var pt_default = {
       month_other: "meses"
     },
     weekday_full: {
-      "0": "Segunda-feira",
-      "1": "Ter\xE7a-feira",
-      "2": "Quarta-feira",
-      "3": "Quinta-feira",
-      "4": "Sexta-feira",
-      "5": "S\xE1bado",
-      "6": "Domingo"
+      "0": "Seg",
+      "1": "Ter",
+      "2": "Qua",
+      "3": "Qui",
+      "4": "Sex",
+      "5": "S\xE1b",
+      "6": "Dom"
     },
     weekday_short: {
       "0": "Seg",

@@ -41,8 +41,8 @@ binary sensor for every task, keeps the schedule in sync through the UI and webs
    more than one configured.
 2) Create tasks from the form at the top of the panel. Give the task a description, set the date it
    was last completed (used as the starting point), and pick a schedule:
-   - **Every N**: choose a number of days, weeks, or months between occurrences.
-   - **Days of the week**: pick one or more weekdays and how many weeks apart to repeat them.
+   - **Interval**: choose how many days, weeks, or months between occurrences.
+   - **Weekly pattern**: pick one or more weekdays and how many weeks apart to repeat them.
 3) Manage tasks from the list:
    - *Mark complete* updates the task’s `last_completed` date to today so the next due date advances.
    - *Edit* lets you change the description, schedule, or last completed date.

@@ -30,8 +30,8 @@
       "icon": "Usa un nombre de icono de Home Assistant como mdi:check-circle-outline."
     },
     "recurrence_options": {
-      "interval": "Cada N",
-      "weekly": "Días de la semana",
+      "interval": "Intervalo",
+      "weekly": "Patrón semanal",
       "units": {
         "days": "Días",
         "weeks": "Semanas",
@@ -92,13 +92,13 @@
       "month_other": "meses"
     },
     "weekday_full": {
-      "0": "Lunes",
-      "1": "Martes",
-      "2": "Miércoles",
-      "3": "Jueves",
-      "4": "Viernes",
-      "5": "Sábado",
-      "6": "Domingo"
+      "0": "Lun",
+      "1": "Mar",
+      "2": "Mié",
+      "3": "Jue",
+      "4": "Vie",
+      "5": "Sáb",
+      "6": "Dom"
     },
     "weekday_short": {
       "0": "Lun",

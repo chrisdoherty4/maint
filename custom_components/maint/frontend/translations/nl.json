@@ -30,8 +30,8 @@
       "icon": "Gebruik een Home Assistant-pictogramnaam zoals mdi:check-circle-outline."
     },
     "recurrence_options": {
-      "interval": "Elke N",
-      "weekly": "Dagen van de week",
+      "interval": "Interval",
+      "weekly": "Wekelijks patroon",
       "units": {
         "days": "Dagen",
         "weeks": "Weken",
@@ -92,13 +92,13 @@
       "month_other": "maanden"
     },
     "weekday_full": {
-      "0": "Maandag",
-      "1": "Dinsdag",
-      "2": "Woensdag",
-      "3": "Donderdag",
-      "4": "Vrijdag",
-      "5": "Zaterdag",
-      "6": "Zondag"
+      "0": "Ma",
+      "1": "Di",
+      "2": "Wo",
+      "3": "Do",
+      "4": "Vr",
+      "5": "Za",
+      "6": "Zo"
     },
     "weekday_short": {
       "0": "Ma",

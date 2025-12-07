@@ -73,7 +73,9 @@ Use type hints for all variables, parameters and return values. Include adequete
 Always use TypeScript and compile down to JavaScript. Assign real types to variables - i.e. avoid
 the `unknown` type.
 
-The TypeScript should be built with `make build-frontend` as an initial sanity check before testing.
+### CSS
+
+When making CSS only changes do not run tests or build the frontend.
 
 ## Translations
 

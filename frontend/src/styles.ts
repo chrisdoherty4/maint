@@ -345,6 +345,56 @@ export const styles = css`
     width: 100%;
   }
 
+  .weekly-inline {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    width: 100%;
+  }
+
+  .weekly-every {
+    flex: 0 0 auto;
+    min-width: 150px;
+  }
+
+  .weekly-every-input {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .weekly-every-field {
+    width: 100%;
+  }
+
+  .weeks-suffix {
+    white-space: nowrap;
+    color: var(--secondary-text-color);
+  }
+
+  .weekday-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    flex: 1 1 auto;
+  }
+
+  .weekday-row-label {
+    font-weight: 600;
+  }
+
+  .weekday-row {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    flex: 0 0 auto;
+  }
+
   .date-input-wrapper {
     display: grid;
     grid-template-columns: 1fr auto;
@@ -678,6 +728,26 @@ export const styles = css`
 
     .action-buttons {
       margin-left: auto;
+    }
+
+    .weekly-inline {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .weekly-every {
+      flex: 1 1 auto;
+      max-width: none;
+      min-width: 0;
+    }
+
+    .weekday-selection {
+      width: 100%;
+    }
+
+    .weekday-row {
+      width: 100%;
+      justify-content: flex-start;
     }
 
     .modal {

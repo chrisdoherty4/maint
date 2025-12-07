@@ -11,6 +11,19 @@
   max-width: 220px;
   min-width: 140px;
 }
+.weekly-every-input {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  width: 4.25rem;
+}
+.weeks-suffix {
+  position: absolute;
+  right: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--secondary-text-color);
+  pointer-events: none;
+}
 .weekday-row {
   display: flex;
   gap: 0.4rem;
