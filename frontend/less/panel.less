@@ -326,6 +326,7 @@ maint-task-row+maint-task-row {
 
   &:hover,
   &:focus-visible {
+
     &::after,
     &::before {
       opacity: 1;
@@ -422,12 +423,12 @@ label {
 
 .weekday-row {
   display: flex;
-  gap: 0.4rem;
   flex-wrap: wrap;
   align-items: center;
   width: 100%;
   min-width: 0;
   flex: 0 0 auto;
+  gap: 5px;
 }
 
 .date-input-wrapper {
@@ -591,7 +592,7 @@ label {
 }
 
 .help-text {
-  margin: 0;
+  margin-top: 5px;
   font-size: 0.9rem;
   color: @secondary-text;
 }
@@ -628,7 +629,6 @@ label {
   border-radius: @radius-large;
   border: 1px solid @divider-color;
   background: @card-bg;
-  margin: 2px 6px 6px 0;
 
   input {
     width: auto;
@@ -676,11 +676,6 @@ h2 {
   h3 {
     margin: 0 0 8px;
     font-size: 18px;
-  }
-
-  p {
-    margin: 0 0 16px;
-    color: @secondary-text;
   }
 
   .modal-actions {
@@ -764,7 +759,6 @@ h2 {
 
   .weekly-inline {
     flex-direction: column;
-    gap: 0.5rem;
   }
 
   .weekly-every {

@@ -326,12 +326,12 @@ label {
 }
 .weekday-row {
   display: flex;
-  gap: 0.4rem;
   flex-wrap: wrap;
   align-items: center;
   width: 100%;
   min-width: 0;
   flex: 0 0 auto;
+  gap: 5px;
 }
 .date-input-wrapper {
   display: grid;
@@ -469,7 +469,7 @@ label {
   display: block;
 }
 .help-text {
-  margin: 0;
+  margin-top: 5px;
   font-size: 0.9rem;
   color: var(--secondary-text-color);
 }
@@ -501,7 +501,6 @@ label {
   border-radius: 10px;
   border: 1px solid var(--divider-color);
   background: var(--card-background-color);
-  margin: 2px 6px 6px 0;
 }
 .weekday-chip input {
   width: auto;
@@ -545,10 +544,6 @@ h2 {
 .modal h3 {
   margin: 0 0 8px;
   font-size: 18px;
-}
-.modal p {
-  margin: 0 0 16px;
-  color: var(--secondary-text-color);
 }
 .modal .modal-actions {
   display: flex;
@@ -626,7 +621,6 @@ h2 {
   }
   .weekly-inline {
     flex-direction: column;
-    gap: 0.5rem;
   }
   .weekly-every {
     flex: 1 1 auto;

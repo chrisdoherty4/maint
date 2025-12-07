@@ -42,10 +42,9 @@ Prioritize clean code:
 - Testable - code is written so its easy to test
 
 Code should follow a hexagonal architecture. Avoid packages/module names like common, util and
-const. Focus on colocating code based on the feature or capability it relates to.
+const. Focus on colocating code in the same module based on the feature or capability it relates to.
 
-Before making changes to the code, make a proposal with an overview and details of what you plan
-to change.
+Before making changes, make a proposal of what you plan to change.
 
 ### Testing & Linting
 
@@ -58,7 +57,7 @@ Test commands:
 - `make test-frontend`: run frontend tests only
 - `make test-backend`: run backend tests only
 
-Run the relevant tests for the code that has changed. Fix all test issues.
+After making changes run the relevant tests for the code that has changed. Fix all test issues.
 
 Lint commands:
 
@@ -67,7 +66,7 @@ Lint commands:
 - `make lint-frontend-less`: lint the LeSS only
 - `make lint-backend`: lint the backend only
 
-Run the relevant linters for the code that has changed. Fix all lint issues.
+After making changes run the relevant linters for the code that has changed. Fix all lint issues.
 
 ### Python
 
