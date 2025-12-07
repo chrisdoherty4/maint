@@ -21,9 +21,9 @@ triggers:
     event_type: tag_scanned
 
 conditions:
-  - "{{ trigger.event.data.tag_id == tag }}"
+  - "{{ trigger.event.data.tag_id == !input tag }}"
 
 actions:
   - action: maint.reset_last_completed
     target:
-      entity_id: '{{ task }}'
+      entity_id: '{{ !input task }}'
