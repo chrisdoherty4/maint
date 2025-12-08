@@ -30,7 +30,7 @@ actions:
       task: !input task
   - action: logbook.log
     data_template:
-      name: Maint
+      name: custom.automation
       message: |
         Resetting {{ task }} beacuse tag {{ tag }} was scanned
   - action: maint.reset_last_completed
