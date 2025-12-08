@@ -1,6 +1,7 @@
 ---
 name: "Question"
 description: "Ask a question about the integration"
+labels: question
 body:
 - type: markdown
   attributes:
