@@ -27,7 +27,8 @@ conditions:
 actions:
   - variables:
       tag: !input tag
-      task: !input task
+      task_input: !input task
+      task: '{{ task_input | string }}'
   - action: logbook.log
     data_template:
       name: custom.automation
