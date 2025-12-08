@@ -15,6 +15,11 @@ blueprint:
         entity:
           domain: binary_sensor
           integration: maint
+    task2:
+      name: "Task2"
+      description: "dsadsa."
+      selector:
+        text:
 
 triggers:
   - trigger: event
@@ -33,6 +38,9 @@ actions:
       name: custom.automation
       message: |
         Resetting {{ task }} beacuse tag {{ tag }} was scanned
-  - action: maint.reset_last_completed
-    data:
-      entity_id: !input task
+  - repeat:
+      for_each: '{{ task }}'
+      sequence:
+        - action: maint.reset_last_completed
+          data:
+            entity_id: "{{ repeat.item }}"
