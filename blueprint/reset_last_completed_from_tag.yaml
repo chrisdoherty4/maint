@@ -34,5 +34,5 @@ actions:
       message: |
         Resetting {{ task }} beacuse tag {{ tag }} was scanned
   - action: maint.reset_last_completed
-    target:
-      entity_id: '{{ task | string }}'
+    data:
+      entity_id: !input task
