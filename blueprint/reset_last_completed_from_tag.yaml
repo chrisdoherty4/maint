@@ -35,4 +35,4 @@ actions:
         Resetting {{ task }} beacuse tag {{ tag }} was scanned
   - action: maint.reset_last_completed
     target:
-      entity_id: '{{ task[0] }}'
+      entity_id: '{{ task }}'
