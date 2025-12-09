@@ -16,18 +16,21 @@
       "unit": "Einheit",
       "on": "Am",
       "weeks_suffix": "Woche(n)",
-      "icon": "Icon"
+      "icon": "Icon",
+      "labels": "Labels"
     },
     "placeholders": {
       "description_example": "Batterie Rauchmelder",
       "date": "tt/mm/jjjj",
-      "icon_example": "mdi:bed"
+      "icon_example": "mdi:bed",
+      "labels_example": "kitchen_filter, hvac"
     },
     "optional": {
       "heading": "Optionale Konfiguration"
     },
     "help": {
-      "icon": "Verwende einen Home Assistant Icon-Namen wie mdi:check-circle-outline."
+      "icon": "Verwende einen Home Assistant Icon-Namen wie mdi:check-circle-outline.",
+      "labels": "Gib vorhandene Home Assistant Label-IDs kommasepariert ein. Labels kannst du unter Einstellungen -> Geräte & Dienste -> Labels anlegen."
     },
     "recurrence_options": {
       "interval": "Intervall",

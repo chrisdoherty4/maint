@@ -57,6 +57,8 @@ TASK_LAST_COMPLETED_VALIDATION = cv.date
 TASK_RECURRENCE_KEY = "recurrence"
 TASK_ICON_KEY = "icon"
 TASK_ICON_VALIDATION = vol.Any(None, cv.string)
+TASK_LABELS_KEY = "labels"
+TASK_LABELS_VALIDATION = vol.All([cv.string])
 
 RECURRENCE_TYPE = vol.In(["interval", "weekly"])
 
@@ -146,6 +148,13 @@ def _normalized_icon(raw: str | None) -> str | None:
     return icon if icon else None
 
 
+def _normalized_labels(raw: list[str] | None) -> set[str] | None:
+    """Return trimmed label ids as a set when present."""
+    if raw is None:
+        return None
+    return {label.strip() for label in raw if label and label.strip()}
+
+
 def _task_icon(hass: HomeAssistant, entry_id: str, task_id: str) -> str | None:
     """Return the icon configured for a task's binary sensor."""
     registry = er.async_get(hass)
@@ -157,23 +166,44 @@ def _task_icon(hass: HomeAssistant, entry_id: str, task_id: str) -> str | None:
     return entity_entry.icon if entity_entry else None
 
 
+def _task_labels(hass: HomeAssistant, entry_id: str, task_id: str) -> list[str]:
+    """Return sorted labels assigned to the task's binary sensor."""
+    registry = er.async_get(hass)
+    unique_id = f"{entry_id}_{task_id}"
+    entity_id = registry.async_get_entity_id("binary_sensor", DOMAIN, unique_id)
+    if entity_id is None:
+        return []
+    entity_entry = registry.async_get(entity_id)
+    if not entity_entry or not entity_entry.labels:
+        return []
+    return sorted(entity_entry.labels)
+
+
 def _task_response(
     hass: HomeAssistant, entry: MaintConfigEntry, task: MaintTask
 ) -> dict[str, Any]:
     """Return websocket response payload including the current icon."""
     data = task.to_dict()
     data[TASK_ICON_KEY] = _task_icon(hass, entry.entry_id, task.task_id)
+    data[TASK_LABELS_KEY] = _task_labels(hass, entry.entry_id, task.task_id)
     return data
 
 
-def _apply_icon(
+def _apply_entity_customizations(
     hass: HomeAssistant,
     entry: MaintConfigEntry,
     task_id: str,
     description: str,
-    icon: str | None,
+    *,
+    icon: str | None = None,
+    icon_provided: bool = False,
+    labels: set[str] | None = None,
+    labels_provided: bool = False,
 ) -> None:
-    """Persist a task's icon to the entity registry."""
+    """Persist optional icon/label overrides to the entity registry."""
+    if not icon_provided and not labels_provided:
+        return
+
     registry = er.async_get(hass)
     unique_id = f"{entry.entry_id}_{task_id}"
     suggested_object_id = slugify(f"{entry.title}_{description}")
@@ -187,8 +217,20 @@ def _apply_icon(
     entity_id = entity_entry.entity_id
     if entity_id is None:
         entity_id = registry.async_get_entity_id("binary_sensor", DOMAIN, unique_id)
-    if entity_id and entity_entry.icon != icon:
-        registry.async_update_entity(entity_id, icon=icon)
+
+    if not entity_id:
+        return
+
+    updates: dict[str, Any] = {}
+    if icon_provided and entity_entry.icon != icon:
+        updates["icon"] = icon
+    if labels_provided:
+        normalized_labels = labels or set()
+        if entity_entry.labels != normalized_labels:
+            updates["labels"] = normalized_labels
+
+    if updates:
+        registry.async_update_entity(entity_id, **updates)
 
 
 @websocket_api.websocket_command(
@@ -226,6 +268,7 @@ async def websocket_list_tasks(
         vol.Required(TASK_LAST_COMPLETED_KEY): TASK_LAST_COMPLETED_VALIDATION,
         vol.Required(TASK_RECURRENCE_KEY): RECURRENCE_VALIDATION,
         vol.Optional(TASK_ICON_KEY): TASK_ICON_VALIDATION,
+        vol.Optional(TASK_LABELS_KEY): TASK_LABELS_VALIDATION,
     }
 )
 @websocket_api.async_response
@@ -241,14 +284,26 @@ async def websocket_create_task(
     recurrence = _parse_recurrence(msg[TASK_RECURRENCE_KEY])
     icon_provided = TASK_ICON_KEY in msg
     icon = _normalized_icon(msg.get(TASK_ICON_KEY) if icon_provided else None)
+    labels_provided = TASK_LABELS_KEY in msg
+    labels = _normalized_labels(
+        msg.get(TASK_LABELS_KEY) if labels_provided else None
+    )
     task = await store.async_create_task(
         entry.entry_id,
         description=msg[TASK_DESCRIPTION_KEY],
         last_completed=msg[TASK_LAST_COMPLETED_KEY],
         recurrence=recurrence,
     )
-    if icon_provided:
-        _apply_icon(hass, entry, task.task_id, task.description, icon)
+    _apply_entity_customizations(
+        hass,
+        entry,
+        task.task_id,
+        task.description,
+        icon=icon,
+        icon_provided=icon_provided,
+        labels=labels,
+        labels_provided=labels_provided,
+    )
     connection.send_result(msg["id"], _task_response(hass, entry, task))
     _LOGGER.debug(
         "Websocket created Maint task %s for entry %s",
@@ -266,6 +321,7 @@ async def websocket_create_task(
         vol.Required(TASK_LAST_COMPLETED_KEY): TASK_LAST_COMPLETED_VALIDATION,
         vol.Required(TASK_RECURRENCE_KEY): RECURRENCE_VALIDATION,
         vol.Optional(TASK_ICON_KEY): TASK_ICON_VALIDATION,
+        vol.Optional(TASK_LABELS_KEY): TASK_LABELS_VALIDATION,
     }
 )
 @websocket_api.async_response
@@ -283,6 +339,10 @@ async def websocket_update_task(
     recurrence = _parse_recurrence(msg[TASK_RECURRENCE_KEY])
     icon_provided = TASK_ICON_KEY in msg
     icon = _normalized_icon(msg.get(TASK_ICON_KEY) if icon_provided else None)
+    labels_provided = TASK_LABELS_KEY in msg
+    labels = _normalized_labels(
+        msg.get(TASK_LABELS_KEY) if labels_provided else None
+    )
 
     try:
         task = await store.async_update_task(
@@ -301,8 +361,16 @@ async def websocket_update_task(
         connection.send_error(msg["id"], "task_not_found", f"Task {task_id} not found")
         return
 
-    if icon_provided:
-        _apply_icon(hass, entry, task.task_id, task.description, icon)
+    _apply_entity_customizations(
+        hass,
+        entry,
+        task.task_id,
+        task.description,
+        icon=icon,
+        icon_provided=icon_provided,
+        labels=labels,
+        labels_provided=labels_provided,
+    )
 
     connection.send_result(msg["id"], _task_response(hass, entry, task))
     _LOGGER.debug(

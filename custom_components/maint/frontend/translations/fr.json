@@ -16,18 +16,21 @@
       "unit": "Unité",
       "on": "Le",
       "weeks_suffix": "semaine(s)",
-      "icon": "Icône"
+      "icon": "Icône",
+      "labels": "Étiquettes"
     },
     "placeholders": {
       "description_example": "Pile du détecteur de fumée",
       "date": "jj/mm/aaaa",
-      "icon_example": "mdi:bed"
+      "icon_example": "mdi:bed",
+      "labels_example": "kitchen_filter, hvac"
     },
     "optional": {
       "heading": "Configuration optionnelle"
     },
     "help": {
-      "icon": "Utilisez un nom d'icône Home Assistant comme mdi:check-circle-outline."
+      "icon": "Utilisez un nom d'icône Home Assistant comme mdi:check-circle-outline.",
+      "labels": "Saisissez des ID d'étiquettes Home Assistant séparés par des virgules. Créez-les via Paramètres -> Appareils et services -> Étiquettes."
     },
     "recurrence_options": {
       "interval": "Intervalle",

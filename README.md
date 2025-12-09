@@ -21,8 +21,8 @@ binary sensor for every task, keeps the schedule in sync through the UI and webs
   panel).
 - Automation hooks: `maint_task_due` event fires when a task becomes due with task metadata, and the
   `maint.reset_last_completed` service marks tasks complete (optionally backdated, default today).
-- Set binary_sensor custom icon (e.g., `mdi:check-circle-outline`) per task when creating or
-  editing.
+- Set binary_sensor custom icon (e.g., `mdi:check-circle-outline`) and Home Assistant labels per
+  task when creating or editing so entities stay organized.
 - Translations for English, French, Spanish, German, Dutch, and Portuguese. If you see incorrect
   translations please raise a pull request.
 

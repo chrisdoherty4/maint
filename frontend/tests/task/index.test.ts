@@ -30,6 +30,7 @@ describe("validateTaskFields", () => {
 
     expect(result.values?.recurrence).toEqual(interval);
     expect(result.values?.icon).toBe(DEFAULT_ICON);
+    expect(result.values?.labels).toEqual([]);
   });
 
   it("normalizes weekly recurrence and trims icon", () => {
@@ -47,6 +48,23 @@ describe("validateTaskFields", () => {
 
     expect(result.values?.recurrence).toEqual({ type: "weekly", every: 2, days: [1, 5] });
     expect(result.values?.icon).toBe("mdi:water");
+    expect(result.values?.labels).toEqual([]);
+  });
+
+  it("parses comma-separated labels", () => {
+    const result = validateTaskFields(
+      {
+        description: "Label test",
+        last_completed: "2024-04-01",
+        recurrence_type: "interval",
+        interval_every: "1",
+        interval_unit: "months",
+        labels: "kitchen, hvac, kitchen"
+      },
+      localize
+    );
+
+    expect(result.values?.labels).toEqual(["kitchen", "hvac"]);
   });
 
   it("treats all-week selections as daily interval", () => {
@@ -121,7 +139,8 @@ describe("task api helpers", () => {
       description: "Task",
       last_completed: "2024-01-01",
       recurrence: interval,
-      icon: null
+      icon: null,
+      labels: ["kitchen"]
     };
 
     const task = await createTask(hass, "entry-1", payload);
@@ -132,7 +151,8 @@ describe("task api helpers", () => {
       description: "Task",
       last_completed: "2024-01-01",
       recurrence: interval,
-      icon: null
+      icon: null,
+      labels: ["kitchen"]
     });
     expect(task.icon).toBeNull();
   });
@@ -150,7 +170,8 @@ describe("task api helpers", () => {
     const payload = {
       description: "Updated",
       last_completed: "2024-02-01",
-      recurrence: interval
+      recurrence: interval,
+      labels: []
     };
 
     await updateTask(hass, "entry-1", "t1", payload);
@@ -161,7 +182,8 @@ describe("task api helpers", () => {
       task_id: "t1",
       description: "Updated",
       last_completed: "2024-02-01",
-      recurrence: interval
+      recurrence: interval,
+      labels: []
     });
   });
 });

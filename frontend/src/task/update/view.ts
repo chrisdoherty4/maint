@@ -9,6 +9,7 @@ export interface EditFormState extends RecurrenceFormState {
   description: string;
   last_completed: string;
   icon: string;
+  labels: string;
 }
 
 @customElement("maint-edit-modal")
@@ -47,6 +48,7 @@ export class MaintEditModal extends LitElement {
       description: this.form.description,
       lastCompleted: this.form.last_completed,
       icon: this.form.icon,
+      labels: this.form.labels,
       defaultIcon: DEFAULT_ICON,
       requireLastCompleted: true,
       recurrenceType: this.form.recurrence_type as RecurrenceType,

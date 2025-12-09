@@ -18,18 +18,21 @@
       "unit": "Unidade",
       "on": "Em",
       "weeks_suffix": "semana(s)",
-      "icon": "Ícone"
+      "icon": "Ícone",
+      "labels": "Rótulos"
     },
     "placeholders": {
       "description_example": "Bateria do detector de fumaça",
       "date": "dd/mm/aaaa",
-      "icon_example": "mdi:bed"
+      "icon_example": "mdi:bed",
+      "labels_example": "kitchen_filter, hvac"
     },
     "optional": {
       "heading": "Configuração opcional"
     },
     "help": {
-      "icon": "Use um nome de ícone do Home Assistant, como mdi:check-circle-outline."
+      "icon": "Use um nome de ícone do Home Assistant, como mdi:check-circle-outline.",
+      "labels": "Informe IDs de rótulos do Home Assistant separados por vírgula. Crie rótulos em Configurações -> Dispositivos e serviços -> Rótulos."
     },
     "recurrence_options": {
       "interval": "Intervalo",

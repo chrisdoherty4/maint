@@ -25,6 +25,7 @@ export interface TaskFormRenderProps {
   recurrence?: Recurrence;
   recurrenceForm?: Partial<RecurrenceFormState>;
   icon?: string | null;
+  labels?: string;
   datePlaceholder: string;
   locale?: string;
   datePickerOpen: boolean;
@@ -64,6 +65,8 @@ export const renderTaskForm = (props: TaskFormRenderProps): TemplateResult | typ
   if (!props.open) {
     return nothing;
   }
+  const hasCustomIcon = Boolean(props.icon && props.icon !== (props.defaultIcon ?? ""));
+  const hasCustomLabels = Boolean(props.labels && props.labels.trim().length > 0);
 
   return html`
     <div class="modal-backdrop">
@@ -141,10 +144,7 @@ export const renderTaskForm = (props: TaskFormRenderProps): TemplateResult | typ
             disabled,
             props.onWeeklyDayChange
           )}
-          <details
-            class="optional-config"
-            ?open=${Boolean(props.icon && props.icon !== (props.defaultIcon ?? ""))}
-          >
+          <details class="optional-config" ?open=${hasCustomIcon || hasCustomLabels}>
             <summary>${props.panelText("optional.heading")}</summary>
             <div class="optional-body">
               <label>
@@ -158,6 +158,18 @@ export const renderTaskForm = (props: TaskFormRenderProps): TemplateResult | typ
                   @input=${props.onFieldInput}
                 />
                 <p class="help-text">${props.panelText("help.icon")}</p>
+              </label>
+              <label>
+                <span class="label-text">${props.panelText("fields.labels")}</span>
+                <input
+                  type="text"
+                  name="labels"
+                  placeholder=${props.panelText("placeholders.labels_example")}
+                  .value=${props.labels ?? ""}
+                  ?disabled=${disabled}
+                  @input=${props.onFieldInput}
+                />
+                <p class="help-text">${props.panelText("help.labels")}</p>
               </label>
             </div>
           </details>

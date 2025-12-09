@@ -16,18 +16,21 @@
       "unit": "Unidad",
       "on": "En",
       "weeks_suffix": "semana(s)",
-      "icon": "Icono"
+      "icon": "Icono",
+      "labels": "Etiquetas"
     },
     "placeholders": {
       "description_example": "Batería del detector de humo",
       "date": "dd/mm/aaaa",
-      "icon_example": "mdi:bed"
+      "icon_example": "mdi:bed",
+      "labels_example": "kitchen_filter, hvac"
     },
     "optional": {
       "heading": "Configuración opcional"
     },
     "help": {
-      "icon": "Usa un nombre de icono de Home Assistant como mdi:check-circle-outline."
+      "icon": "Usa un nombre de icono de Home Assistant como mdi:check-circle-outline.",
+      "labels": "Introduce IDs de etiquetas de Home Assistant separadas por comas. Crea etiquetas en Ajustes -> Dispositivos y servicios -> Etiquetas."
     },
     "recurrence_options": {
       "interval": "Intervalo",
