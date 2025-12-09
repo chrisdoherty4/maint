@@ -16,18 +16,21 @@
       "unit": "Eenheid",
       "on": "Op",
       "weeks_suffix": "week/weken",
-      "icon": "Icoon"
+      "icon": "Icoon",
+      "labels": "Labels"
     },
     "placeholders": {
       "description_example": "Batterij rookmelder",
       "date": "dd/mm/jjjj",
-      "icon_example": "mdi:bed"
+      "icon_example": "mdi:bed",
+      "labels_example": "kitchen_filter, hvac"
     },
     "optional": {
       "heading": "Optionele configuratie"
     },
     "help": {
-      "icon": "Gebruik een Home Assistant-pictogramnaam zoals mdi:check-circle-outline."
+      "icon": "Gebruik een Home Assistant-pictogramnaam zoals mdi:check-circle-outline.",
+      "labels": "Voer Home Assistant-label-ID's gescheiden door komma's in. Maak labels via Instellingen -> Apparaten en diensten -> Labels."
     },
     "recurrence_options": {
       "interval": "Interval",

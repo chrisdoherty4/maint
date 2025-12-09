@@ -29,6 +29,7 @@ const task = (overrides: Partial<MaintTask> = {}): MaintTask => ({
   description: "Task",
   last_completed: "2024-01-05",
   recurrence: weekly,
+  labels: ["kitchen"],
   ...overrides
 });
 
@@ -47,6 +48,7 @@ describe("UpdateTaskController", () => {
     expect(state.form?.recurrence_type).toBe("weekly");
     expect(state.form?.weekly_days).toEqual(["0", "2", "4"]);
     expect(state.form?.weekly_every).toBe("2");
+    expect(state.form?.labels).toBe("kitchen");
   });
 
   it("defaults weekly day when switching recurrence type", () => {
@@ -68,7 +70,12 @@ describe("UpdateTaskController", () => {
   });
 
   it("submits updates and clears busy state", async () => {
-    const payload = { description: "Task", last_completed: "2024-02-01", recurrence: interval };
+    const payload = {
+      description: "Task",
+      last_completed: "2024-02-01",
+      recurrence: interval,
+      labels: ["kitchen"]
+    };
     mockValidate.mockReturnValue({ values: payload });
     mockUpdateTask.mockResolvedValue({ task_id: "t1", ...payload });
 
@@ -89,6 +96,9 @@ describe("UpdateTaskController", () => {
     const updated = controller.updateField("icon", "mdi:fan");
     expect(updated.form?.icon).toBe("mdi:fan");
     expect(updated.error).toBeNull();
+
+    const withLabels = controller.updateField("labels", "kitchen,garage");
+    expect(withLabels.form?.labels).toBe("kitchen,garage");
 
     const opened = controller.openDatePicker();
     expect(opened.datePickerOpen).toBe(true);

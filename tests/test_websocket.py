@@ -10,6 +10,7 @@ from homeassistant.config_entries import ConfigEntryState
 from custom_components.maint.domain import DOMAIN
 from custom_components.maint.models import MaintRuntimeData
 from custom_components.maint.websocket import (
+    _normalized_labels,
     _parse_recurrence,
     _resolve_task_store,
     _validated_description,
@@ -44,6 +45,18 @@ def test_parse_recurrence_keeps_week_interval() -> None:
     )
 
     assert recurrence.every == interval_weeks
+
+
+def test_normalized_labels_trims_and_deduplicates() -> None:
+    """Label normalization should trim whitespace and remove empties."""
+    labels = _normalized_labels([" kitchen ", "garage", "", "garage"])
+
+    assert labels == {"kitchen", "garage"}
+
+
+def test_normalized_labels_returns_none_when_absent() -> None:
+    """Missing label payloads should be returned as None."""
+    assert _normalized_labels(None) is None
 
 
 class _DummyConnection:

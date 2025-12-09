@@ -16,18 +16,21 @@
       "unit": "Unit",
       "on": "On",
       "weeks_suffix": "week(s)",
-      "icon": "Icon"
+      "icon": "Icon",
+      "labels": "Labels"
     },
     "placeholders": {
       "description_example": "Smoke detector battery",
       "date": "mm/dd/yyyy",
-      "icon_example": "mdi:bed"
+      "icon_example": "mdi:bed",
+      "labels_example": "kitchen_filter, hvac"
     },
     "optional": {
       "heading": "Optional configuration"
     },
     "help": {
-      "icon": "Use a Home Assistant icon name such as mdi:check-circle-outline."
+      "icon": "Use a Home Assistant icon name such as mdi:check-circle-outline.",
+      "labels": "Enter comma-separated Home Assistant label IDs. Create labels under Settings -> Devices & Services -> Labels."
     },
     "recurrence_options": {
       "interval": "Interval",

@@ -41,6 +41,7 @@ export class MaintCreateModal extends LitElement {
       dateLabel: this.panelText("fields.starting_from"),
       description: "",
       icon: DEFAULT_ICON,
+      labels: "",
       defaultIcon: DEFAULT_ICON,
       lastCompleted: this.lastCompleted,
       recurrenceType: this.recurrenceType,

@@ -44,6 +44,7 @@ export interface MaintTask {
   recurrence: Recurrence;
   next_scheduled?: string | null;
   icon?: string | null;
+  labels?: string[];
 }
 
 export interface TaskPayload {
@@ -51,6 +52,7 @@ export interface TaskPayload {
   last_completed: string;
   recurrence: Recurrence;
   icon?: string | null;
+  labels?: string[];
 }
 
 export interface HassConnection {
@@ -79,7 +81,8 @@ export interface TaskFields {
   interval_unit?: FrequencyUnitField;
   weekly_days?: WeeklyDaysField;
   weekly_every?: WeeklyEveryField;
-   icon?: ScalarField;
+  icon?: ScalarField;
+  labels?: ScalarField;
 }
 
 const normalizeWeekdays = (days: Weekday[] = []): Weekday[] => {
@@ -97,7 +100,8 @@ export const normalizeTask = (task: MaintTask): MaintTask => ({
           every: task.recurrence.every ?? 1,
           days: normalizeWeekdays(task.recurrence.days)
         }
-      : task.recurrence
+      : task.recurrence,
+  labels: Array.isArray(task.labels) ? Array.from(new Set(task.labels)) : []
 });
 
 const toRecurrenceType = (value: RecurrenceTypeField): RecurrenceType => {
@@ -123,6 +127,18 @@ const parseWeekdays = (value: WeeklyDaysField): Weekday[] | null => {
     .filter((num): num is Weekday => Number.isInteger(num) && num >= 0 && num <= 6);
   const unique = Array.from(new Set(parsed)).sort((a, b) => a - b) as Weekday[];
   return unique.length ? unique : null;
+};
+
+const parseLabels = (value: ScalarField): string[] | undefined => {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  const raw = value.toString();
+  const labels = raw
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+  return Array.from(new Set(labels));
 };
 
 const parseRecurrence = (
@@ -196,13 +212,16 @@ export const validateTaskFields = (
   const iconRaw = fields.icon;
   const icon = typeof iconRaw === "string" ? iconRaw.trim() : iconRaw === null ? null : undefined;
   const normalizedIcon = icon === "" ? null : icon ?? DEFAULT_ICON;
+  const labelsList = parseLabels(fields.labels);
+  const normalizedLabels = labelsList ?? [];
 
   return {
     values: {
       description,
       last_completed: lastCompleted,
       recurrence: recurrence.value,
-      icon: normalizedIcon
+      icon: normalizedIcon,
+      labels: normalizedLabels
     }
   };
 };
@@ -226,7 +245,7 @@ export const createTask = async (
   entryId: string,
   payload: TaskPayload
 ): Promise<MaintTask> => {
-  const { icon, ...rest } = payload;
+  const { icon, labels, ...rest } = payload;
   const request: WsRequest = {
     type: "maint/task/create",
     entry_id: entryId,
@@ -234,6 +253,9 @@ export const createTask = async (
   };
   if (icon !== undefined) {
     request.icon = icon;
+  }
+  if (labels !== undefined) {
+    request.labels = labels;
   }
   const task = await hass.callWS<MaintTask>(request);
   return normalizeTask(task);
@@ -245,7 +267,7 @@ export const updateTask = async (
   taskId: string,
   payload: TaskPayload
 ): Promise<MaintTask> => {
-  const { icon, ...rest } = payload;
+  const { icon, labels, ...rest } = payload;
   const request: WsRequest = {
     type: "maint/task/update",
     entry_id: entryId,
@@ -254,6 +276,9 @@ export const updateTask = async (
   };
   if (icon !== undefined) {
     request.icon = icon;
+  }
+  if (labels !== undefined) {
+    request.labels = labels;
   }
   const task = await hass.callWS<MaintTask>(request);
   return normalizeTask(task);

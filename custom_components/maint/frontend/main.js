@@ -1430,7 +1430,8 @@ var normalizeTask = (task) => ({
     ...task.recurrence,
     every: task.recurrence.every ?? 1,
     days: normalizeWeekdays2(task.recurrence.days)
-  } : task.recurrence
+  } : task.recurrence,
+  labels: Array.isArray(task.labels) ? Array.from(new Set(task.labels)) : []
 });
 var toRecurrenceType = (value) => {
   const normalized = (value ?? "interval").toString();
@@ -1451,6 +1452,14 @@ var parseWeekdays = (value) => {
   const parsed = entries.map((entry) => Number(entry)).filter((num) => Number.isInteger(num) && num >= 0 && num <= 6);
   const unique = Array.from(new Set(parsed)).sort((a3, b3) => a3 - b3);
   return unique.length ? unique : null;
+};
+var parseLabels = (value) => {
+  if (value === void 0 || value === null) {
+    return void 0;
+  }
+  const raw = value.toString();
+  const labels = raw.split(",").map((entry) => entry.trim()).filter((entry) => entry.length > 0);
+  return Array.from(new Set(labels));
 };
 var parseRecurrence = (fields, localize) => {
   const type = toRecurrenceType(fields.recurrence_type);
@@ -1509,12 +1518,15 @@ var validateTaskFields = (fields, localize, hass) => {
   const iconRaw = fields.icon;
   const icon = typeof iconRaw === "string" ? iconRaw.trim() : iconRaw === null ? null : void 0;
   const normalizedIcon = icon === "" ? null : icon ?? DEFAULT_ICON;
+  const labelsList = parseLabels(fields.labels);
+  const normalizedLabels = labelsList ?? [];
   return {
     values: {
       description,
       last_completed: lastCompleted,
       recurrence: recurrence.value,
-      icon: normalizedIcon
+      icon: normalizedIcon,
+      labels: normalizedLabels
     }
   };
 };
@@ -1530,7 +1542,7 @@ var listTasks = async (hass, entryId) => {
   return tasks.map((task) => normalizeTask(task));
 };
 var createTask = async (hass, entryId, payload) => {
-  const { icon, ...rest } = payload;
+  const { icon, labels, ...rest } = payload;
   const request = {
     type: "maint/task/create",
     entry_id: entryId,
@@ -1539,11 +1551,14 @@ var createTask = async (hass, entryId, payload) => {
   if (icon !== void 0) {
     request.icon = icon;
   }
+  if (labels !== void 0) {
+    request.labels = labels;
+  }
   const task = await hass.callWS(request);
   return normalizeTask(task);
 };
 var updateTask = async (hass, entryId, taskId, payload) => {
-  const { icon, ...rest } = payload;
+  const { icon, labels, ...rest } = payload;
   const request = {
     type: "maint/task/update",
     entry_id: entryId,
@@ -1552,6 +1567,9 @@ var updateTask = async (hass, entryId, taskId, payload) => {
   };
   if (icon !== void 0) {
     request.icon = icon;
+  }
+  if (labels !== void 0) {
+    request.labels = labels;
   }
   const task = await hass.callWS(request);
   return normalizeTask(task);
@@ -1656,6 +1674,8 @@ var renderTaskForm = (props) => {
   if (!props.open) {
     return E;
   }
+  const hasCustomIcon = Boolean(props.icon && props.icon !== (props.defaultIcon ?? ""));
+  const hasCustomLabels = Boolean(props.labels && props.labels.trim().length > 0);
   return x`
     <div class="modal-backdrop">
       <div class="modal edit-modal">
@@ -1732,10 +1752,7 @@ var renderTaskForm = (props) => {
     disabled,
     props.onWeeklyDayChange
   )}
-          <details
-            class="optional-config"
-            ?open=${Boolean(props.icon && props.icon !== (props.defaultIcon ?? ""))}
-          >
+          <details class="optional-config" ?open=${hasCustomIcon || hasCustomLabels}>
             <summary>${props.panelText("optional.heading")}</summary>
             <div class="optional-body">
               <label>
@@ -1749,6 +1766,18 @@ var renderTaskForm = (props) => {
                   @input=${props.onFieldInput}
                 />
                 <p class="help-text">${props.panelText("help.icon")}</p>
+              </label>
+              <label>
+                <span class="label-text">${props.panelText("fields.labels")}</span>
+                <input
+                  type="text"
+                  name="labels"
+                  placeholder=${props.panelText("placeholders.labels_example")}
+                  .value=${props.labels ?? ""}
+                  ?disabled=${disabled}
+                  @input=${props.onFieldInput}
+                />
+                <p class="help-text">${props.panelText("help.labels")}</p>
               </label>
             </div>
           </details>
@@ -1806,6 +1835,7 @@ var MaintCreateModal = class extends i4 {
       dateLabel: this.panelText("fields.starting_from"),
       description: "",
       icon: DEFAULT_ICON,
+      labels: "",
       defaultIcon: DEFAULT_ICON,
       lastCompleted: this.lastCompleted,
       recurrenceType: this.recurrenceType,
@@ -2105,7 +2135,8 @@ var CreateTaskController = class {
         interval_unit: formData.get("interval_unit"),
         weekly_every: formData.get("weekly_every"),
         weekly_days: formData.getAll("weekly_days"),
-        icon: formData.get("icon")
+        icon: formData.get("icon"),
+        labels: formData.get("labels")
       },
       localize,
       hass
@@ -2542,7 +2573,8 @@ var UpdateTaskController = class {
       interval_unit: "days",
       weekly_every: "1",
       weekly_days: [],
-      icon: task.icon ?? DEFAULT_ICON
+      icon: task.icon ?? DEFAULT_ICON,
+      labels: (task.labels ?? []).join(", ")
     };
     if (task.recurrence.type === "interval") {
       baseForm.interval_every = task.recurrence.every.toString();
@@ -2596,6 +2628,9 @@ var UpdateTaskController = class {
         break;
       case "icon":
         nextForm.icon = value;
+        break;
+      case "labels":
+        nextForm.labels = value;
         break;
       default:
         break;
@@ -2664,7 +2699,8 @@ var UpdateTaskController = class {
         interval_unit: formData.get("interval_unit"),
         weekly_every: formData.get("weekly_every"),
         weekly_days: formData.getAll("weekly_days"),
-        icon: formData.get("icon")
+        icon: formData.get("icon"),
+        labels: formData.get("labels")
       },
       localize,
       hass
@@ -2899,18 +2935,21 @@ var de_default = {
       unit: "Einheit",
       on: "Am",
       weeks_suffix: "Woche(n)",
-      icon: "Icon"
+      icon: "Icon",
+      labels: "Labels"
     },
     placeholders: {
       description_example: "Batterie Rauchmelder",
       date: "tt/mm/jjjj",
-      icon_example: "mdi:bed"
+      icon_example: "mdi:bed",
+      labels_example: "kitchen_filter, hvac"
     },
     optional: {
       heading: "Optionale Konfiguration"
     },
     help: {
-      icon: "Verwende einen Home Assistant Icon-Namen wie mdi:check-circle-outline."
+      icon: "Verwende einen Home Assistant Icon-Namen wie mdi:check-circle-outline.",
+      labels: "Gib vorhandene Home Assistant Label-IDs kommasepariert ein. Labels kannst du unter Einstellungen -> Ger\xE4te & Dienste -> Labels anlegen."
     },
     recurrence_options: {
       interval: "Intervall",
@@ -3014,18 +3053,21 @@ var en_default = {
       unit: "Unit",
       on: "On",
       weeks_suffix: "week(s)",
-      icon: "Icon"
+      icon: "Icon",
+      labels: "Labels"
     },
     placeholders: {
       description_example: "Smoke detector battery",
       date: "mm/dd/yyyy",
-      icon_example: "mdi:bed"
+      icon_example: "mdi:bed",
+      labels_example: "kitchen_filter, hvac"
     },
     optional: {
       heading: "Optional configuration"
     },
     help: {
-      icon: "Use a Home Assistant icon name such as mdi:check-circle-outline."
+      icon: "Use a Home Assistant icon name such as mdi:check-circle-outline.",
+      labels: "Enter comma-separated Home Assistant label IDs. Create labels under Settings -> Devices & Services -> Labels."
     },
     recurrence_options: {
       interval: "Interval",
@@ -3129,18 +3171,21 @@ var es_default = {
       unit: "Unidad",
       on: "En",
       weeks_suffix: "semana(s)",
-      icon: "Icono"
+      icon: "Icono",
+      labels: "Etiquetas"
     },
     placeholders: {
       description_example: "Bater\xEDa del detector de humo",
       date: "dd/mm/aaaa",
-      icon_example: "mdi:bed"
+      icon_example: "mdi:bed",
+      labels_example: "kitchen_filter, hvac"
     },
     optional: {
       heading: "Configuraci\xF3n opcional"
     },
     help: {
-      icon: "Usa un nombre de icono de Home Assistant como mdi:check-circle-outline."
+      icon: "Usa un nombre de icono de Home Assistant como mdi:check-circle-outline.",
+      labels: "Introduce IDs de etiquetas de Home Assistant separadas por comas. Crea etiquetas en Ajustes -> Dispositivos y servicios -> Etiquetas."
     },
     recurrence_options: {
       interval: "Intervalo",
@@ -3244,18 +3289,21 @@ var fr_default = {
       unit: "Unit\xE9",
       on: "Le",
       weeks_suffix: "semaine(s)",
-      icon: "Ic\xF4ne"
+      icon: "Ic\xF4ne",
+      labels: "\xC9tiquettes"
     },
     placeholders: {
       description_example: "Pile du d\xE9tecteur de fum\xE9e",
       date: "jj/mm/aaaa",
-      icon_example: "mdi:bed"
+      icon_example: "mdi:bed",
+      labels_example: "kitchen_filter, hvac"
     },
     optional: {
       heading: "Configuration optionnelle"
     },
     help: {
-      icon: "Utilisez un nom d'ic\xF4ne Home Assistant comme mdi:check-circle-outline."
+      icon: "Utilisez un nom d'ic\xF4ne Home Assistant comme mdi:check-circle-outline.",
+      labels: "Saisissez des ID d'\xE9tiquettes Home Assistant s\xE9par\xE9s par des virgules. Cr\xE9ez-les via Param\xE8tres -> Appareils et services -> \xC9tiquettes."
     },
     recurrence_options: {
       interval: "Intervalle",
@@ -3359,18 +3407,21 @@ var nl_default = {
       unit: "Eenheid",
       on: "Op",
       weeks_suffix: "week/weken",
-      icon: "Icoon"
+      icon: "Icoon",
+      labels: "Labels"
     },
     placeholders: {
       description_example: "Batterij rookmelder",
       date: "dd/mm/jjjj",
-      icon_example: "mdi:bed"
+      icon_example: "mdi:bed",
+      labels_example: "kitchen_filter, hvac"
     },
     optional: {
       heading: "Optionele configuratie"
     },
     help: {
-      icon: "Gebruik een Home Assistant-pictogramnaam zoals mdi:check-circle-outline."
+      icon: "Gebruik een Home Assistant-pictogramnaam zoals mdi:check-circle-outline.",
+      labels: "Voer Home Assistant-label-ID's gescheiden door komma's in. Maak labels via Instellingen -> Apparaten en diensten -> Labels."
     },
     recurrence_options: {
       interval: "Interval",
@@ -3476,18 +3527,21 @@ var pt_default = {
       unit: "Unidade",
       on: "Em",
       weeks_suffix: "semana(s)",
-      icon: "\xCDcone"
+      icon: "\xCDcone",
+      labels: "R\xF3tulos"
     },
     placeholders: {
       description_example: "Bateria do detector de fuma\xE7a",
       date: "dd/mm/aaaa",
-      icon_example: "mdi:bed"
+      icon_example: "mdi:bed",
+      labels_example: "kitchen_filter, hvac"
     },
     optional: {
       heading: "Configura\xE7\xE3o opcional"
     },
     help: {
-      icon: "Use um nome de \xEDcone do Home Assistant, como mdi:check-circle-outline."
+      icon: "Use um nome de \xEDcone do Home Assistant, como mdi:check-circle-outline.",
+      labels: "Informe IDs de r\xF3tulos do Home Assistant separados por v\xEDrgula. Crie r\xF3tulos em Configura\xE7\xF5es -> Dispositivos e servi\xE7os -> R\xF3tulos."
     },
     recurrence_options: {
       interval: "Intervalo",
@@ -3661,6 +3715,7 @@ var MaintEditModal = class extends i4 {
       description: this.form.description,
       lastCompleted: this.form.last_completed,
       icon: this.form.icon,
+      labels: this.form.labels,
       defaultIcon: DEFAULT_ICON,
       requireLastCompleted: true,
       recurrenceType: this.form.recurrence_type,
